@@ -1,0 +1,40 @@
+OASISFormat: 0.4
+Name:        calculon
+Version:     0.22
+Homepage:    https://github.com/c-cube/calculon
+Authors:     Simon Cruanes, Armael Guéneau, Joris Giovannangeli
+License:     MIT
+LicenseFile: LICENSE
+Plugins:     META (0.3), DevFiles (0.3)
+OCamlVersion: >= 4.00.1
+BuildTools:  ocamlbuild
+AlphaFeatures: compiled_setup_ml, ocamlbuild_more_args
+
+# cygwin fails with anything else
+XOCamlbuildExtraArgs: "-j 1"
+
+Synopsis:    A library for writing IRC bots
+
+Flag "web"
+  Description:  Build the web-dependent plugins
+  Default:      true
+
+Library "calculon"
+  Path:             src/core/
+  Pack:             true
+  Modules:          Command, Config, Core, DistribM,
+                    Log, Plugin, Prelude, Signal, Talk, Run_main,
+                    Plugin_factoids, Plugin_vote, Plugin_social
+  BuildDepends:     containers, str, yojson, irc-client.tls, lwt.unix,
+                    stringext, ISO8601
+
+PreBuildCommand: make atdgen
+
+Library "calculon_web"
+  Path:             src/web
+  Pack:             true
+  FindlibName:      web
+  FindlibParent:    calculon
+  Modules:          Plugin_web, Plugin_movie, Movie_j, Movie_t, Movie_schema
+  BuildDepends:     calculon, atdgen, cohttp, lwt, lambdasoup, uri
+

@@ -1,0 +1,18 @@
+S src/core
+B _build/src/core
+S src/web
+B _build/src/web
+
+PKG irc-client.lwt
+PKG str
+PKG result
+PKG containers
+PKG yojson
+PKG stringext
+PKG irc-client.tls
+PKG ISO8601
+FLG -w +a-4-44-48
+
+PKG uri
+PKG cohttp.lwt
+PKG lambdasoup

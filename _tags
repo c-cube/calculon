@@ -1,0 +1,61 @@
+# OASIS_START
+# DO NOT EDIT (digest: 7f37cca9eb616bf18f009aa4dabf3686)
+# Ignore VCS directories, you can use the same kind of rule outside
+# OASIS_START/STOP if you want to exclude directories that contains
+# useless stuff for the build process
+true: annot, bin_annot
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Library calculon
+"src/core/calculon.cmxs": use_calculon
+"src/core/Command.cmx": for-pack(Calculon)
+"src/core/Config.cmx": for-pack(Calculon)
+"src/core/Core.cmx": for-pack(Calculon)
+"src/core/DistribM.cmx": for-pack(Calculon)
+"src/core/Log.cmx": for-pack(Calculon)
+"src/core/Plugin.cmx": for-pack(Calculon)
+"src/core/Prelude.cmx": for-pack(Calculon)
+"src/core/Signal.cmx": for-pack(Calculon)
+"src/core/Talk.cmx": for-pack(Calculon)
+"src/core/Run_main.cmx": for-pack(Calculon)
+"src/core/Plugin_factoids.cmx": for-pack(Calculon)
+"src/core/Plugin_vote.cmx": for-pack(Calculon)
+"src/core/Plugin_social.cmx": for-pack(Calculon)
+<src/core/*.ml{,i,y}>: package(ISO8601)
+<src/core/*.ml{,i,y}>: package(containers)
+<src/core/*.ml{,i,y}>: package(irc-client.tls)
+<src/core/*.ml{,i,y}>: package(lwt.unix)
+<src/core/*.ml{,i,y}>: package(str)
+<src/core/*.ml{,i,y}>: package(stringext)
+<src/core/*.ml{,i,y}>: package(yojson)
+# Library calculon_web
+"src/web/calculon_web.cmxs": use_calculon_web
+"src/web/Plugin_web.cmx": for-pack(Calculon_web)
+"src/web/Plugin_movie.cmx": for-pack(Calculon_web)
+"src/web/movie_j.cmx": for-pack(Calculon_web)
+"src/web/movie_t.cmx": for-pack(Calculon_web)
+"src/web/movie_schema.cmx": for-pack(Calculon_web)
+<src/web/*.ml{,i,y}>: package(ISO8601)
+<src/web/*.ml{,i,y}>: package(atdgen)
+<src/web/*.ml{,i,y}>: package(cohttp)
+<src/web/*.ml{,i,y}>: package(containers)
+<src/web/*.ml{,i,y}>: package(irc-client.tls)
+<src/web/*.ml{,i,y}>: package(lambdasoup)
+<src/web/*.ml{,i,y}>: package(lwt)
+<src/web/*.ml{,i,y}>: package(lwt.unix)
+<src/web/*.ml{,i,y}>: package(str)
+<src/web/*.ml{,i,y}>: package(stringext)
+<src/web/*.ml{,i,y}>: package(uri)
+<src/web/*.ml{,i,y}>: package(yojson)
+<src/web/*.ml{,i,y}>: use_calculon
+# OASIS_STOP
+
+true: warn(+a-4-44-48-29), color(always)
