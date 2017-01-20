@@ -36,41 +36,6 @@ let cmd_yt =
          | _ -> Lwt.return_none
     )
 
-let cancer_uri =
-  Uri.of_string "https://polochon.lelele.io/cancer/quickcancer"
-
-let cmd_cancer =
-  Command.make_simple
-    ~prio:10 ~prefix:"cancer" ~descr:"lookup in the abyss of bad videos"
-    (fun _ s ->
-       Client.get cancer_uri >>= fun (_, body) ->
-       Cohttp_lwt_body.to_string body >>= fun body ->
-       let fmt_link (title, url) = title ^ ":" ^ url in
-       let links =
-         Str.split (Str.regexp "\n") body
-         |> List.filter ((<>) "")
-         |> CCList.filter_map (fun s ->
-           match Str.bounded_split (Str.regexp ":") s 2 with
-             | [title; url] -> Some (title, url)
-             | _ -> None)
-       in
-       let links_with_search =
-         match String.trim s with
-           | "" -> links
-           | search ->
-             let re = Str.regexp_case_fold search in
-             CCList.filter_map
-               (fun (title, url) ->
-                  if Prelude.contains title re then Some (title, url) else None)
-               links
-       in
-
-       if links_with_search = [] then Lwt.return_none
-       else
-         let message = fmt_link @@ DistribM.(run @@ uniform links_with_search) in
-         Lwt.return (Some message)
-    )
-
 let find_yt_ids ?(n=1) (body:string): string list =
   let ast = parse body in
   Soup.select "#results li li > div" ast
@@ -97,6 +62,5 @@ let cmd_yt_search =
 
 let plugin =
   [ cmd_yt;
-    cmd_cancer;
     cmd_yt_search;
   ] |> Plugin.of_cmds
