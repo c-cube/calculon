@@ -22,7 +22,6 @@ type to_tell = {
 type contact = {
   last_seen: float;
   to_tell: to_tell list;
-  coucous : int;
 }
 
 type t
@@ -39,7 +38,3 @@ val set_data : state -> ?force_sync:bool -> string -> contact -> unit
 val sync : state -> unit
 
 val plugin : Plugin.t
-
-(**/**)
-val is_coucou : string -> bool
-(**/**)

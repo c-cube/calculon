@@ -16,7 +16,6 @@ type to_tell = {
 type contact = {
   last_seen: float;
   to_tell: to_tell list;
-  coucous : int;
 }
 
 exception Bad_json
@@ -37,7 +36,6 @@ let contact_of_json (json: json): contact option =
               let tell_after = Some (float_of_string tell_after) in
               {from; on_channel; msg; tell_after;}
           | _ -> raise Bad_json);
-      coucous = member "coucous" |> J.to_int_option |? 0
     } |> some
   with Bad_json | J.Type_error (_, _) -> None
 
@@ -53,7 +51,6 @@ let json_of_contact (c: contact): json =
         `List ([`String from; `String on_channel; `String msg] @ last)
       ) c.to_tell
     );
-    "coucous", `Int c.coucous
   ]
 
 (* Contacts db *)
@@ -95,35 +92,11 @@ let new_contact state nick =
     set_data state nick {
       last_seen = Unix.time ();
       to_tell = [];
-      coucous = 0;
     }
 
 let data state nick =
   if not @@ is_contact state nick then new_contact state nick;
   StrMap.find nick !state
-
-(* plugin *)
-
-(* Update coucous *)
-let is_coucou msg =
-  contains msg (Str.regexp "[^!]\\bcoucou\\b")
-  ||
-  CCString.prefix ~pre:"coucou" msg
-
-let () =
-  assert (is_coucou "coucou");
-  assert (is_coucou " coucou");
-  assert (is_coucou "foo bar coucou yolo");
-  assert (not (is_coucou "!coucou"));
-  assert (not (is_coucou "!coucou yolo"));
-  ()
-
-let shift_coucou ~by state nick =
-  let d = data state nick in
-  set_data state ~force_sync:false nick {d with coucous = d.coucous + by}
-
-let incr_coucou = shift_coucou ~by:1
-let decr_coucou = shift_coucou ~by:~-1
 
 (* Write the db to the disk periodically.
 
@@ -226,22 +199,6 @@ let cmd_seen state =
        with e ->
          Lwt.fail (Command.Fail ("seen: " ^ Printexc.to_string e)))
 
-let cmd_coucou state =
-  Command.make_simple
-    ~descr:"increment coucou level" ~prefix:"coucou" ~prio:10
-    (fun msg s ->
-       let s = String.trim s in
-       if contains s (Str.regexp " ") then Lwt.return_none
-       else
-         let nick = if s <> "" then s else msg.Core.nick in
-         let coucou_count = (data state nick).coucous in
-         let message =
-           Printf.sprintf "%s est un coucouteur niveau %d"
-             nick coucou_count
-         in
-         Lwt.return (Some message)
-    )
-
 let cmd_reload state =
   Command.make_simple ~descr:"reload socialdb" ~prefix:"social_reload" ~prio:10
     (fun _ _ ->
@@ -291,16 +248,6 @@ let plugin =
          set_data state ~force_sync:false msg.Core.nick
            {(data state msg.Core.nick) with last_seen = Unix.time ()};
          Lwt.return ());
-    (* update coucou *)
-    Signal.on' C.privmsg
-      (fun msg ->
-         let target = Core.reply_to msg in
-         if is_coucou msg.Core.message then (
-           if Core.is_chan target
-           then incr_coucou state msg.Core.nick
-           else decr_coucou state msg.Core.nick
-         );
-         Lwt.return ());
     (* notify users *)
     Signal.on' C.messages (on_message core state);
     (* periodic save *)
@@ -312,7 +259,6 @@ let plugin =
   and commands state =
     [ cmd_tell state;
       cmd_tell_at state;
-      cmd_coucou state;
       cmd_seen state;
       cmd_reload state;
     ]

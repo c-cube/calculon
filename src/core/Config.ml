@@ -13,10 +13,10 @@ type t = {
 let default = {
   server = "irc.freenode.net";
   port = 7000;
-  username = "coucoubot";
-  realname = "coucoubot";
-  nick = "coucoubot";
-  channel = "#arch-fr-free";
+  username = "calculon";
+  realname = "calculon";
+  nick = "calculon";
+  channel = "#ocaml";
   factoids_file = "factoids.json";
 }
 
