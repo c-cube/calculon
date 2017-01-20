@@ -1,0 +1,42 @@
+opam-version: "1.2"
+name: "coucoubot"
+version: "dev"
+authors: ["Armael" "Enjolras" "c-cube"]
+maintainer: "Armael"
+build: [
+    ["./configure"
+      "--%{uri+lambdasoup+cohttp+atdgen:enable}%-web"]
+    [make "build"]
+]
+install: [
+    [make "install"]
+]
+build-doc: [ make "doc" ]
+build-test: [ make "test" ]
+remove: [
+    ["rm" "%{bin}%/coucoubot"]
+]
+depends: [
+    "ocamlfind" {build}
+    "base-bytes"
+    "base-unix"
+    "result"
+    "lwt"
+    "irc-client" { >= "0.4.0" }
+    "tls"
+    "yojson"
+    "containers"
+    "ISO8601"
+]
+depopts: [
+    "uri"
+    "cohttp"
+    "atdgen"
+    "lambdasoup"
+]
+tags: [ "irc" "bot" "factoids" ]
+homepage: "https://github.com/c-cube/calculon"
+bug-reports: "https://github.com/c-cube/calculon/issues"
+dev-repo: "https://github.com/c-cube/calculon"
+
+
