@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: d10d14aeb1e1ebd6452cd8b6baf14fcf)
+# DO NOT EDIT (digest: b19cf678cc8af7055836931f94222ba2)
 version = "0.22"
 description = "A library for writing IRC bots"
 requires = "containers str yojson irc-client.tls lwt.unix stringext ISO8601"
@@ -11,7 +11,7 @@ exists_if = "calculon.cma"
 package "web" (
  version = "0.22"
  description = "A library for writing IRC bots"
- requires = "calculon atdgen cohttp lwt lambdasoup uri"
+ requires = "calculon atdgen cohttp lwt cohttp.lwt lambdasoup uri"
  archive(byte) = "calculon_web.cma"
  archive(byte, plugin) = "calculon_web.cma"
  archive(native) = "calculon_web.cmxa"

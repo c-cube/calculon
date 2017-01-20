@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 7f37cca9eb616bf18f009aa4dabf3686)
+# DO NOT EDIT (digest: 5f1aa8761f57a6c72ee89311c299d0ea)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -46,6 +46,7 @@ true: annot, bin_annot
 <src/web/*.ml{,i,y}>: package(ISO8601)
 <src/web/*.ml{,i,y}>: package(atdgen)
 <src/web/*.ml{,i,y}>: package(cohttp)
+<src/web/*.ml{,i,y}>: package(cohttp.lwt)
 <src/web/*.ml{,i,y}>: package(containers)
 <src/web/*.ml{,i,y}>: package(irc-client.tls)
 <src/web/*.ml{,i,y}>: package(lambdasoup)

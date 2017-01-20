@@ -36,5 +36,5 @@ Library "calculon_web"
   FindlibName:      web
   FindlibParent:    calculon
   Modules:          Plugin_web, Plugin_movie, Movie_j, Movie_t, Movie_schema
-  BuildDepends:     calculon, atdgen, cohttp, lwt, lambdasoup, uri
+  BuildDepends:     calculon, atdgen, cohttp, lwt, cohttp.lwt, lambdasoup, uri
 
