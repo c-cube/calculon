@@ -83,6 +83,12 @@ let parse_op msg : (op * string option) option =
       None
   ) |> Prelude.map_opt (fun x->x, hl)
 
+let () =
+  let test_ok s = CCOpt.is_some (parse_op s) in
+  assert (test_ok "!foo2 = bar");
+  assert (test_ok "!foo2 += bar");
+  ()
+
 (* read the json file *)
 let read_json (file:string) : json option Lwt.t =
   Lwt.catch

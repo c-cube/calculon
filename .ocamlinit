@@ -1,0 +1,13 @@
+#require "lwt.unix";;
+#require "irc-client.tls";;
+#require "str";;
+#require "yojson";;
+#require "containers";;
+#require "sequence";;
+#require "cohttp.lwt";;
+#require "atdgen";;
+#require "lambdasoup";;
+#require "ISO8601";;
+#directory "_build/src/core";;
+#load "calculon.cma";;
+module C = Calculon;;
