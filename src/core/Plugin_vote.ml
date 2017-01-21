@@ -11,12 +11,11 @@ module Time = struct
 
   let display_mins x =
     match as_mins x with
-    | 0 -> "moins d'une minute"
-    | 1 -> "une minute"
+    | 0 -> "less than 1 minute"
+    | 1 -> "one minute"
     | n -> Printf.sprintf "%d minutes" n
 
   let now = Unix.gettimeofday
-
 end
 
 module Vote = struct

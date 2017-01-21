@@ -6,15 +6,12 @@ type t =
   | Err
 
 let ack = [
-  "Bien reçu";
   "OK.";
   "done.";
 ]
 
 let error = [
   "oops";
-  "nop";
-  "coucOUPS";
 ]
 
 let talk_base = function
