@@ -34,7 +34,4 @@ val decr : key -> t -> int option * t
 
 val search : string list -> t -> string list
 
-val read_file : file:string -> t Lwt.t
-val write_file : file:string -> t -> unit Lwt.t
-
 val plugin : Plugin.t

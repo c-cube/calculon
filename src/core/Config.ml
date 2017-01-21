@@ -7,7 +7,7 @@ type t = {
   realname : string;
   nick : string;
   channel : string;
-  factoids_file : string;
+  state_file : string;
 }
 
 let default = {
@@ -17,14 +17,14 @@ let default = {
   realname = "calculon";
   nick = "calculon";
   channel = "#ocaml";
-  factoids_file = "factoids.json";
+  state_file = "state.json";
 }
 
 let parse conf args =
   let custom_nick = ref None in
   let custom_chan = ref None in
   let custom_server = ref None in
-  let custom_factoids = ref None in
+  let custom_state = ref None in
   let custom_port = ref 7000 in
   let options = Arg.align
       [ "--nick", Arg.String (fun s -> custom_nick := Some s),
@@ -34,8 +34,8 @@ let parse conf args =
       ; "--port", Arg.Set_int custom_port, " port of the server"
       ; "--server", Arg.String (fun s -> custom_server := Some s),
         " server to join (default: " ^ default.server ^ ")"
-      ; "--factoids", Arg.String (fun s -> custom_factoids := Some s),
-        " file containing factoids (default: " ^ default.factoids_file ^ ")"
+      ; "--state", Arg.String (fun s -> custom_state := Some s),
+        " file containing factoids (default: " ^ default.state_file ^ ")"
       ]
   in
   Arg.parse_argv args options ignore "parse options";
@@ -44,7 +44,7 @@ let parse conf args =
     channel = !custom_chan |? conf.channel;
     server = !custom_server |? conf.server;
     port = !custom_port;
-    factoids_file = !custom_factoids |? conf.factoids_file;
+    state_file = !custom_state |? conf.state_file;
   }
 
 let of_argv () =

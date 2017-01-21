@@ -179,25 +179,26 @@ let random (fcs:t): string =
       in
       Printf.sprintf "!%s: %s" fact.key msg_val
 
+let oj_json_exn j =
+  begin match j with
+    | `Assoc l ->
+      List.fold_left
+        (fun acc (k, v) ->
+           let v = as_value v in
+           let key = match key_of_string k with
+             | Some k -> k
+             | None -> raise Could_not_parse
+           in
+           append {key;value=v} acc
+        )
+        StrMap.empty l
+    | _ -> raise Could_not_parse
+  end
+
 (* parsing/outputting the factoids json *)
-let factoids_of_json (json: json): t option =
-  try
-    begin match json with
-      | `Assoc l ->
-        List.fold_left
-          (fun acc (k, v) ->
-             let v = as_value v in
-             let key = match key_of_string k with
-               | Some k -> k
-               | None -> raise Could_not_parse
-             in
-             append {key;value=v} acc
-          )
-          StrMap.empty l
-      | _ -> raise Could_not_parse
-    end
-    |> some
-  with Could_not_parse -> None
+let factoids_of_json (j: json): t Lwt_err.t =
+  try Lwt_err.return (oj_json_exn j)
+  with Could_not_parse -> Lwt_err.fail "could not parse json"
 
 let json_of_factoids (factoids: t): json =
   let l =
@@ -212,45 +213,14 @@ let json_of_factoids (factoids: t): json =
   in
   `Assoc l
 
-let dump_factoids (factoids: t): string =
-  json_of_factoids factoids |> Yojson.Safe.to_string
-
 (* operations *)
 
 let empty = StrMap.empty
 
-let read_file ~(file:string) : t Lwt.t =
-  read_json file >|= function
-  | None -> StrMap.empty
-  | Some data -> factoids_of_json data |? StrMap.empty
-
-let write_file ~file (fs: t) : unit Lwt.t =
-  let file' = file ^ ".tmp" in
-  let s = dump_factoids fs in
-  Lwt_io.with_file ~mode:Lwt_io.output file'
-    (fun oc ->
-       Lwt_io.write oc s >>= fun () ->
-       Lwt_io.flush oc)
-  >>= fun () ->
-  Sys.rename file' file;
-  Lwt.return ()
-
 type state = {
   mutable st_cur: t;
-  st_conf: Config.t;
+  actions: Plugin.action Signal.Send_ref.t;
 }
-
-let save state =
-  write_file ~file:state.st_conf.Config.factoids_file state.st_cur
-and reload state =
-  read_file ~file:state.st_conf.Config.factoids_file >|= fun fs ->
-  state.st_cur <- fs
-
-let init _ config : state Lwt.t =
-  print_endline "load initial factoids file...";
-  let state = {st_cur=empty; st_conf=config;} in
-  reload state >|= fun () ->
-  state
 
 let pick_list (l:'a list): 'a option = match l with
   | [] -> None
@@ -328,11 +298,8 @@ let cmd_random state =
        Some msg |> Lwt.return
     )
 
-let cmd_reload state =
-  Command.make_simple ~descr:"reload factoids" ~prefix:"reload" ~prio:10
-    (fun _ _ ->
-       reload state >|= fun () -> Some (Talk.select Talk.Ack)
-    )
+let save state =
+  Signal.Send_ref.send state.actions Plugin.Require_save
 
 let cmd_factoids state =
   let reply (module C:Core.S) msg =
@@ -367,7 +334,9 @@ let cmd_factoids state =
           C.talk ~target Talk.Err |> matched
         ) else (
           state.st_cur <- set f state.st_cur;
-          (save state >>= fun () -> C.talk ~target Talk.Ack) |> matched
+          ( Signal.Send_ref.send state.actions Plugin.Require_save
+            >>= fun () ->
+            C.talk ~target Talk.Ack) |> matched
         )
       | Some (Set_force f, _) ->
         state.st_cur <- set f state.st_cur;
@@ -401,13 +370,23 @@ let commands state: Command.t list =
   [ cmd_factoids state;
     cmd_search state;
     cmd_search_all state;
-    cmd_reload state;
     cmd_see state;
     cmd_see_all state;
     cmd_random state;
   ]
 
+let of_json actions j: state Lwt_err.t =
+  let open Lwt_err in
+  begin match j with
+    | None -> Lwt_err.return StrMap.empty
+    | Some j -> factoids_of_json j
+  end
+  >|= fun t -> {st_cur=t; actions}
+
+let to_json (st:state): json option =
+  Some (json_of_factoids st.st_cur)
+
 let plugin : Plugin.t =
-  (* create state *)
-  let cleanup state = save state in
-  Plugin.stateful ~init ~stop:cleanup commands
+  Plugin.stateful
+    ~name:"factoids" ~to_json ~of_json ~commands
+    ~stop:(fun _ -> Lwt.return_unit) ()

@@ -169,11 +169,6 @@ let rec collector polls =
   Lwt_unix.sleep (Time.minutes 1) >>= fun () ->
   collector polls
 
-let init _core _conf : state Lwt.t =
-  let polls = Hashtbl.create 10 in
-  Lwt.async (fun () -> collector polls);
-  Lwt.return polls
-
 let help =
   "!vote show <poll> <nick> : display current vote of <nick> for <poll>\n\
    !vote start <poll> <description (optional)> : create new poll\n\
@@ -208,9 +203,17 @@ let cmd_vote state : Command.t =
     ~prefix:"vote" ~prio:10
     (reply state)
 
+let of_json _ _ : state Lwt_err.t =
+  let polls = Hashtbl.create 10 in
+  Lwt.async (fun () -> collector polls);
+  Lwt_err.return polls
+
 let plugin =
   Plugin.stateful
-    ~init
+    ~name:"vote"
+    ~to_json:(fun _ -> None)
+    ~of_json
+    ~commands:(fun state -> [cmd_vote state])
     ~stop:(fun _ -> Lwt.return_unit)
-    (fun state -> [cmd_vote state])
+    ()
 

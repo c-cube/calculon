@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 1a104e6871adeec10db994b0a2bc7039)
+# DO NOT EDIT (digest: 67de91ac76b323dc720b3e1be57b4c58)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -19,6 +19,7 @@ true: annot, bin_annot
 "src/core/Command.cmx": for-pack(Calculon)
 "src/core/Config.cmx": for-pack(Calculon)
 "src/core/Core.cmx": for-pack(Calculon)
+"src/core/Lwt_err.cmx": for-pack(Calculon)
 "src/core/Log.cmx": for-pack(Calculon)
 "src/core/Plugin.cmx": for-pack(Calculon)
 "src/core/Prelude.cmx": for-pack(Calculon)
@@ -28,6 +29,7 @@ true: annot, bin_annot
 "src/core/Plugin_factoids.cmx": for-pack(Calculon)
 "src/core/Plugin_vote.cmx": for-pack(Calculon)
 "src/core/Plugin_social.cmx": for-pack(Calculon)
+"src/core/Plugin_state.cmx": for-pack(Calculon)
 <src/core/*.ml{,i,y}>: package(ISO8601)
 <src/core/*.ml{,i,y}>: package(containers)
 <src/core/*.ml{,i,y}>: package(irc-client.tls)

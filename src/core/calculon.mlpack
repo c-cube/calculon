@@ -1,8 +1,9 @@
 # OASIS_START
-# DO NOT EDIT (digest: 82a291d8fdf50193a000a75feb0aaaa7)
+# DO NOT EDIT (digest: 20993635388165f27e6851af130727f0)
 Command
 Config
 Core
+Lwt_err
 Log
 Plugin
 Prelude
@@ -12,4 +13,5 @@ Run_main
 Plugin_factoids
 Plugin_vote
 Plugin_social
+Plugin_state
 # OASIS_STOP

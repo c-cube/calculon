@@ -12,8 +12,8 @@ type res =
 
 type t = {
   prio: int; (* priority. The lower, the more urgent this command is. *)
-  match_: Core.t -> Core.privmsg -> res;
-  name: string;
+  match_: Core.t -> Core.privmsg -> res; (* how to react to incoming messages *)
+  name: string; (* name of the command *)
   descr: string; (* for !help *)
 }
 
@@ -39,6 +39,8 @@ val make :
   name:string ->
   (Core.t -> Core.privmsg -> res) ->
   t
+(** Make a command using the given methods. Only the name and
+    matching rules are requested *)
 
 exception Fail of string
 

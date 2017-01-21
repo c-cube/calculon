@@ -24,17 +24,12 @@ type contact = {
   to_tell: to_tell list;
 }
 
-type t
-
-type state = t ref
+type state
 
 val data : state -> string -> contact
 
 (* by default, [force_sync] is true. Setting data with [force_sync] as false may
    result in data loss in case of reload/crash of the bot *)
 val set_data : state -> ?force_sync:bool -> string -> contact -> unit
-
-(* Sync the in-memory db with the on-disk storage *)
-val sync : state -> unit
 
 val plugin : Plugin.t

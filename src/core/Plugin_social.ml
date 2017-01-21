@@ -1,9 +1,8 @@
 open Prelude
 open Containers
-open Lwt.Infix
 
-module J = Yojson.Basic.Util
-type json = Yojson.Basic.json
+module J = Yojson.Safe.Util
+type json = Yojson.Safe.json
 
 type to_tell = {
   from: string;
@@ -55,37 +54,19 @@ let json_of_contact (c: contact): json =
 
 (* Contacts db *)
 
-type t = contact StrMap.t
+type state = {
+  actions: Plugin.action_callback;
+  mutable map: contact StrMap.t;
+}
 
-(* TODO: move to config *)
-let db_filename = "socialdb.json"
+let write_db (db:state) =
+  Signal.Send_ref.send db.actions Plugin.Require_save
 
-let read_db (): t =
-  match Yojson.Basic.from_file db_filename with
-  | `Assoc l ->
-    l
-    |> CCList.filter_map (fun (k, j) ->
-      Option.(contact_of_json j >>= fun c -> Some (k, c)))
-    |> StrMap.of_list
-  | exception (Sys_error _) -> StrMap.empty
-  | _ -> StrMap.empty
-
-let write_db (db: t) =
-  let json = `Assoc (
-    StrMap.to_list db
-    |> List.map (fun (k, c) -> (k, json_of_contact c))
-  ) in
-  Yojson.Basic.to_file db_filename json
-
-type state = t ref
-
-let is_contact state nick = StrMap.mem nick !state
+let is_contact state nick = StrMap.mem nick state.map
 
 let set_data state ?(force_sync = true) nick contact =
-  state := StrMap.add nick contact !state;
-  if force_sync then write_db !state
-
-let sync state = write_db !state
+  state.map <- StrMap.add nick contact state.map;
+  if force_sync then Lwt.async (fun () -> write_db state)
 
 let new_contact state nick =
   if not (is_contact state nick) then
@@ -96,20 +77,7 @@ let new_contact state nick =
 
 let data state nick =
   if not @@ is_contact state nick then new_contact state nick;
-  StrMap.find nick !state
-
-(* Write the db to the disk periodically.
-
-   We do not update the on-disk db each time lastSeen is updated (i.e. each time
-   someone talks), as it's not a big deal if we lose some data about lastSeen in
-   case of a crash.
-*)
-let save_thread state =
-  let rec loop () =
-    Lwt_unix.sleep 300. >>= fun () ->
-    sync state; loop ()
-  in
-  Lwt.async loop
+  StrMap.find nick state.map
 
 let split_2 ~msg re s =
   let a = Str.bounded_split re s 2 in
@@ -175,8 +143,7 @@ let print_diff (f:float) : string =
     [spf "%d seconds" s];
   ] |> List.flatten |> String.concat ", "
 
-
-let cmd_seen state =
+let cmd_seen (state:state) =
   Command.make_simple
     ~descr:"ask for the last time someone talked on this chan"
     ~prio:10 ~prefix:"seen"
@@ -184,7 +151,7 @@ let cmd_seen state =
        try
          let dest = String.trim s in
          Log.logf "query: seen `%s`" dest;
-         begin match StrMap.get dest !state with
+         begin match StrMap.get dest state.map with
            | Some data ->
              let last = data.last_seen in
              let now = Unix.time () in
@@ -199,69 +166,72 @@ let cmd_seen state =
        with e ->
          Lwt.fail (Command.Fail ("seen: " ^ Printexc.to_string e)))
 
-let cmd_reload state =
-  Command.make_simple ~descr:"reload socialdb" ~prefix:"social_reload" ~prio:10
-    (fun _ _ ->
-       let new_db = read_db() in
-       state := new_db;
-       Lwt.return_some (Talk.select Talk.Ack)
-    )
-
 (* callback to update state, notify users of their messages, etc. *)
-let on_message (module C:Core.S) state msg =
+let on_message state (module C:Core.S) msg =
   let module Msg = Irc_message in
-  let nick =
-    match msg.Msg.command with
+  let nick = match msg.Msg.command with
     | Msg.JOIN (_, _) | Msg.PRIVMSG (_, _) ->
       some @@ get_nick @@ Option.get_exn msg.Msg.prefix
     | Msg.NICK newnick ->
       Some newnick
     | _ -> None
   in
-  match nick with
-  | None -> Lwt.return ()
-  | Some nick ->
-    let contact = data state nick in
-    let to_tell, remaining =
-      let now = Unix.time() in
-      contact.to_tell
-      |> List.partition
-        (fun t -> match t.tell_after with
-           | None -> true
-           | Some f when now > f -> true
-           | Some _ -> false)
+  (* trigger [tell] messages *)
+  begin match nick with
+    | None -> Lwt.return ()
+    | Some nick ->
+      (* update [lastSeen] *)
+      set_data state ~force_sync:false nick
+        {(data state nick) with last_seen = Unix.time ()};
+      let contact = data state nick in
+      let to_tell, remaining =
+        let now = Unix.time() in
+        contact.to_tell
+        |> List.partition
+          (fun t -> match t.tell_after with
+             | None -> true
+             | Some f when now > f -> true
+             | Some _ -> false)
+      in
+      if to_tell <> [] then (
+        set_data state nick {contact with to_tell = remaining};
+      );
+      Lwt_list.iter_s (fun {from=author; on_channel; msg=m; _} ->
+        C.send_notice ~target:on_channel
+          ~message:(Printf.sprintf "%s: (from %s): %s" nick author m))
+        (List.rev to_tell)
+  end
+
+let of_json actions = function
+  | None ->
+    Lwt_err.return {actions; map=StrMap.empty}
+  | Some j ->
+    let map = match j with
+      | `Assoc l ->
+        l
+        |> CCList.filter_map (fun (k, j) ->
+          Option.(contact_of_json j >>= fun c -> Some (k, c)))
+        |> StrMap.of_list
+      | _ -> StrMap.empty
     in
-    if to_tell <> [] then (
-      set_data state nick {contact with to_tell = remaining};
-    );
-    Lwt_list.iter_s (fun {from=author; on_channel; msg=m; _} ->
-      C.send_notice ~target:on_channel
-        ~message:(Printf.sprintf "%s: (from %s): %s" nick author m))
-      (List.rev to_tell)
+    Lwt_err.return {actions; map}
+
+let to_json (db:state) =
+  let json = `Assoc (
+    StrMap.to_list db.map
+    |> List.map (fun (k, c) -> (k, json_of_contact c))
+  ) in
+  Some json
 
 let plugin =
-  let init ((module C:Core.S) as core) _conf =
-    let state = ref (read_db ()) in
-    (* Update lastSeen *)
-    Signal.on' C.privmsg
-      (fun msg ->
-         set_data state ~force_sync:false msg.Core.nick
-           {(data state msg.Core.nick) with last_seen = Unix.time ()};
-         Lwt.return ());
-    (* notify users *)
-    Signal.on' C.messages (on_message core state);
-    (* periodic save *)
-    save_thread state;
-    Lwt.return state
-  and stop state =
-    (* TODO: stop saving thread? *)
-    write_db !state |> Lwt.return
-  and commands state =
+  let commands state =
     [ cmd_tell state;
       cmd_tell_at state;
       cmd_seen state;
-      cmd_reload state;
     ]
   in
-  Plugin.stateful ~init ~stop commands
+  Plugin.stateful
+    ~name:"social"
+    ~on_msg:(fun st -> [on_message st])
+    ~of_json ~to_json ~commands ()
 

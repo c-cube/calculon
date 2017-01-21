@@ -17,6 +17,8 @@ and keepalive =
   | Keep : 'a t -> keepalive
   | NotAlive : keepalive
 
+type 'a signal = 'a t
+
 let _exn_handler = ref (fun _ -> ())
 
 let nop_handler _x = Lwt.return ContinueListening
@@ -124,3 +126,13 @@ let filter_map signal f =
   signal'
 
 let set_exn_handler h = _exn_handler := h
+
+(** {2 Send-only View} *)
+
+(** Can be used only for sending *)
+
+module Send_ref = struct
+  type 'a t = 'a signal
+  let make s = s
+  let send = send
+end

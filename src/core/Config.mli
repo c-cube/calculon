@@ -7,7 +7,7 @@ type t = {
   realname : string;
   nick : string;
   channel : string;
-  factoids_file : string;
+  state_file : string; (* where plugins' state is stored *)
 }
 
 val default : t
@@ -17,4 +17,5 @@ val parse : t -> string array -> t
     arguments can override its fields *)
 
 val of_argv : unit -> t
-(** Parsed from {!Sys.argv} *)
+(** Parsed from {!Sys.argv}
+    Will call {!exit} if [Arg.parse] fails *)

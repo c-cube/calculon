@@ -3,6 +3,8 @@
 type 'a t
   (** Signal of type 'a *)
 
+type 'a signal = 'a t
+
 val create : unit -> 'a t
   (** New signal *)
 
@@ -38,3 +40,15 @@ val set_exn_handler : (exn -> unit) -> unit
   (** Set the handler that is called upon an exception in
       a Signal.  The default handler does nothing.
       If the handler raises an exception, it is not caught! *)
+
+(** {2 Send-only View} *)
+
+(** Can be used only for sending *)
+
+module Send_ref : sig
+  type 'a t
+
+  val make : 'a signal -> 'a t
+
+  val send : 'a t -> 'a -> unit Lwt.t
+end

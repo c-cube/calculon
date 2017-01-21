@@ -1,26 +1,35 @@
 
-open Lwt.Infix
-
 let main conf all : unit Lwt.t =
-  let init (core:Core.t) =
+  let init_or_err (core:Core.t): unit Lwt_err.t =
+    let open Lwt_err in
     let (module C) = core in
     (* setup plugins *)
-    Plugin.init core conf all >>= fun (cmds, cleanup_cmds) ->
+    Plugin.Set.create conf all >>= fun plugins ->
+    let cmds = Plugin.Set.commands plugins in
+    let on_msg_l = Plugin.Set.on_msg_l plugins in
     (* connect to chan *)
-    C.send_join ~channel:conf.Config.channel >>= fun () ->
+    C.send_join ~channel:conf.Config.channel |> ok >|= fun () ->
     Log.logf "got %d commands from %d plugins" (List.length cmds) (List.length all);
     (* log incoming messages, apply commands to them *)
     Signal.on' C.messages
       (fun msg ->
          Log.logf "got message: %s" (Core.Msg.to_string msg);
+         let open Lwt.Infix in
+         Lwt_list.iter_s (fun f -> f core msg) on_msg_l >>= fun () ->
          match Core.privmsg_of_msg msg with
            | None -> Lwt.return_unit
            | Some msg -> Command.run core cmds msg);
-    (* cleanup *)
-    Lwt.async (fun () -> C.exit >>= cleanup_cmds);
-    Lwt.return_unit
+    ()
   and connect =
     Core.connect_of_config conf
+  in
+  (* error-logging wraper *)
+  let init core : unit Lwt.t =
+    let open Lwt.Infix in
+    init_or_err core >|= function
+    | Result.Ok () -> ()
+    | Result.Error msg ->
+      Log.logf "error in main loop: %s" msg;
   in
   Core.run
     ~connect
