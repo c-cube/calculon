@@ -5,14 +5,14 @@ let main conf all : unit Lwt.t =
     let (module C) = core in
     (* setup plugins *)
     Plugin.Set.create conf all >>= fun plugins ->
-    let cmds = Plugin.Set.commands plugins in
-    let on_msg_l = Plugin.Set.on_msg_l plugins in
     (* connect to chan *)
     C.send_join ~channel:conf.Config.channel |> ok >|= fun () ->
-    Log.logf "got %d commands from %d plugins" (List.length cmds) (List.length all);
+    Log.logf "run %d plugins" (List.length all);
     (* log incoming messages, apply commands to them *)
     Signal.on' C.messages
       (fun msg ->
+         let cmds = Plugin.Set.commands plugins in
+         let on_msg_l = Plugin.Set.on_msg_l plugins in
          Log.logf "got message: %s" (Core.Msg.to_string msg);
          let open Lwt.Infix in
          Lwt_list.iter_s (fun f -> f core msg) on_msg_l >>= fun () ->
