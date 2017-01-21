@@ -3,9 +3,9 @@
 
 type 'a t = ('a, string) Result.result Lwt.t
 
-val return : 'a -> ('a, 'b) result Lwt.t
+val return : 'a -> ('a, 'b) Result.result Lwt.t
 
-val fail : 'a -> ('b, 'a) result Lwt.t
+val fail : 'a -> ('b, 'a) Result.result Lwt.t
 
 val lift : ('a, string) Result.result -> 'a t
 

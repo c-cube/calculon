@@ -1,6 +1,8 @@
 
 (** {1 Lwt+Result Monad} *)
 
+open Result
+
 type 'a t = ('a,string) Result.result Lwt.t
 
 let return x = Lwt.return (Ok x)
