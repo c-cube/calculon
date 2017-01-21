@@ -22,7 +22,7 @@ Flag "web"
 Library "calculon"
   Path:             src/core/
   Pack:             true
-  Modules:          Command, Config, Core, DistribM,
+  Modules:          Command, Config, Core,
                     Log, Plugin, Prelude, Signal, Talk, Run_main,
                     Plugin_factoids, Plugin_vote, Plugin_social
   BuildDepends:     containers, str, yojson, irc-client.tls, lwt.unix,

@@ -18,4 +18,4 @@ let talk_base = function
   | Ack -> ack
   | Err -> error
 
-let select ty = talk_base ty |> Prelude.select
+let select ty = talk_base ty |> Prelude.random_l

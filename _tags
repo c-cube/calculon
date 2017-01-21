@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 5f1aa8761f57a6c72ee89311c299d0ea)
+# DO NOT EDIT (digest: 1a104e6871adeec10db994b0a2bc7039)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -19,7 +19,6 @@ true: annot, bin_annot
 "src/core/Command.cmx": for-pack(Calculon)
 "src/core/Config.cmx": for-pack(Calculon)
 "src/core/Core.cmx": for-pack(Calculon)
-"src/core/DistribM.cmx": for-pack(Calculon)
 "src/core/Log.cmx": for-pack(Calculon)
 "src/core/Plugin.cmx": for-pack(Calculon)
 "src/core/Prelude.cmx": for-pack(Calculon)

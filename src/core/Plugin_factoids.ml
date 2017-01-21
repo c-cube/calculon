@@ -171,10 +171,10 @@ let random (fcs:t): string =
   match l with
     | [] -> ""
     | _ ->
-      let _, fact = DistribM.uniform l |> DistribM.run in
+      let _, fact = Rand_distrib.uniform l |> Rand_distrib.run in
       let msg_val = match fact.value with
         | StrList [] -> assert false
-        | StrList l -> DistribM.uniform l |> DistribM.run
+        | StrList l -> Rand_distrib.uniform l |> Rand_distrib.run
         | Int i -> string_of_int i
       in
       Printf.sprintf "!%s: %s" fact.key msg_val
@@ -255,7 +255,7 @@ let init _ config : state Lwt.t =
 let pick_list (l:'a list): 'a option = match l with
   | [] -> None
   | [message] -> Some message
-  | l -> Some (DistribM.uniform l |> DistribM.run)
+  | l -> Some (Rand_distrib.uniform l |> Rand_distrib.run)
 
 let msg_of_value_pick (v:value): string option = match v with
   | Int i -> Some (string_of_int i)
@@ -349,7 +349,7 @@ let cmd_factoids state =
       | StrList [message] ->
         C.send_privmsg ~target ~message:(add_hl hl message) |> matched
       | StrList l ->
-        let message = DistribM.uniform l |> DistribM.run |> add_hl hl in
+        let message = Rand_distrib.uniform l |> Rand_distrib.run |> add_hl hl in
         C.send_privmsg ~target ~message |> matched
     and count_update_message (k: key) = function
       | None -> Lwt.return_unit

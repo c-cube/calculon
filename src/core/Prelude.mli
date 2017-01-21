@@ -23,9 +23,28 @@ val re_match1 : (string -> 'a) -> Str.regexp -> string -> 'a option
 
 val re_match0 : 'a -> Str.regexp -> string -> 'a option
 
-val select : 'a list -> 'a
-(** Random choice *)
-
 module StrMap : CCMap.S with type key = string
 
+(** {2 Random Distribution} *)
+module Rand_distrib : sig
+  type 'a t = ('a * float) list
 
+  val return : 'a -> 'a t
+  val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
+
+  val add : 'a -> float -> 'a t -> 'a t
+  val binjoin : 'a t -> 'a t -> 'a t
+  val join : 'a t list -> 'a t
+
+  val uniform : 'a list -> 'a t
+  val filter : ('a -> bool) -> 'a t -> 'a t
+  val top : 'a t -> 'a t
+  val bot : 'a t -> 'a t
+  val normalize : 'a t -> 'a t
+
+  val run : 'a t -> 'a
+  (** Pick a value in the given distribution *)
+end
+
+val random_l : 'a list -> 'a
+(** Random choice in list, shortcut for {!Rand_distrib} *)
