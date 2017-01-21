@@ -72,6 +72,7 @@ module Set = struct
   (* "safe" writing to file, using a temporary file + atomic move *)
   let save_state_ config j: unit =
     let file = config.Config.state_file in
+    Log.logf "plugin: save state in '%s'" file;
     let file' = file ^ ".tmp" in
     Yojson.Safe.to_file file j;
     Sys.rename file' file
@@ -97,6 +98,7 @@ module Set = struct
 
   let load_state_ config : (json, string) Result.result Lwt.t =
     let file = config.Config.state_file in
+    Log.logf "load from file '%s'" file;
     if Sys.file_exists file then (
       try
         let j = Yojson.Safe.from_file file in
@@ -149,6 +151,7 @@ module Set = struct
 
   let reload t =
     let open Lwt_err in
+    Log.log "plugin: reload state";
     load_state_ t.config >>= fun j ->
     load_from (Signal.Send_ref.make t.actions) t.plugins j
     >|= fun (commands, on_msg_l, active) ->
