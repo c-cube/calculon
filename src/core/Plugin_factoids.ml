@@ -29,7 +29,7 @@ let string_of_value = function
 
 let string_of_op = function
   | Get k -> "get " ^ k
-  | Set {key;value} -> "set " ^ key ^ " := " ^ string_of_value value
+  | Set {key;value} -> "set " ^ key ^ " = " ^ string_of_value value
   | Set_force {key;value} -> "set_force " ^ key ^ " := " ^ string_of_value value
   | Append {key;value} -> "append " ^ key ^ " += " ^ string_of_value value
   | Incr k -> "incr " ^ k
@@ -46,12 +46,12 @@ let mk_factoid key value =
   try {key; value = Int (int_of_string value)}
   with Failure _ -> {key; value = StrList [value]}
 
-let re_set = Str.regexp "^![ ]*\\([^!=+ -:]+\\)[ ]*=\\(.*\\)$"
-let re_set_force = Str.regexp "^![ ]*\\([^!=+ -:]+\\)[ ]*:=\\(.*\\)$"
-let re_append = Str.regexp "^![ ]*\\([^!=+ -:]+\\)[ ]*\\+=\\(.*\\)$"
+let re_set = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*=\\(.*\\)$"
+let re_set_force = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*:=\\(.*\\)$"
+let re_append = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*\\+=\\(.*\\)$"
 let re_get = Str.regexp "^![ ]*\\([^!= :]+\\)[ ]*$"
-let re_incr = Str.regexp "^![ ]*\\([^!=+ -:]+\\)[ ]*\\+\\+[ ]*$"
-let re_decr = Str.regexp "^![ ]*\\([^!=+ -:]+\\)[ ]*--[ ]*$"
+let re_incr = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*\\+\\+[ ]*$"
+let re_decr = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*--[ ]*$"
 
 let parse_op msg : (op * string option) option =
   let msg, hl = match Command.extract_hl msg with
