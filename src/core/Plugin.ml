@@ -150,7 +150,9 @@ module Set = struct
       )
       ([],[])
       plugins
-    >|= fun ((a,b),c) -> a,b,c
+    >|= fun ((cmds,on_msg_l),active) ->
+    let commands_l = List.sort Command.compare_prio cmds in
+    commands_l,on_msg_l,active
 
   let reload t =
     let open Lwt_err in
@@ -183,8 +185,7 @@ module Set = struct
     load_state_ config >>= fun j ->
     let actions = Signal.create() in
     load_from (Signal.Send_ref.make actions) plugins j
-    >|= fun (commands, on_msg_l, active) ->
-    let commands_l = List.sort Command.compare_prio commands in
+    >|= fun (commands_l, on_msg_l, active) ->
     let t = {
       config; plugins; actions; active; commands_l; on_msg_l; stopped=false;
     } in
