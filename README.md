@@ -32,7 +32,7 @@ let plugins : C.Plugin.t list = [
 
 let () =
   let conf = C.Config.of_argv () in
-  C.Run_main.main conf all_ |> Lwt_main.run
+  C.Run_main.main conf plugins |> Lwt_main.run
 
 
 ```
