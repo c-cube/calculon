@@ -228,9 +228,13 @@ let find_close_keys (k:key) (fcs:t) : string * int =
       fcs []
   in
   let l = if List.length l > 5 then CCList.take 5 l @ ["…"] else l in
-  CCFormat.sprintf "did you mean one of [@[<h>%a@]]?"
-    CCFormat.(list ~sep:"," string) l,
-  List.length l
+  let res = match l with
+    | [] -> ""
+    | [x] -> Printf.sprintf "did you mean %s?" x
+    | _ -> CCFormat.sprintf "did you mean one of [@[<h>%a@]]?"
+             CCFormat.(list ~sep:"," string) l
+  in
+  res, List.length l
 
 let oj_json_exn j =
   begin match j with
