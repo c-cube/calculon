@@ -39,10 +39,9 @@ let () =
 
 ### Plugins
 
-A plugin contains some hooks for startup and teardown
-(mostly for storing/loading state on disk) and a set of *commands*.
-Typically a command (see the module `Command`) is a rule that matches a IRC
-message with some regex, and decides whether or not to fire with a reply.
+A plugin contains a set of *commands*.
+A command is is a rule that matches a IRC message with some regex, and decides
+whether or not to fire with a reply. They are defined in the module `Command`.
 
 For instance, the following module will reply to messages
 starting with `!hello` by replying `"hello <sender>"`. This is a simple
@@ -62,5 +61,12 @@ let cmd_hello : Command.t =
 let plugin_hello = Plugin.of_cmd cmd_hello
 ```
 
-See the existing plugins in `Factoids` and `Social` to see how to implement
-stateful plugins that store their data on disk.
+Basic plugins are stateless, built from one or more commands with `Plugin.of_cmd`
+and `Plugin.of_cmds`.
+Other plugins can be stateful (typically, they can have some persistent
+state, or more "custom" schemes).
+The constructor `Plugin.stateful` is used to make such plugins.
+All the persistent state is stored in a single json file.
+
+See for instance the existing plugins `Plugin_factoids` and `Plugin_movie`
+to see how to use `Plugin.stateful`.

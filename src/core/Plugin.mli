@@ -16,7 +16,7 @@ type action_callback = action Signal.Send_ref.t
 (** A stateful plugin, using a persistent state ['st] *)
 type stateful = St : 'st stateful_ -> stateful
 
-and 'st stateful_ = {
+and 'st stateful_ = private {
   name: string;
   (* namespace for storing state. Must be distinct for every plugin. *)
   commands: 'st -> Command.t list;
@@ -58,6 +58,10 @@ val stateful :
   ?stop:('st -> unit Lwt.t) ->
   unit ->
   t
+(** Make a stateful plugin using the given [name] (for prefixing
+    its storage; this should be unique) and ways to serialize state to Json,
+    deserialize state from Json, and building commands from the state.
+    See {!stateful_} for more details on each field. *)
 
 (** {2 Collection of Plugins} *)
 module Set : sig
