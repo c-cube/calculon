@@ -2,6 +2,10 @@ S src/core
 B _build/src/core
 S src/web
 B _build/src/web
+S src/extras/
+B _build/src/extras
+S src/tools
+B _build/src/tools
 
 PKG irc-client.lwt
 PKG str
@@ -16,3 +20,7 @@ FLG -w +a-4-44-48
 PKG uri
 PKG cohttp.lwt
 PKG lambdasoup
+
+PKG re
+PKG sequence
+PKG unix

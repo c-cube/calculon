@@ -19,14 +19,18 @@ Flag "web"
   Description:  Build the web-dependent plugins
   Default:      true
 
+Flag "extras"
+  Description:  Build the "extras" plugins
+  Default:      true
+
 Library "calculon"
   Path:             src/core/
   Pack:             true
   Modules:          Command, Config, Core, Lwt_err,
                     Log, Plugin, Prelude, Signal, Talk, Run_main,
                     Plugin_factoids, Plugin_vote, Plugin_social, Plugin_state
-  BuildDepends:     containers, str, yojson, irc-client.tls, lwt.unix,
-                    stringext, ISO8601
+  BuildDepends:     containers, containers.data, str, yojson,
+                    irc-client.tls, lwt.unix, stringext, ISO8601
 
 PreBuildCommand: make atdgen
 
@@ -43,3 +47,15 @@ Executable "demo_bot"
   MainIs:           demo_bot.ml
   BuildDepends:     calculon.web
   Install:          false
+  Build$:           flag(web)
+  Install$:         flag(web)
+
+Library "calculon_extras"
+  Path:             src/extras
+  Pack:             true
+  FindlibName:      extras
+  FindlibParent:    calculon
+  Build$:           flag(extras)
+  Install$:         flag(extras)
+  Modules:          Plugin_markcough, Irclog
+  BuildDepends:     calculon, re, sequence, unix
