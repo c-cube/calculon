@@ -1,8 +1,9 @@
 # OASIS_START
-# DO NOT EDIT (digest: b6368067847a5c267854a6f122cb2fa3)
-Plugin_web
-Plugin_movie
-Movie_j
-Movie_t
-Movie_schema
-# OASIS_STOP
+# DO NOT EDIT (digest: 764bf17a04a4c576260204417d7e03c3)
+  Plugin_web
+  Plugin_movie
+  Movie_j
+  Movie_t
+  Movie_schema
+  Og
+  # OASIS_STOP

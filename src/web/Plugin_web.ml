@@ -20,7 +20,20 @@ let page_title uri =
       Cohttp_lwt_body.to_string body
   in
   get_body uri >>= fun body ->
-  parse body $ "title" |> leaf_text |> Lwt.return
+  let tags = Og.Parser.parse_string body in
+  let title_descr = List.fold_left (fun (t,d) -> function
+      | Og.Title title       when t = None -> (Some title, d)
+      | Og.Description descr when d = None -> (t, Some descr)
+      | _ -> (t,d)
+    ) (None, None) tags in
+  match title_descr with
+  | Some title, Some description ->
+    Some (Format.asprintf "%s : %s" title description) |> Lwt.return
+  | Some title, None ->
+    Some (Format.asprintf "%s" title) |> Lwt.return
+  | _, _ ->
+    parse body $ "title" |> leaf_text |> Lwt.return
+
 
 let youtube_hosts = [
   "youtube.com"; "www.youtube.com";
@@ -33,9 +46,9 @@ let cmd_yt =
     (fun _ s ->
        let uri = Uri.of_string (String.trim s) in
        match Uri.host uri with
-         | Some host when List.mem host youtube_hosts ->
-           page_title uri
-         | _ -> Lwt.return_none
+       | Some host when List.mem host youtube_hosts ->
+         page_title uri
+       | _ -> Lwt.return_none
     )
 
 let find_yt_ids ?(n=1) (body:string): string list =
