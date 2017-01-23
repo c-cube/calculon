@@ -15,44 +15,7 @@ open Calculon
 
 
 (** {2 Transition Table} *)
-module Table : sig
-  type token =
-    | Start
-    | Stop
-    | Word of string (* non empty string *)
-
-  val print_token : token CCFormat.printer
-
-  (** A prefix tree of uniform length *)
-  type t
-
-  val empty : t
-
-  val singleton : token -> t
-
-  val add : token list -> token -> t -> t
-
-  val merge : t -> t -> t
-
-  val merge_list : t list -> t
-
-  val pick_key : Random.State.t -> t -> token
-  (** [pick_key rand t] picks one of the keys of [t]
-      @raise Not_found if [t] is empty *)
-
-  val pick : Random.State.t -> token list -> t -> token
-  (** Pick a token following the given path, randomly
-      @raise Not_found if there is no token to be found *)
-
-  val print : t CCFormat.printer
-  (** Pretty-print the tree on the given formatter *)
-
-  val write_to : out_channel -> t -> unit
-  (** Serialize to channel *)
-
-  val read_from : in_channel -> t
-  (** Deserialize from channel *)
-end = struct
+module Table = struct
   type token =
     | Start
     | Stop
@@ -204,10 +167,7 @@ end = struct
 end
 
 (** {2 Parse IRC logs into a table} *)
-module Parse_logs : sig
-  val parse_file : Irclog.fmt -> string -> Table.t -> Table.t
-  val parse_dir : Irclog.fmt -> string -> Table.t -> Table.t
-end = struct
+module Parse_logs = struct
   module I = Irclog
   module T = Table
 
@@ -251,25 +211,29 @@ end = struct
 
   (* parse the file and add it to the table *)
   let parse_file fmt file tbl =
-    Irclog.iter_file fmt file
+    I.iter_file fmt file
     |> Sequence.fold (fun tbl r -> parse_record r tbl) tbl
 
   let parse_dir fmt dir tbl =
     I.iter_dir fmt dir
     |> Sequence.fold (fun tbl (_file,r) -> parse_record r tbl) tbl
+
+  let parse_file_or_dir fmt name tbl =
+    I.iter_file_or_dir fmt name
+    |> Sequence.fold (fun tbl r -> parse_record r tbl) tbl
 end
 
 (** {2 Generate} *)
-module Gen : sig
-  val generate : ?author:string -> Random.State.t -> Table.t -> string
-end = struct
+module Gen = struct
   module T = Table
 
   (* pick an author from [tbl] *)
   let pick_author rand tbl = T.pick_key rand tbl
 
+  let default_rand_ = Random.State.make_self_init()
+
   (* generate a sentence from the given author *)
-  let generate ?author rand tbl =
+  let generate ?author ?(rand=default_rand_) tbl =
     let prefix = match author with
       | None -> pick_author rand tbl
       | Some a -> T.Word (Irclog.norm_author a)
@@ -298,7 +262,7 @@ let cmd_markov (state:state): Command.t =
     (fun _ msg ->
        let msg = String.trim msg in
        let author = if msg="" then None else Some msg in
-       Lwt.return_some (Gen.generate ?author state.rand state.tbl)
+       Lwt.return_some (Gen.generate ?author ~rand:state.rand state.tbl)
     )
 
 (* initialization *)

@@ -20,6 +20,10 @@ type fmt =
   | Irssi
   | Weechat
 
+val fmt_of_string : string -> fmt
+val string_of_fmt : fmt -> string
+val fmt_l : string list
+
 val parse_record : fmt -> string -> log_record option
 (** Parse one line of log *)
 
@@ -31,6 +35,8 @@ val pp_record : log_record CCFormat.printer
 val iter_file : fmt -> string -> log_record sequence
 
 val iter_dir : fmt -> string -> (string * log_record) sequence
+
+val iter_file_or_dir : fmt -> string -> log_record sequence
 
 val norm_author : string -> string
 (** Normalize author's name *)

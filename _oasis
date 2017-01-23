@@ -59,3 +59,19 @@ Library "calculon_extras"
   Install$:         flag(extras)
   Modules:          Plugin_markcough, Irclog
   BuildDepends:     calculon, re, sequence, unix
+
+Executable "markcough_learn"
+  Path:             src/tools/
+  Build$:           flag(extras)
+  Install$:         flag(extras)
+  BuildDepends:     calculon.extras, re.posix
+  CompiledObject:   best
+  MainIs:           markcough_learn.ml
+
+Executable "markcough_show"
+  Path:             src/tools/
+  Build$:           flag(extras)
+  Install$:         flag(extras)
+  BuildDepends:     calculon.extras, re.posix
+  CompiledObject:   best
+  MainIs:           markcough_show.ml

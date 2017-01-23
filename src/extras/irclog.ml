@@ -27,6 +27,17 @@ let re_of_fmt = function
   | Irssi -> re_irssi
   | Weechat -> re_weechat
 
+let fmt_of_string = function
+  | "irssi" -> Irssi
+  | "weechat" -> Weechat
+  | s -> invalid_arg ("unknown Irclog.fmt: " ^ s)
+
+let string_of_fmt = function
+  | Irssi -> "irssi"
+  | Weechat -> "weechat"
+
+let fmt_l = List.map string_of_fmt [Irssi; Weechat]
+
 (* read lines *)
 let rec seq_lines_ ic yield =
   match input_line ic with
@@ -34,19 +45,25 @@ let rec seq_lines_ ic yield =
     | exception End_of_file -> ()
 
 let norm_author s =
-  match s.[0] with
+  if s="" then s
+  else match s.[0] with
     | '+' | '@' -> String.sub s 1 (String.length s-1)
     | _ -> s
 
 let parse_record fmt s =
   let re = re_of_fmt fmt in
-  match Re.exec_opt re s with
+  begin match Re.exec_opt re s with
     | None -> None
     | Some g ->
       let time = Re.Group.get g 1 |> String.trim in
       let author = Re.Group.get g 2 |> String.trim |> norm_author in
       let msg = Re.Group.get g 3 in
-      Some {author; time; msg}
+      (* check if this line is useless *)
+      begin match author, fmt with
+        | ("--" | "<--" | "-->"), Weechat -> None (* join/part *)
+        | _ -> Some {author; time; msg}
+      end
+  end
 
 let seq_record_ fmt ic yield =
   seq_lines_ ic
@@ -83,4 +100,10 @@ let iter_dir fmt dir yield =
        CCIO.with_in file
          (fun ic -> seq_record_ fmt ic (fun x -> yield (file,x))))
 
+let iter_file_or_dir fmt s =
+  if Sys.is_directory s
+  then
+    seq_files_ s
+    |> Sequence.flat_map (iter_file fmt)
+  else iter_file fmt s
 
