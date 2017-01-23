@@ -37,3 +37,9 @@ Library "calculon_web"
   FindlibParent:    calculon
   Modules:          Plugin_web, Plugin_movie, Movie_j, Movie_t, Movie_schema, Og
   BuildDepends:     calculon, atdgen, cohttp, lwt, cohttp.lwt, lambdasoup, uri
+
+Executable "demo_bot"
+  Path:             src/tools/
+  MainIs:           demo_bot.ml
+  BuildDepends:     calculon.web
+  Install:          false
