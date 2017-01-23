@@ -282,7 +282,7 @@ type state = {
 
 let cmd_markov (state:state): Command.t =
   Command.make_simple
-    ~descr:"generate random chains" ~prio:15 ~prefix:"!markcough"
+    ~descr:"generate random chains" ~prio:15 ~prefix:"markcough"
     (fun _ msg ->
        let msg = String.trim msg in
        let author = if msg="" then None else Some msg in
@@ -300,6 +300,7 @@ let of_json _ _ : state Lwt_err.t =
     tbl;
     rand=Random.State.make_self_init();
   } in
+  Log.logf "markcough: parsed state, weight %d" (Table.get_weight tbl);
   Lwt_err.return state
 
 let plugin =

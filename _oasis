@@ -45,8 +45,9 @@ Library "calculon_web"
 Executable "demo_bot"
   Path:             src/tools/
   MainIs:           demo_bot.ml
-  BuildDepends:     calculon.web
+  BuildDepends:     calculon.web, calculon.extras
   Install:          false
+  CompiledObject:   best
   Build$:           flag(web)
   Install$:         flag(web)
 
