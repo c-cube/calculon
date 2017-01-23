@@ -1,6 +1,8 @@
 
 (** {1 Commands querying the Web} *)
 
+open Calculon
+
 open Cohttp_lwt_unix
 open Soup
 open Lwt.Infix
