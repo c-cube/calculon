@@ -5,7 +5,6 @@
 module Table : sig
   type token =
     | Start
-    | Stop
     | Word of string (* non empty string *)
 
   val print_token : token CCFormat.printer

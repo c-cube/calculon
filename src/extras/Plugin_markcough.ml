@@ -9,12 +9,10 @@ open Calculon
 module Table = struct
   type token =
     | Start
-    | Stop
     | Word of string (* non empty string *)
 
   let print_token out = function
     | Start -> CCFormat.string out ">"
-    | Stop -> CCFormat.string out "ε"
     | Word w -> CCFormat.string out w
 
   module TokenMap = CCMap.Make(struct
@@ -217,15 +215,14 @@ module Parse_logs = struct
       |> List.filter (fun s -> s<>"")
       |> List.rev_map (fun s -> T.Word (norm_token s))
     in
-    T.Start :: T.Start :: List.rev_append l [T.Stop]
+    T.Start :: T.Start :: List.rev l
 
   (* parse record [r] into [tbl] *)
   let parse_record r tbl =
     let author = I.norm_author r.I.author in
     let tokens = tokenize r.I.msg in
     let rec aux toks t = match toks with
-      | [_; T.Stop] | [T.Stop] -> t
-      | [] | [_] | [_;_] -> assert false
+      | [] | [_] | [_;_] -> t
       | t1 :: ((t2 :: next :: _) as toks') ->
         let t = T.add [T.Word author; t1; t2] next t in
         aux toks' t
@@ -250,22 +247,12 @@ end
 module Gen = struct
   module T = Table
 
-  (* how many times we try to avoid a premature "stop" *)
-  let max_retries = 250
-
   let gen_rec rand min_len prefix tbl =
-    let retries = ref 0 in
     let rec gen acc p1 p2 =
-      match T.pick rand [prefix; p1; p2] tbl with
+      if List.length acc >= min_len && Random.State.int rand 10 < 1
+      then String.concat " " (List.rev acc) (* stop *)
+      else match T.pick rand [prefix; p1; p2] tbl with
         | T.Start -> assert false
-        | T.Stop ->
-          if !retries >= max_retries || List.length acc >= min_len
-          then (
-            String.concat " " (List.rev acc) (* stop *)
-          ) else (
-            incr retries;
-            gen acc p1 p2 (* again *)
-          )
         | T.Word w ->
           (* shift: p1, p2 = p2, w *)
           gen (w :: acc) p2 (T.Word w)
