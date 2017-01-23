@@ -11,3 +11,6 @@
 #directory "_build/src/core";;
 #load "calculon.cma";;
 module C = Calculon;;
+#directory "_build/src/web";;
+#load "calculon_web.cma";;
+module CW = Calculon_web;;

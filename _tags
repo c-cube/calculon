@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 67de91ac76b323dc720b3e1be57b4c58)
+# DO NOT EDIT (digest: 066d7dd3b9d3000e7d7e274c002cae8f)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -44,6 +44,7 @@ true: annot, bin_annot
 "src/web/movie_j.cmx": for-pack(Calculon_web)
 "src/web/movie_t.cmx": for-pack(Calculon_web)
 "src/web/movie_schema.cmx": for-pack(Calculon_web)
+"src/web/og.cmx": for-pack(Calculon_web)
 <src/web/*.ml{,i,y}>: package(ISO8601)
 <src/web/*.ml{,i,y}>: package(atdgen)
 <src/web/*.ml{,i,y}>: package(cohttp)

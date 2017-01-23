@@ -35,6 +35,5 @@ Library "calculon_web"
   Pack:             true
   FindlibName:      web
   FindlibParent:    calculon
-  Modules:          Plugin_web, Plugin_movie, Movie_j, Movie_t, Movie_schema
+  Modules:          Plugin_web, Plugin_movie, Movie_j, Movie_t, Movie_schema, Og
   BuildDepends:     calculon, atdgen, cohttp, lwt, cohttp.lwt, lambdasoup, uri
-
