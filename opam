@@ -18,6 +18,7 @@ remove: [
 ]
 depends: [
   "ocamlfind" {build}
+  "oasis" {build}
   "base-bytes"
   "base-unix"
   "result"
