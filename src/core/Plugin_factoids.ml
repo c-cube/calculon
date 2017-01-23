@@ -185,6 +185,53 @@ let random (fcs:t): string =
       in
       Printf.sprintf "!%s: %s" fact.key msg_val
 
+(* from containers 1.0 *)
+let edit_distance s1 s2 =
+  if String.length s1 = 0
+  then String.length s2
+  else if String.length s2 = 0
+  then String.length s1
+  else if s1 = s2
+  then 0
+  else begin
+    (* distance vectors (v0=previous, v1=current) *)
+    let v0 = Array.make (String.length s2 + 1) 0 in
+    let v1 = Array.make (String.length s2 + 1) 0 in
+    (* initialize v0: v0(i) = A(0)(i) = delete i chars from t *)
+    for i = 0 to String.length s2 do
+      v0.(i) <- i
+    done;
+    (* main loop for the bottom up dynamic algorithm *)
+    for i = 0 to String.length s1 - 1 do
+      (* first edit distance is the deletion of i+1 elements from s *)
+      v1.(0) <- i+1;
+
+      (* try add/delete/replace operations *)
+      for j = 0 to String.length s2 - 1 do
+        let cost = if Char.compare (String.get s1 i) (String.get s2 j) = 0 then 0 else 1 in
+        v1.(j+1) <- min (v1.(j) + 1) (min (v0.(j+1) + 1) (v0.(j) + cost));
+      done;
+
+      (* copy v1 into v0 for next iteration *)
+      Array.blit v1 0 v0 0 (String.length s2 + 1);
+    done;
+    v1.(String.length s2)
+  end
+
+(* returns a help message that suggest keys that are close to [k]
+   by edit distance, and the number of such keys *)
+let find_close_keys (k:key) (fcs:t) : string * int =
+  let l =
+    StrMap.fold
+      (fun _ {key; _} keys ->
+         if edit_distance key k < 2 then key :: keys else keys)
+      fcs []
+  in
+  let l = if List.length l > 5 then CCList.take 5 l @ ["…"] else l in
+  CCFormat.sprintf "did you mean one of [@[<h>%a@]]?"
+    CCFormat.(list ~sep:"," string) l,
+  List.length l
+
 let oj_json_exn j =
   begin match j with
     | `Assoc l ->
@@ -334,7 +381,15 @@ let cmd_factoids state =
     CCOpt.iter (fun (c,_) -> Log.logf "parsed command `%s`" (string_of_op c)) op;
     begin match op with
       | Some (Get k, hl) ->
-        reply_value ~hl (get k state.st_cur)
+        begin match get k state.st_cur with
+          | StrList [] ->
+            let help_msg, n = find_close_keys k state.st_cur in
+            (* probably a typo for this key *)
+            if n>0
+            then C.send_privmsg ~target ~message:help_msg |> matched
+            else Command.Cmd_skip
+          | v -> reply_value ~hl v
+        end
       | Some (Set f, _) ->
         if mem f.key state.st_cur then (
           C.talk ~target Talk.Err |> matched
