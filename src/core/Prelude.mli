@@ -23,6 +23,8 @@ val re_match1 : (string -> 'a) -> Str.regexp -> string -> 'a option
 
 val re_match0 : 'a -> Str.regexp -> string -> 'a option
 
+val edit_distance : string -> string -> int
+
 module StrMap : CCMap.S with type key = string
 
 (** {2 Random Distribution} *)
