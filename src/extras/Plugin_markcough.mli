@@ -52,7 +52,14 @@ end
 
 (** {2 Generate} *)
 module Gen : sig
-  val generate : ?author:string -> ?rand:Random.State.t -> Table.t -> string
+  (** generate a string of at least [min_len] words, trying to start from
+        the given [author] *)
+  val generate :
+    ?author:string ->
+    ?rand:Random.State.t ->
+    ?min_len:int ->
+    Table.t ->
+    string
 end
 
 val plugin : Calculon.Plugin.t

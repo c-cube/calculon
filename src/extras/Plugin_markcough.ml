@@ -5,15 +5,6 @@
 
 open Calculon
 
-(* TODO:
-   - if the sentence is too short (< 6 tokens, for instance), and the next token
-   is Stop, generate again (with a few retries)
-   - make the table a suffix tree allow random jumps (except for 1st token)
-      with low probability; probabilty gets bigger when the subtree's weight is
-      smaller
-*)
-
-
 (** {2 Transition Table} *)
 module Table = struct
   type token =
@@ -108,6 +99,12 @@ module Table = struct
       | None -> assert false
       | Some res -> res)
 
+  let mem k t : bool = match t with
+    | Leaf _
+    | Empty -> false
+    | Node (m,_) ->
+      TokenMap.mem (Word k) m
+
   let pick_key rand t = match t with
     | Empty -> raise Not_found
     | Leaf _ -> invalid_arg "pick_key: at leaf"
@@ -117,29 +114,55 @@ module Table = struct
       let t, _ = map_weight_get_ ~get_w:(fun (_,m) -> get_weight m) i m in
       t
 
-  let rec pick rand toks t = match toks with
-    | [] ->
-      begin match t with
-        | Empty -> raise Not_found
-        | Leaf (m,w) ->
-          assert (w>0);
-          let i = Random.State.int rand w in
-          let t, _ = map_weight_get_ ~get_w:snd i m in
-          t
-        | Node (m,w) ->
-          assert (w>0);
-          let i = Random.State.int rand w in
-          let _, sub = map_weight_get_ ~get_w:(fun (_,m) -> get_weight m) i m in
-          pick rand [] sub
-      end
-    | tok :: toks_tail ->
-      begin match t with
-        | Empty -> invalid_arg "pick: insufficient depth"
-        | Node (m,_) ->
-          let sub = TokenMap.get_or tok m ~or_:empty in
-          pick rand toks_tail sub
-        | Leaf _ -> invalid_arg "pick: wrong depth"
-      end
+  (* sub-tree has weight [w], we might instead do a random jump with
+     a probability that increases when [w] becomes small.
+  
+     [p_jump = exp   *)
+  let jump_proba w =
+    let w = float w in
+    exp ((-. w) /. 2.)
+
+  let max_jumps = 2
+
+  let pick rand toks0 t_root : token =
+    let jumps = ref 0 in
+    let rec aux toks t = match toks with
+      | [] ->
+        begin match t with
+          | Empty -> raise Not_found
+          | Leaf (m,w) ->
+            assert (w>0);
+            let i = Random.State.int rand w in
+            let t, _ = map_weight_get_ ~get_w:snd i m in
+            t
+          | Node (m,w) ->
+            assert (w>0);
+            let i = Random.State.int rand w in
+            let _, sub = map_weight_get_ ~get_w:(fun (_,m) -> get_weight m) i m in
+            aux [] sub
+        end
+      | tok :: toks_tail ->
+        begin match t with
+          | Empty -> raise Not_found
+          | Node (m,w) ->
+            if !jumps < max_jumps
+            && Random.State.float rand 1. < jump_proba w
+            then (
+              (* random jump *)
+              incr jumps;
+              let new_tok = pick_key rand t in
+              aux (new_tok::toks_tail) t
+            ) else begin match TokenMap.get tok m with
+              | Some sub -> aux toks_tail sub
+              | None ->
+                (* forced jump *)
+                let new_tok = pick_key rand t in
+                aux (new_tok::toks_tail) t
+            end
+          | Leaf _ -> invalid_arg "pick: wrong depth"
+        end
+    in
+    aux toks0 t_root
 
   let rec print out t = match t with
     | Empty -> ()
@@ -227,26 +250,40 @@ end
 module Gen = struct
   module T = Table
 
+  (* how many times we try to avoid a premature "stop" *)
+  let max_retries = 250
+
+  let gen_rec rand min_len prefix tbl =
+    let retries = ref 0 in
+    let rec gen acc p1 p2 =
+      match T.pick rand [prefix; p1; p2] tbl with
+        | T.Start -> assert false
+        | T.Stop ->
+          if !retries >= max_retries || List.length acc >= min_len
+          then (
+            String.concat " " (List.rev acc) (* stop *)
+          ) else (
+            incr retries;
+            gen acc p1 p2 (* again *)
+          )
+        | T.Word w ->
+          (* shift: p1, p2 = p2, w *)
+          gen (w :: acc) p2 (T.Word w)
+    in
+    gen [] T.Start T.Start
+
   (* pick an author from [tbl] *)
   let pick_author rand tbl = T.pick_key rand tbl
 
   let default_rand_ = Random.State.make_self_init()
 
   (* generate a sentence from the given author *)
-  let generate ?author ?(rand=default_rand_) tbl =
+  let generate ?author ?(rand=default_rand_) ?(min_len=20) tbl =
     let prefix = match author with
-      | None -> pick_author rand tbl
-      | Some a -> T.Word (Irclog.norm_author a)
+      | Some a when T.mem a tbl -> T.Word (Irclog.norm_author a)
+      | _ -> pick_author rand tbl
     in
-    let rec gen acc p1 p2 =
-      match T.pick rand [prefix; p1; p2] tbl with
-        | T.Start -> assert false
-        | T.Stop -> String.concat " " (List.rev acc)
-        | T.Word w ->
-          (* shift: p1, p2 = p2, w *)
-          gen (w :: acc) p2 (T.Word w)
-    in
-    gen [] T.Start T.Start
+    gen_rec rand min_len prefix tbl
 end
 
 (** {2 Plugin} *)
