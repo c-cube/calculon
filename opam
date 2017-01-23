@@ -5,6 +5,7 @@ authors: ["Armael" "Enjolras" "c-cube"]
 maintainer: "c-cube"
 build: [
   ["./configure"
+    "--bindir" "%{bin}%"
     "--%{uri+lambdasoup+cohttp+atdgen:enable}%-web"]
   [make "build"]
 ]
