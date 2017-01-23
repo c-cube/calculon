@@ -118,7 +118,7 @@ module Table = struct
      [p_jump = exp   *)
   let jump_proba w =
     let w = float w in
-    exp ((-. w) /. 2.)
+    exp ((-. w) /. 1.5)
 
   let max_jumps = 2
 
@@ -265,7 +265,7 @@ module Gen = struct
   let default_rand_ = Random.State.make_self_init()
 
   (* generate a sentence from the given author *)
-  let generate ?author ?(rand=default_rand_) ?(min_len=20) tbl =
+  let generate ?author ?(rand=default_rand_) ?(min_len=10) tbl =
     let prefix = match author with
       | Some a when T.mem a tbl -> T.Word (Irclog.norm_author a)
       | _ -> pick_author rand tbl
