@@ -2,7 +2,7 @@ OASISFormat: 0.4
 Name:        calculon
 Version:     0.22
 Homepage:    https://github.com/c-cube/calculon
-Authors:     Simon Cruanes, Armael Guéneau, Joris Giovannangeli
+Authors:     Simon Cruanes, Armaël Guéneau, Joris Giovannangeli
 License:     MIT
 LicenseFile: LICENSE
 Plugins:     META (0.3), DevFiles (0.3)

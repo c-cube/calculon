@@ -52,14 +52,14 @@ option` to indicate whether or not to respond to any line starting with
 
 ```ocaml
 
-let my_own_plugin : Command.t =
+let cmd_hello : Command.t =
   Command.make_simple ~descr:"hello world" ~prefix:"hello" ~prio:10
     (fun (input_msg:Core.privmsg) _ ->
        let who = input_msg.Core.nick in
        Lwt.return (Some ("hello " ^ who))
     )
 
-let plugin = Plugin.of_cmd cmd_hello
+let plugin_hello = Plugin.of_cmd cmd_hello
 ```
 
 See the existing plugins in `Factoids` and `Social` to see how to implement
