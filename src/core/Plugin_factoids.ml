@@ -203,7 +203,7 @@ let find_close_keys (k:key) (fcs:t) : string * int =
   in
   res, List.length l
 
-let oj_json_exn j =
+let of_json_exn j =
   begin match j with
     | `Assoc l ->
       List.fold_left
@@ -220,9 +220,9 @@ let oj_json_exn j =
   end
 
 (* parsing/outputting the factoids json *)
-let factoids_of_json (j: json): t Lwt_err.t =
-  try Lwt_err.return (oj_json_exn j)
-  with Could_not_parse -> Lwt_err.fail "could not parse json"
+let factoids_of_json (j: json): (t,string) CCResult.t =
+  try CCResult.return (of_json_exn j)
+  with Could_not_parse -> CCResult.fail "could not parse json"
 
 let json_of_factoids (factoids: t): json =
   let l =
@@ -411,7 +411,7 @@ let of_json actions j: state Lwt_err.t =
   let open Lwt_err in
   begin match j with
     | None -> Lwt_err.return StrMap.empty
-    | Some j -> factoids_of_json j
+    | Some j -> Lwt.return (factoids_of_json j)
   end
   >|= fun t -> {st_cur=t; actions}
 
