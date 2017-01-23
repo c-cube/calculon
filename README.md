@@ -4,6 +4,8 @@
 Library for writing IRC bots in OCaml, a collection of plugins, and a dramatic robotic actor.
 The core library is called `calculon`.
 
+![calculon logo](https://raw.github.com/c-cube/calculon/master/media/calculon.jpg)
+
 ## Build
 
 ```
