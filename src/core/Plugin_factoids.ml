@@ -191,8 +191,11 @@ let find_close_keys (k:key) (fcs:t) : string * int =
   let l =
     StrMap.fold
       (fun _ {key; _} keys ->
-         if Prelude.edit_distance key k <= 2 then key :: keys else keys)
+         let d = Prelude.edit_distance key k in
+         if d <= 2 then (key, d) :: keys else keys)
       fcs []
+    |> List.sort (fun (_, x) (_, y) -> compare x y)
+    |> List.map fst
   in
   let l = if List.length l > 5 then CCList.take 5 l @ ["…"] else l in
   let res = match l with
