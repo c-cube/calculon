@@ -15,6 +15,7 @@ type t = {
   actions: Plugin.action_callback;
   hist: line Queue.t;
   size: int; (* max size of [hist] *)
+  default_len: int; (* default length of history in query *)
 }
 
 let on_msg state _ m = match Core.privmsg_of_msg m with
@@ -45,29 +46,30 @@ let reply_history state n : string list =
 
 let cmd_history st =
   Command.make_simple_query_l
-    ~descr:"give back <n> lines of history in query"
+    ~descr:(Printf.sprintf
+        "give back <n> lines of history in query (max %d)" st.size)
     ~prio:10
     ~prefix:"history"
     (fun _ msg ->
        let msg = String.trim msg in
-       if msg="" then Lwt.return (reply_history st st.size)
+       if msg="" then Lwt.return (reply_history st st.default_len)
        else (
          (* parse the number of lines *)
          try
            let n = int_of_string msg in
            if n > 0
-           then reply_history st st.size
+           then reply_history st n
            else [Talk.select Talk.Err]
          with _ ->
            [Talk.select Talk.Err]
        ) |> Lwt.return
     )
 
-let plugin ?(n=30) () =
+let plugin ?(default_len=10) ?(n=150) () =
   Plugin.stateful
     ~name:"history"
     ~of_json:(fun actions _ ->
-      Lwt_err.return {actions; size=n; hist=Queue.create();})
+      Lwt_err.return {actions; size=n; default_len; hist=Queue.create();})
     ~to_json:(fun _ -> None)
     ~on_msg:(fun state -> [on_msg state])
     ~stop:(fun _ -> Lwt.return_unit)
