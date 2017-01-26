@@ -20,6 +20,8 @@ type t = {
 
 let on_msg state _ m = match Core.privmsg_of_msg m with
   | None -> Lwt.return_unit
+  | Some {Core. to_; _} when not (Core.is_chan to_) ->
+    Lwt.return_unit (* ignore private messages *)
   | Some {Core. nick; to_=_; message } ->
     let time = Unix.gettimeofday() in
     let line = {time; nick_=nick; msg=message } in
