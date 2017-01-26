@@ -28,7 +28,8 @@ Library "calculon"
   Pack:             true
   Modules:          Command, Config, Core, Lwt_err,
                     Log, Plugin, Prelude, Signal, Talk, Run_main,
-                    Plugin_factoids, Plugin_vote, Plugin_social, Plugin_state
+                    Plugin_factoids, Plugin_vote, Plugin_social,
+                    Plugin_state, Plugin_history
   BuildDepends:     containers, containers.data, str, yojson,
                     irc-client.tls, lwt.unix, stringext, ISO8601
 

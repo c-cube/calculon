@@ -5,6 +5,7 @@ let plugins : C.Plugin.t list = [
   C.Plugin_social.plugin;
   C.Plugin_factoids.plugin;
   C.Plugin_state.plugin;
+  C.Plugin_history.plugin ~n:40 ();
   CW.Plugin_web.plugin;
   Calculon_extras.Plugin_markcough.plugin;
 ]
