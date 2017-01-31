@@ -49,7 +49,7 @@ let mk_factoid key value =
 let re_set = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*=\\(.*\\)$"
 let re_set_force = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*:=\\(.*\\)$"
 let re_append = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*\\+=\\(.*\\)$"
-let re_get = Str.regexp "^![ ]*\\([^!= :]+\\)[ ]*$"
+let re_get = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*$"
 let re_incr = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*\\+\\+[ ]*$"
 let re_decr = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*--[ ]*$"
 
