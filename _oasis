@@ -31,7 +31,7 @@ Library "calculon"
                     Plugin_factoids, Plugin_vote, Plugin_social,
                     Plugin_state, Plugin_history
   BuildDepends:     containers, containers.data, str, yojson,
-                    irc-client.tls, lwt.unix, stringext, ISO8601
+                    irc-client.lwt, irc-client.tls, lwt.unix, stringext, ISO8601
 
 PreBuildCommand: make atdgen
 

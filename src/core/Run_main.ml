@@ -20,8 +20,6 @@ let main conf all : unit Lwt.t =
            | None -> Lwt.return_unit
            | Some msg -> Command.run core cmds msg);
     ()
-  and connect =
-    Core.connect_of_config conf
   in
   (* error-logging wraper *)
   let init core : unit Lwt.t =
@@ -31,7 +29,4 @@ let main conf all : unit Lwt.t =
     | Result.Error msg ->
       Log.logf "error in main loop: %s" msg;
   in
-  Core.run
-    ~connect
-    ~init
-    ()
+  Core.run conf ~init ()

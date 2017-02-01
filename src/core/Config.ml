@@ -6,6 +6,7 @@ type t = {
   username : string;
   realname : string;
   nick : string;
+  tls: bool;
   channel : string;
   state_file : string;
 }
@@ -16,6 +17,7 @@ let default = {
   username = "calculon";
   realname = "calculon";
   nick = "calculon";
+  tls = true;
   channel = "#ocaml";
   state_file = "state.json";
 }
@@ -26,6 +28,7 @@ let parse conf args =
   let custom_server = ref None in
   let custom_state = ref None in
   let custom_port = ref 7000 in
+  let custom_tls = ref None in
   let options = Arg.align
       [ "--nick", Arg.String (fun s -> custom_nick := Some s),
         " custom nickname (default: " ^ default.nick ^ ")"
@@ -36,6 +39,8 @@ let parse conf args =
         " server to join (default: " ^ default.server ^ ")"
       ; "--state", Arg.String (fun s -> custom_state := Some s),
         " file containing factoids (default: " ^ default.state_file ^ ")"
+      ; "--tls", Arg.Unit (fun () -> custom_tls := Some true), " enable TLS"
+      ; "--no-tls", Arg.Unit (fun () -> custom_tls := Some false), " disable TLS"
       ]
   in
   Arg.parse_argv args options ignore "parse options";
@@ -43,6 +48,7 @@ let parse conf args =
     nick = !custom_nick |? conf.nick;
     channel = !custom_chan |? conf.channel;
     server = !custom_server |? conf.server;
+    tls = !custom_tls |? conf.tls;
     port = !custom_port;
     state_file = !custom_state |? conf.state_file;
   }

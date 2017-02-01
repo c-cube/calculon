@@ -3,8 +3,6 @@
 
 module Msg = Irc_message
 
-type connection = Irc_client_tls.connection_t
-
 type privmsg = {
   nick: string; (* author *)
   to_: string; (* target *)
@@ -25,6 +23,10 @@ val privmsg_of_msg : Msg.t -> privmsg option
 val string_of_privmsg : privmsg -> string
 
 module type S = sig
+  module I : Irc_client.CLIENT
+
+  type connection = I.connection_t
+
   val connection : connection
 
   val init : unit Lwt.t
@@ -69,13 +71,27 @@ end
 
 type t = (module S)
 
-val run :
-  connect:(unit -> connection option Lwt.t) ->
+type connection
+
+val loop_tls :
+  connect:(unit -> Irc_client_tls.connection_t option Lwt.t) ->
   init:(t -> unit Lwt.t) ->
   unit ->
   unit Lwt.t
 (** Feed to {!Lwt_main.run} *)
 
-val connect_of_config :
+val loop_unsafe :
+  connect:(unit -> Irc_client_lwt.connection_t option Lwt.t) ->
+  init:(t -> unit Lwt.t) ->
+  unit ->
+  unit Lwt.t
+(** Feed to {!Lwt_main.run} *)
+
+val run :
   Config.t ->
-  (unit -> connection option Lwt.t)
+  init:(t -> unit Lwt.t) ->
+  unit ->
+  unit Lwt.t
+(** Main entry point: use config to pick the connection method,
+    then call the appropriate auto-reconnection loop.
+    Calls {!init} every time a new connection is opened. *)
