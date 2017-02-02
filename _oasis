@@ -46,13 +46,13 @@ Library "calculon_web"
   BuildDepends:     calculon, atdgen, cohttp, lwt, cohttp.lwt, lambdasoup, uri
 
 Executable "demo_bot"
-  Path:             src/tools/
+  Path:             src/demo/
   MainIs:           demo_bot.ml
   BuildDepends:     calculon.web, calculon.extras
   Install:          false
   CompiledObject:   best
-  Build$:           flag(web)
-  Install$:         flag(web)
+  Build$:           flag(web) && flag(extras)
+  Install$:         flag(web) && flag(extras)
 
 Library "calculon_extras"
   Path:             src/extras
