@@ -3,9 +3,7 @@
 
 (** {2 Transition Table} *)
 module Table : sig
-  type token =
-    | Start
-    | Word of string (* non empty string *)
+  type token = private string (* non empty string *)
 
   val print_token : token CCFormat.printer
 

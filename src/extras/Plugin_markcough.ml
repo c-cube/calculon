@@ -7,18 +7,11 @@ open Calculon
 
 (** {2 Transition Table} *)
 module Table = struct
-  type token =
-    | Start
-    | Word of string (* non empty string *)
+  type token = string (* "" is start; non empty string otherwie *)
 
-  let print_token out = function
-    | Start -> CCFormat.string out ">"
-    | Word w -> CCFormat.string out w
+  let print_token = CCFormat.string
 
-  module TokenMap = CCMap.Make(struct
-      type t = token
-      let compare = Pervasives.compare
-    end)
+  module TokenMap = CCMap.Make(String)
 
   (** A prefix tree of uniform length *)
   type t =
@@ -100,8 +93,7 @@ module Table = struct
   let mem k t : bool = match t with
     | Leaf _
     | Empty -> false
-    | Node (m,_) ->
-      TokenMap.mem (Word k) m
+    | Node (m,_) -> TokenMap.mem k m
 
   let pick_key rand t = match t with
     | Empty -> raise Not_found
@@ -213,9 +205,9 @@ module Parse_logs = struct
     let l =
       Re.split re_split s
       |> List.filter (fun s -> s<>"")
-      |> List.rev_map (fun s -> T.Word (norm_token s))
+      |> List.rev_map (fun s -> norm_token s)
     in
-    T.Start :: T.Start :: List.rev l
+    "" :: "" :: List.rev l
 
   (* parse record [r] into [tbl] *)
   let parse_record r tbl =
@@ -224,7 +216,7 @@ module Parse_logs = struct
     let rec aux toks t = match toks with
       | [] | [_] | [_;_] -> t
       | t1 :: ((t2 :: next :: _) as toks') ->
-        let t = T.add [T.Word author; t1; t2] next t in
+        let t = T.add [author; t1; t2] next t in
         aux toks' t
     in
     aux tokens tbl
@@ -252,12 +244,12 @@ module Gen = struct
       if List.length acc >= min_len && Random.State.int rand 10 < 1
       then String.concat " " (List.rev acc) (* stop *)
       else match T.pick rand [prefix; p1; p2] tbl with
-        | T.Start -> assert false
-        | T.Word w ->
+        | "" -> assert false
+        | w ->
           (* shift: p1, p2 = p2, w *)
-          gen (w :: acc) p2 (T.Word w)
+          gen (w :: acc) p2 w
     in
-    gen [] T.Start T.Start
+    gen [] "" ""
 
   (* pick an author from [tbl] *)
   let pick_author rand tbl = T.pick_key rand tbl
@@ -267,7 +259,7 @@ module Gen = struct
   (* generate a sentence from the given author *)
   let generate ?author ?(rand=default_rand_) ?(min_len=10) tbl =
     let prefix = match author with
-      | Some a when T.mem a tbl -> T.Word (Irclog.norm_author a)
+      | Some a when T.mem a tbl -> Irclog.norm_author a
       | _ -> pick_author rand tbl
     in
     gen_rec rand min_len prefix tbl
