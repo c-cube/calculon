@@ -40,6 +40,8 @@ Library "calculon_web"
   Pack:             true
   FindlibName:      web
   FindlibParent:    calculon
+  Build$:           flag(web)
+  Install$:         flag(web)
   Modules:          Plugin_web, Plugin_movie, Movie_j, Movie_t, Movie_schema, Og
   BuildDepends:     calculon, atdgen, cohttp, lwt, cohttp.lwt, lambdasoup, uri
 
