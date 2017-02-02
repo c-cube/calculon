@@ -118,7 +118,7 @@ module Table = struct
      [p_jump = exp   *)
   let jump_proba w =
     let w = float w in
-    exp ((-. w) /. 1.5)
+    exp ((-. w) /. 0.5)
 
   let max_jumps = 2
 
