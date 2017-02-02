@@ -46,8 +46,10 @@ setup.exe: setup.ml _oasis
 # OASIS_STOP
 
 atdgen:
-	atdgen -t src/web/movie.atd
-	atdgen -j -j-std src/web/movie.atd
+	if which atdgen > /dev/null ; then \
+	  atdgen -t src/web/movie.atd; \
+	  atdgen -j -j-std src/web/movie.atd; \
+	fi
 
 clean-atdgen:
 	rm src/web/movie_t.ml*
