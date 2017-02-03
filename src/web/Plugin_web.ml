@@ -63,7 +63,7 @@ let get_youtube_search (query:string): string Lwt.t =
   let uri =
     Uri.of_string "https://www.youtube.com/results"
   in
-  let uri = Uri.add_query_param' uri ("search_query", query) in
+  let uri = Uri.add_query_params' uri ["sp","EgIQAQ%3D%3D"; "q", query] in
   Cohttp_lwt_unix.Client.get uri >>= fun (_,body) ->
   Cohttp_lwt_body.to_string body
 
