@@ -74,11 +74,15 @@ module Set = struct
     let file = config.Config.state_file in
     Log.logf "plugin: save state in '%s'" file;
     let file' = file ^ ".tmp" in
-    Yojson.Safe.to_file file' j;
-    try Sys.rename file' file
+    try
+      Yojson.Safe.to_file file' j;
+      try Sys.rename file' file
+      with e ->
+        Log.logf "failed to save into '%s' (temp file '%s'): %s"
+          file file' (Printexc.to_string e)
     with e ->
-      Log.logf "failed to save into '%s' (temp file '%s'): %s"
-        file file' (Printexc.to_string e)
+      Log.logf "failed to write into temp file '%s': %s"
+        file' (Printexc.to_string e)
 
   let save_ config active =
     let assoc_l =
