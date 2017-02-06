@@ -7,7 +7,7 @@ open Cohttp_lwt_unix
 open Soup
 open Lwt.Infix
 
-let page_title uri =
+let page_title ~with_description uri =
   let open Cohttp in
   let rec get_body uri =
     Client.get uri >>= fun (resp, body) ->
@@ -22,15 +22,21 @@ let page_title uri =
   get_body uri >>= fun body ->
   let tags = Og.Parser.parse_string body in
   let title_descr = List.fold_left (fun (t,d) -> function
-      | Og.Title title       when t = None -> (Some title, d)
-      | Og.Description descr when d = None -> (t, Some descr)
-      | _ -> (t,d)
+      | Og.Title title       when t = None && title <> "" -> (Some title, d)
+      | Og.Description descr when d = None && descr <> "" && with_description ->
+        (t, Some descr)
+      | _ ->
+        (t,d)
     ) (None, None) tags in
   match title_descr with
   | Some title, Some description ->
-    Some (Format.asprintf "%s : %s" title description) |> Lwt.return
+    let msg = Format.asprintf "%s : %s" title description in
+    (*    Log.logf "og:: %s" msg; *)
+    Some msg |> Lwt.return
   | Some title, None ->
-    Some (Format.asprintf "%s" title) |> Lwt.return
+    let msg = Format.asprintf "%s" title in
+    (* Log.logf "og:title %s" msg; *)
+    Some msg |> Lwt.return
   | _, _ ->
     parse body $ "title" |> leaf_text |> Lwt.return
 
@@ -47,7 +53,7 @@ let cmd_yt =
        let uri = Uri.of_string (String.trim s) in
        match Uri.host uri with
        | Some host when List.mem host youtube_hosts ->
-         page_title uri
+         page_title ~with_description:true uri
        | _ -> Lwt.return_none
     )
 
@@ -71,8 +77,18 @@ let cmd_yt_search =
   Command.make_simple_l
     ~prio:10 ~prefix:"yt_search" ~descr:"lookup on youtube"
     (fun _ s ->
-       get_youtube_search (String.trim s) >|= fun body ->
-       find_yt_ids body
+       (get_youtube_search (String.trim s) >|= fun body ->
+        find_yt_ids ~n:1 body)
+       >>= fun urls ->
+       Lwt_list.fold_left_s (fun acc url ->
+           Log.logf "Getting metadata for url %s" url;
+           page_title ~with_description:false (Uri.of_string url) >>= function
+           | Some x ->
+             let descr = Format.asprintf "%s : %s" url x in
+             descr::acc |> Lwt.return
+           | None ->
+             url::acc |> Lwt.return
+         ) [] urls
     )
 
 let plugin =

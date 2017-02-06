@@ -267,6 +267,10 @@ let limit_list l =
   then CCList.take list_size_limit l @ ["…"]
   else l
 
+let insert_noresult = function
+  | [] -> ["nothing found!"]
+  | l -> l
+
 (* tokenize message into search tokens *)
 let search_tokenize s =
   String.trim s
@@ -278,6 +282,7 @@ let cmd_search state =
        let tokens = search_tokenize s in
        search tokens state.st_cur
        |> limit_list
+       |> insert_noresult
        |> Lwt.return
     )
 
@@ -288,6 +293,7 @@ let cmd_search_all state =
     (fun _ s ->
        let tokens = search_tokenize s in
        search tokens state.st_cur
+       |> insert_noresult
        |> Lwt.return
     )
 
@@ -399,6 +405,8 @@ let cmd_factoids state =
       (in which case it fails)
     - `!foo += bar` adds `bar` to the mappings of `foo`
     - `!foo := bar` maps `foo` to `bar` even if `foo` is already mapped
+    - `!search term` looks up `term` in the database
+    - `!search_all` looks up all terms in the database
     "
 
 let commands state: Command.t list =
