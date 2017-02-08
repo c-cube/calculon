@@ -28,6 +28,7 @@ depends: [
   "tls"
   "yojson"
   "containers"
+  "sequence"
   "ISO8601"
 ]
 depopts: [
