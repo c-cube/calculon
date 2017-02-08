@@ -6,7 +6,9 @@ maintainer: "c-cube"
 build: [
   ["./configure"
     "--bindir" "%{bin}%"
-    "--%{uri+lambdasoup+cohttp+atdgen:enable}%-web"]
+    "--%{uri+lambdasoup+cohttp+atdgen:enable}%-web"
+    "--%{re+sequence:enable}%-extras"
+    ]
   [make "build"]
 ]
 install: [
@@ -28,7 +30,6 @@ depends: [
   "tls"
   "yojson"
   "containers"
-  "sequence"
   "ISO8601"
 ]
 depopts: [
@@ -36,6 +37,8 @@ depopts: [
   "cohttp"
   "atdgen"
   "lambdasoup"
+  "sequence"
+  "re"
 ]
 tags: [ "irc" "bot" "factoids" ]
 homepage: "https://github.com/c-cube/calculon"
