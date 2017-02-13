@@ -5,7 +5,7 @@ module Maybe = struct
     | "N/A" -> None
     | s -> Some s
 
-  let unwrap = CCOpt.get "N/A" 
+  let unwrap = CCOpt.get_or ~default:"N/A" 
 
 end
 

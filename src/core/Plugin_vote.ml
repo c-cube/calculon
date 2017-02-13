@@ -138,7 +138,7 @@ let vote polls nick name vote =
       | true ->
         Hashtbl.remove polls name;
         Ok (Some (Printf.sprintf "poll done : result %s"
-              (CCOpt.get "draw" @@ CCOpt.map Vote.string_of_vote
+              (CCOpt.get_or ~default:"draw" @@ CCOpt.map Vote.string_of_vote
                @@ Vote.get_winner poll.vote)))
       | _ -> Ok (Some (Vote.show_status poll.vote))
 
@@ -148,7 +148,7 @@ let show_vote polls name nick =
       Error (Printf.sprintf "no such active poll '%s'" name)
     | poll ->
       let vote =
-        CCOpt.get "draw"
+        CCOpt.get_or ~default:"draw"
         @@ CCOpt.map Vote.string_of_vote
         @@ Vote.vote_status poll.vote nick
       in

@@ -29,7 +29,7 @@ module Table = struct
       begin match t with
         | Empty -> singleton v
         | Leaf (m,w) ->
-          let m = TokenMap.add v (TokenMap.get_or v m ~or_:0 + 1) m in
+          let m = TokenMap.add v (TokenMap.get_or v m ~default:0 + 1) m in
           Leaf (m,w+1)
         | Node _ -> invalid_arg "trie is not of uniform depth"
       end
@@ -38,7 +38,7 @@ module Table = struct
         | Empty -> Node (TokenMap.singleton k (add key_tail v Empty), 1)
         | Leaf _ -> invalid_arg "trie is not of uniform depth"
         | Node (m,w) ->
-          let sub = TokenMap.get_or k m ~or_:Empty in
+          let sub = TokenMap.get_or k m ~default:Empty in
           let sub = add key_tail v sub in
           Node (TokenMap.add k sub m, w+1)
       end
@@ -161,14 +161,14 @@ module Table = struct
         Format.fprintf out "@[<h>%a (weight %d)@]" print_token tok i
       in
       Format.fprintf out "@[<v>%a@]"
-        (CCFormat.seq ~start:"" ~stop:"" ~sep:"" pp_pair)
+        (CCFormat.seq pp_pair)
         (TokenMap.to_seq m)
     | Node (m,w) ->
       let pp_pair out (tok,m) =
         Format.fprintf out "@[<v1>%a (weight %d): %a@]" print_token tok w print m
       in
       Format.fprintf out "@[<v>%a@]"
-        (CCFormat.seq ~start:"" ~stop:"" ~sep:"" pp_pair)
+        (CCFormat.seq pp_pair)
         (TokenMap.to_seq m)
 
   let write_to out t =

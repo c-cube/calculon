@@ -201,8 +201,8 @@ let find_close_keys (k:key) (fcs:t) : string * int =
   let res = match l with
     | [] -> ""
     | [x] -> Printf.sprintf "did you mean %s?" x
-    | _ -> CCFormat.sprintf "did you mean one of [@[<h>%a@]]?"
-             CCFormat.(list ~sep:"," string) l
+    | _ -> CCFormat.sprintf "did you mean one of %a@]?"
+             CCFormat.(Dump.list string) l
   in
   res, List.length l
 
