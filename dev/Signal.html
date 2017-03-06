@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Prelude.html">
+<link rel="next" href="Talk.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Command" rel="Chapter" href="Command.html">
+<link title="Config" rel="Chapter" href="Config.html">
+<link title="Core" rel="Chapter" href="Core.html">
+<link title="Lwt_err" rel="Chapter" href="Lwt_err.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Plugin" rel="Chapter" href="Plugin.html">
+<link title="Prelude" rel="Chapter" href="Prelude.html">
+<link title="Signal" rel="Chapter" href="Signal.html">
+<link title="Talk" rel="Chapter" href="Talk.html">
+<link title="Run_main" rel="Chapter" href="Run_main.html">
+<link title="Plugin_factoids" rel="Chapter" href="Plugin_factoids.html">
+<link title="Plugin_vote" rel="Chapter" href="Plugin_vote.html">
+<link title="Plugin_social" rel="Chapter" href="Plugin_social.html">
+<link title="Plugin_state" rel="Chapter" href="Plugin_state.html">
+<link title="Plugin_history" rel="Chapter" href="Plugin_history.html"><link title="Combinators" rel="Section" href="#2_Combinators">
+<link title="Send-only View" rel="Section" href="#2_SendonlyView">
+<title>Signal</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Prelude.html" title="Prelude">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Talk.html" title="Talk">Next</a>
+</div>
+<h1>Module <a href="type_Signal.html">Signal</a></h1>
+
+<pre><span class="keyword">module</span> Signal: <code class="code"><span class="keyword">sig</span></code> <a href="Signal.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<h1 id="1_Basicsignal">Basic signal</h1><br>
+</div>
+<hr width="100%">
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type">'a</code> t</span> </pre>
+<div class="info ">
+Signal of type 'a<br>
+</div>
+
+
+<pre><span id="TYPEsignal"><span class="keyword">type</span> <code class="type">'a</code> signal</span> = <code class="type">'a <a href="Signal.html#TYPEt">t</a></code> </pre>
+
+
+<pre><span id="VALcreate"><span class="keyword">val</span> create</span> : <code class="type">unit -> 'a <a href="Signal.html#TYPEt">t</a></code></pre><div class="info ">
+New signal<br>
+</div>
+
+<pre><span id="VALsend"><span class="keyword">val</span> send</span> : <code class="type">'a <a href="Signal.html#TYPEt">t</a> -> 'a -> unit Lwt.t</code></pre><div class="info ">
+Trigger the signal<br>
+</div>
+
+<pre><code><span id="TYPEhandler_response"><span class="keyword">type</span> <code class="type"></code>handler_response</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELThandler_response.ContinueListening"><span class="constructor">ContinueListening</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELThandler_response.StopListening"><span class="constructor">StopListening</span></span></code></td>
+
+</tr></table>
+
+
+
+<pre><span id="VALon"><span class="keyword">val</span> on</span> : <code class="type">'a <a href="Signal.html#TYPEt">t</a> -> ('a -> <a href="Signal.html#TYPEhandler_response">handler_response</a> Lwt.t) -> unit</code></pre><div class="info ">
+Register a handler to the signal; the handler returns <code class="code"><span class="constructor">ContinueListening</span></code>
+      if it wants to continue being notified, <code class="code"><span class="constructor">StopListening</span></code> otherwise<br>
+</div>
+
+<pre><span id="VALon'"><span class="keyword">val</span> on'</span> : <code class="type">'a <a href="Signal.html#TYPEt">t</a> -> ('a -> 'b Lwt.t) -> unit</code></pre>
+<pre><span id="VALonce"><span class="keyword">val</span> once</span> : <code class="type">'a <a href="Signal.html#TYPEt">t</a> -> ('a -> 'b Lwt.t) -> unit</code></pre><div class="info ">
+Register a handler to be called only once<br>
+</div>
+
+<pre><span id="VALpropagate"><span class="keyword">val</span> propagate</span> : <code class="type">'a <a href="Signal.html#TYPEt">t</a> -> 'a <a href="Signal.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
+<code class="code">propagate a b</code> propagates all values of <code class="code">a</code> into <code class="code">b</code>. Cycles
+      are not detected.<br>
+</div>
+<br>
+<h2 id="2_Combinators">Combinators</h2><br>
+
+<pre><span id="VALmap"><span class="keyword">val</span> map</span> : <code class="type">'a <a href="Signal.html#TYPEt">t</a> -> ('a -> 'b) -> 'b <a href="Signal.html#TYPEt">t</a></code></pre>
+<pre><span id="VALfilter"><span class="keyword">val</span> filter</span> : <code class="type">'a <a href="Signal.html#TYPEt">t</a> -> ('a -> bool) -> 'a <a href="Signal.html#TYPEt">t</a></code></pre>
+<pre><span id="VALfilter_map"><span class="keyword">val</span> filter_map</span> : <code class="type">'a <a href="Signal.html#TYPEt">t</a> -> ('a -> 'b option) -> 'b <a href="Signal.html#TYPEt">t</a></code></pre>
+<pre><span id="VALset_exn_handler"><span class="keyword">val</span> set_exn_handler</span> : <code class="type">(exn -> unit) -> unit</code></pre><div class="info ">
+Set the handler that is called upon an exception in
+      a Signal.  The default handler does nothing.
+      If the handler raises an exception, it is not caught!<br>
+</div>
+<br>
+<h2 id="2_SendonlyView">Send-only View</h2><br>
+<br>
+Can be used only for sending<br>
+
+<pre><span class="keyword">module</span> <a href="Signal.Send_ref.html">Send_ref</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Signal.Send_ref.html">..</a> <code class="code"><span class="keyword">end</span></code></pre></body></html>

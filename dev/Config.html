@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Command.html">
+<link rel="next" href="Core.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Command" rel="Chapter" href="Command.html">
+<link title="Config" rel="Chapter" href="Config.html">
+<link title="Core" rel="Chapter" href="Core.html">
+<link title="Lwt_err" rel="Chapter" href="Lwt_err.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Plugin" rel="Chapter" href="Plugin.html">
+<link title="Prelude" rel="Chapter" href="Prelude.html">
+<link title="Signal" rel="Chapter" href="Signal.html">
+<link title="Talk" rel="Chapter" href="Talk.html">
+<link title="Run_main" rel="Chapter" href="Run_main.html">
+<link title="Plugin_factoids" rel="Chapter" href="Plugin_factoids.html">
+<link title="Plugin_vote" rel="Chapter" href="Plugin_vote.html">
+<link title="Plugin_social" rel="Chapter" href="Plugin_social.html">
+<link title="Plugin_state" rel="Chapter" href="Plugin_state.html">
+<link title="Plugin_history" rel="Chapter" href="Plugin_history.html"><title>Config</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Command.html" title="Command">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Core.html" title="Core">Next</a>
+</div>
+<h1>Module <a href="type_Config.html">Config</a></h1>
+
+<pre><span class="keyword">module</span> Config: <code class="code"><span class="keyword">sig</span></code> <a href="Config.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<code class="code">parse conf args</code> is the same as <code class="code">conf</code>, but some command line
+    arguments can override its fields<br>
+</div>
+<hr width="100%">
+
+<pre><code><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.server">server</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.port">port</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.username">username</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.realname">realname</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.nick">nick</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.tls">tls</span>&nbsp;: <code class="type">bool</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.channel">channel</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.state_file">state_file</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr></table>
+}
+
+
+
+<pre><span id="VALdefault"><span class="keyword">val</span> default</span> : <code class="type"><a href="Config.html#TYPEt">t</a></code></pre>
+<pre><span id="VALparse"><span class="keyword">val</span> parse</span> : <code class="type"><a href="Config.html#TYPEt">t</a> -> string array -> <a href="Config.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">parse conf args</code> is the same as <code class="code">conf</code>, but some command line
+    arguments can override its fields<br>
+</div>
+
+<pre><span id="VALof_argv"><span class="keyword">val</span> of_argv</span> : <code class="type">unit -> <a href="Config.html#TYPEt">t</a></code></pre><div class="info ">
+Parsed from <code class="code"><span class="constructor">Sys</span>.argv</code>
+    Will call <code class="code">exit</code> if <code class="code"><span class="constructor">Arg</span>.parse</code> fails<br>
+</div>
+</body></html>

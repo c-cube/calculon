@@ -1,0 +1,131 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Config.html">
+<link rel="next" href="Lwt_err.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Command" rel="Chapter" href="Command.html">
+<link title="Config" rel="Chapter" href="Config.html">
+<link title="Core" rel="Chapter" href="Core.html">
+<link title="Lwt_err" rel="Chapter" href="Lwt_err.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Plugin" rel="Chapter" href="Plugin.html">
+<link title="Prelude" rel="Chapter" href="Prelude.html">
+<link title="Signal" rel="Chapter" href="Signal.html">
+<link title="Talk" rel="Chapter" href="Talk.html">
+<link title="Run_main" rel="Chapter" href="Run_main.html">
+<link title="Plugin_factoids" rel="Chapter" href="Plugin_factoids.html">
+<link title="Plugin_vote" rel="Chapter" href="Plugin_vote.html">
+<link title="Plugin_social" rel="Chapter" href="Plugin_social.html">
+<link title="Plugin_state" rel="Chapter" href="Plugin_state.html">
+<link title="Plugin_history" rel="Chapter" href="Plugin_history.html"><title>Core</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Config.html" title="Config">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Lwt_err.html" title="Lwt_err">Next</a>
+</div>
+<h1>Module <a href="type_Core.html">Core</a></h1>
+
+<pre><span class="keyword">module</span> Core: <code class="code"><span class="keyword">sig</span></code> <a href="Core.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<h1 id="1_CoreIRCstate">Core IRC state</h1><br>
+</div>
+<hr width="100%">
+
+<pre><span class="keyword">module</span> <a href="Core.Msg.html">Msg</a>: <code class="type">Irc_message</code></pre>
+<pre><code><span id="TYPEprivmsg"><span class="keyword">type</span> <code class="type"></code>privmsg</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTprivmsg.nick">nick</span>&nbsp;: <code class="type">string</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+author: nick<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTprivmsg.to_">to_</span>&nbsp;: <code class="type">string</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+target: nick or chan<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTprivmsg.message">message</span>&nbsp;: <code class="type">string</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+actual content<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+}
+
+<div class="info ">
+A message sent on some IRC channel, or in query.
+    The message content is <code class="code">message</code>, its sender is <code class="code">nick</code> (a nickname),
+    and its target is <code class="code">to_</code> (either a nickname for private messages,
+    or a channel name).<br>
+</div>
+
+
+<pre><span id="VALis_chan"><span class="keyword">val</span> is_chan</span> : <code class="type">string -> bool</code></pre><div class="info ">
+Is this a valid chan name?<br>
+</div>
+
+<pre><span id="VALreply_to"><span class="keyword">val</span> reply_to</span> : <code class="type"><a href="Core.html#TYPEprivmsg">privmsg</a> -> string</code></pre><div class="info ">
+find whom to reply to. If the message is in query,
+    that is, <code class="code">not (is_chan msg.to_)</code>, then reply to <code class="code">msg.nick</code>;
+    otherwise reply on the channel <code class="code">msg.to_</code>.<br>
+</div>
+
+<pre><span id="VALnick"><span class="keyword">val</span> nick</span> : <code class="type"><a href="Core.html#TYPEprivmsg">privmsg</a> -> string</code></pre><div class="info ">
+The author of the message<br>
+</div>
+
+<pre><span id="VALprivmsg_of_msg"><span class="keyword">val</span> privmsg_of_msg</span> : <code class="type">Msg.t -> <a href="Core.html#TYPEprivmsg">privmsg</a> option</code></pre><div class="info ">
+Try to parse a <a href="Core.html#TYPEprivmsg"><code class="code"><span class="constructor">Core</span>.privmsg</code></a> from a raw IRC message<br>
+</div>
+
+<pre><span id="VALstring_of_privmsg"><span class="keyword">val</span> string_of_privmsg</span> : <code class="type"><a href="Core.html#TYPEprivmsg">privmsg</a> -> string</code></pre>
+<pre><span class="keyword">module type</span> <a href="Core.S.html">S</a> = <code class="code"><span class="keyword">sig</span></code> <a href="Core.S.html">..</a> <code class="code"><span class="keyword">end</span></code></pre>
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = <code class="type">(module Core.S)</code> </pre>
+
+
+<pre><span id="TYPEconnection"><span class="keyword">type</span> <code class="type"></code>connection</span> </pre>
+
+
+<pre><span id="VALloop_tls"><span class="keyword">val</span> loop_tls</span> : <code class="type">connect:(unit -> Irc_client_tls.connection_t option Lwt.t) -><br>       init:(<a href="Core.html#TYPEt">t</a> -> unit Lwt.t) -> unit -> unit Lwt.t</code></pre><div class="info ">
+Feed this to <code class="code"><span class="constructor">Lwt_main</span>.run</code>. It will connect using
+    <code class="code">connect</code> (which opens a TLS connection),
+    create a new core object (of type <a href="Core.html#TYPEt"><code class="code"><span class="constructor">Core</span>.t</code></a>),
+    call <code class="code">init</code> on this core object (to initialize plugins, etc.)
+    then loop on incoming messages.
+    If the connection is closed for any reason, this will wait
+    for some time and then re-connect and call <code class="code">init</code> again, etc.<br>
+</div>
+
+<pre><span id="VALloop_unsafe"><span class="keyword">val</span> loop_unsafe</span> : <code class="type">connect:(unit -> Irc_client_lwt.connection_t option Lwt.t) -><br>       init:(<a href="Core.html#TYPEt">t</a> -> unit Lwt.t) -> unit -> unit Lwt.t</code></pre><div class="info ">
+Feed to <code class="code"><span class="constructor">Lwt_main</span>.run</code>. Same as <a href="Core.html#VALloop_tls"><code class="code"><span class="constructor">Core</span>.loop_tls</code></a> but with a cleartext
+    connection (boo!).<br>
+</div>
+
+<pre><span id="VALrun"><span class="keyword">val</span> run</span> : <code class="type"><a href="Config.html#TYPEt">Config.t</a> -> init:(<a href="Core.html#TYPEt">t</a> -> unit Lwt.t) -> unit -> unit Lwt.t</code></pre><div class="info ">
+Main entry point: use config to pick the connection method,
+    then call the appropriate auto-reconnection loop.
+    Calls <code class="code">init</code> every time a new connection is opened.<br>
+</div>
+</body></html>
