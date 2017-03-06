@@ -1,6 +1,15 @@
 (** {1 Command Type}
 
-    A command is a particular rule for reacting to what is said on IRC. *)
+    A command is a particular rule for reacting to what is said on IRC.
+    Typically, a command takes a {!Core.t} (to be able to answer
+    and perform IRC actions) and an input message, and it decides
+    whether to do something or not based on the message.
+
+    The command returns a {!res}, which specifies whether it successfully
+    "caught" the message (no need then for other commands to run),
+    if it didn't react ("skip") so we can try the other commands,
+    or whether it failed when trying to answer.
+*)
 
 type res =
   | Cmd_match of unit Lwt.t
@@ -10,6 +19,9 @@ type res =
   | Cmd_fail of string
   (** command applies, but failed *)
 
+(** A command, bundling some metadata (name + descr, used for "!help"),
+    a priority (used to run some commands before the others),
+    and the answering function itself *)
 type t = {
   prio: int; (* priority. The lower, the more urgent this command is. *)
   match_: Core.t -> Core.privmsg -> res; (* how to react to incoming messages *)
@@ -25,7 +37,7 @@ val match_prefix1 : prefix:string -> Core.privmsg -> string option
   *)
 
 val extract_hl : string -> (string * string) option
-(** [extract_hl "foo > bar" returns [Some ("foo", "bar")].
+(** [extract_hl "foo > bar"] returns [Some ("foo", "bar")].
     Returns [None] if it cannot split on ">" cleanly. *)
 
 val match_prefix1_full : prefix:string -> Core.privmsg -> (string * string option) option
@@ -73,7 +85,7 @@ val make_simple_query_l :
     The function can raise Fail to indicate failure *)
 
 val compare_prio : t -> t -> int
-(** Compare by priority *)
+(** Compare by priority. Used to sort a list of commands by their priority. *)
 
 val run : Core.t -> t list -> Core.privmsg -> unit Lwt.t
 (** Execute the commands, in given order, on the message. First command
