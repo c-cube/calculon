@@ -31,6 +31,7 @@ depends: [
   "containers" { >= "1.0" }
   "ISO8601"
   "re"
+  "stringext"
 ]
 depopts: [
   "uri"
@@ -42,6 +43,6 @@ depopts: [
 tags: [ "irc" "bot" "factoids" ]
 homepage: "https://github.com/c-cube/calculon"
 bug-reports: "https://github.com/c-cube/calculon/issues"
-dev-repo: "https://github.com/c-cube/calculon"
+dev-repo: "https://github.com/c-cube/calculon.git"
 
 
