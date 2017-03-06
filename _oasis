@@ -79,3 +79,14 @@ Executable "markcough_show"
   BuildDepends:     calculon.extras, re.posix
   CompiledObject:   best
   MainIs:           markcough_show.ml
+
+Document calculon
+  Title:                Calculon
+  Type:                 ocamlbuild (0.3)
+  BuildTools+:          ocamldoc
+  Build$:               flag(docs)
+  Install:              true
+  XOCamlbuildPath:      .
+  XOCamlbuildExtraArgs:
+    "-docflags '-colorize-code -short-functors -charset utf-8'"
+  XOCamlbuildLibraries: calculon
