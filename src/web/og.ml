@@ -36,7 +36,7 @@ let parse_type = function
 let parse_url str = Some { name = str }
 
 let parse_locale str =
-  match Str.split (Str.regexp "_") str with
+  match Re.split (Re.str "_" |> Re.compile) str with
   | language :: territory :: _ -> Some { language; territory }
   | _ -> None
 
@@ -115,7 +115,7 @@ let format_metadata formatter = function
 
 module Parser = struct
   open Soup
-  let og_prefix = Str.regexp "^og:"
+  let og_prefix = Re_perl.compile_pat "^og:"
 
   let og_parser list elem =
     let prop constructor x list =
@@ -151,7 +151,7 @@ module Parser = struct
     | Some "og:video" -> optprop (purl make_video) elem list
     | Some "og:video:tag" ->
       prop (fun x -> x |> make_video_tag |> make_video_metadata ) elem list
-    | Some str when  Str.string_match og_prefix str 0 ->
+    | Some str when Re.execp og_prefix str ->
       UnparsedMeta str :: list
     | Some _ -> list
     | None -> list

@@ -80,15 +80,15 @@ let data state nick =
   StrMap.find nick state.map
 
 let split_2 ~msg re s =
-  let a = Str.bounded_split re s 2 in
+  let a = Re.split re s in
   match a with
-    | [x;y] ->x,y
+    | x :: y -> x, String.concat " " y
     | _ -> raise (Command.Fail msg)
 
 let split_3 ~msg re s =
-  let a = Str.bounded_split re s 3 in
+  let a = Re.split re s in
   match a with
-    | [x;y;z] -> x,y,z
+    | x::y::tail -> x,y,String.concat " " tail
     | _ -> raise (Command.Fail msg)
 
 let cmd_tell_inner ~at state =
@@ -105,13 +105,15 @@ let cmd_tell_inner ~at state =
            if at
            then (
              let d, m, t =
-               split_3 ~msg:"tell_at: expected <date> <nick> <msg>" (Str.regexp " ") s
+               split_3 ~msg:"tell_at: expected <date> <nick> <msg>"
+                 (Re_perl.compile_pat "[ \t]+") s
              in
              let t = ISO8601.Permissive.datetime ~reqtime:false t in
              d, m, Some t
            ) else (
              let d, m =
-               split_2 ~msg:"tell: expected <nick> <msg>" (Str.regexp " ") s
+               split_2 ~msg:"tell: expected <nick> <msg>"
+                 (Re_perl.compile_pat "[ \t]+") s
              in
              d, m, None
            )

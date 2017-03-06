@@ -119,9 +119,7 @@ module Make
            | Some f -> f())
       lines
 
-  let split_lines_ s =
-    let nl = Str.regexp_string "\n" in
-    Str.split nl s
+  let split_lines_ = CCString.Split.list_cpy ~by:"\n"
 
   let flat_map f l = List.map f l |> List.flatten
 

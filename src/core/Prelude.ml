@@ -7,8 +7,7 @@ let string_opt_to_string = function
 let string_list_to_string string_list =
   Printf.sprintf "[%s]" (String.concat "; " string_list)
 
-let get_nick h =
-  Str.split_delim (Str.regexp "!") h |> List.hd
+let get_nick h = CCString.Split.left_exn ~by:"!" h |> fst
 
 let id x = x
 let some x = Some x
@@ -20,24 +19,19 @@ let (|?) o x = match o with
   | None -> x
   | Some y -> y
 
-let contains s x =
-  try Str.search_forward x s 0 |> ignore; true
-  with Not_found -> false
+let contains s (re:Re.re) = Re.execp re s
 
-let re_match2 f r s =
-  if Str.string_match r s 0
-  then f (Str.matched_group 1 s) (Str.matched_group 2 s) |> some
-  else None
+let re_match2 f r s = match Re.exec_opt r s with
+  | None -> None
+  | Some g ->
+    f (Re.Group.get g 1) (Re.Group.get g 2) |> some
 
-let re_match1 f r s =
-  if Str.string_match r s 0
-  then f (Str.matched_group 1 s) |> some
-  else None
+let re_match1 f r s = match Re.exec_opt r s with
+  | None -> None
+  | Some g -> f (Re.Group.get g 1) |> some
 
 let re_match0 x r s =
-  if Str.string_match r s 0
-  then Some x
-  else None
+  if contains s r then Some x else None
 
 (* from containers 1.0 *)
 let edit_distance s1 s2 =

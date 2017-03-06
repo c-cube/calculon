@@ -15,13 +15,13 @@ val map_opt : ('a -> 'b) -> 'a option -> 'b option
 val (|?) : 'a option -> 'a -> 'a
 (** [o |? x] is [y] if [o=Some y], [x] otherwise *)
 
-val contains : string -> Str.regexp -> bool
+val contains : string -> Re.re -> bool
 
-val re_match2 : (string -> string -> 'a) -> Str.regexp -> string -> 'a option
+val re_match2 : (string -> string -> 'a) -> Re.re -> string -> 'a option
 
-val re_match1 : (string -> 'a) -> Str.regexp -> string -> 'a option
+val re_match1 : (string -> 'a) -> Re.re -> string -> 'a option
 
-val re_match0 : 'a -> Str.regexp -> string -> 'a option
+val re_match0 : 'a -> Re.re -> string -> 'a option
 
 val edit_distance : string -> string -> int
 

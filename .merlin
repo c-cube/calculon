@@ -8,8 +8,9 @@ S src/tools
 B _build/src/tools
 
 PKG irc-client.lwt
-PKG str
 PKG result
+PKG re
+PKG re.perl
 PKG containers
 PKG yojson
 PKG stringext
@@ -21,6 +22,5 @@ PKG uri
 PKG cohttp.lwt
 PKG lambdasoup
 
-PKG re
 PKG sequence
 PKG unix

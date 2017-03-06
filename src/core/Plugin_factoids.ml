@@ -46,12 +46,12 @@ let mk_factoid key value =
   try {key; value = Int (int_of_string value)}
   with Failure _ -> {key; value = StrList [value]}
 
-let re_set = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*=\\(.*\\)$"
-let re_set_force = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*:=\\(.*\\)$"
-let re_append = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*\\+=\\(.*\\)$"
-let re_get = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*$"
-let re_incr = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*\\+\\+[ ]*$"
-let re_decr = Str.regexp "^![ ]*\\([^!=+ :-]+\\)[ ]*--[ ]*$"
+let re_set = Re_perl.compile_pat "^![ ]*([^!=+ :-]+)[ ]*=(.*)$"
+let re_set_force = Re_perl.compile_pat "^![ ]*([^!=+ :-]+)[ ]*:=(.*)$"
+let re_append = Re_perl.compile_pat "^![ ]*([^!=+ :-]+)[ ]*\\+=(.*)$"
+let re_get = Re_perl.compile_pat "^![ ]*([^!=+ :-]+)[ ]*$"
+let re_incr = Re_perl.compile_pat "^![ ]*([^!=+ :-]+)[ ]*\\+\\+[ ]*$"
+let re_decr = Re_perl.compile_pat "^![ ]*([^!=+ :-]+)[ ]*--[ ]*$"
 
 let parse_op msg : (op * string option) option =
   let msg, hl = match Command.extract_hl msg with
@@ -274,7 +274,7 @@ let insert_noresult = function
 (* tokenize message into search tokens *)
 let search_tokenize s =
   String.trim s
-  |> Str.split (Str.regexp "[ \t]+")
+  |> Re.split (Re_perl.compile_pat "[ \t]+")
 
 let cmd_search state =
   Command.make_simple_l ~descr:"search in factoids" ~prefix:"search" ~prio:10
