@@ -1,0 +1,18 @@
+# OASIS_START
+# DO NOT EDIT (digest: bd5e5a134069f7c9445bd52b3902933c)
+src/core/Command
+src/core/Config
+src/core/Core
+src/core/Lwt_err
+src/core/Log
+src/core/Plugin
+src/core/Prelude
+src/core/Signal
+src/core/Talk
+src/core/Run_main
+src/core/Plugin_factoids
+src/core/Plugin_vote
+src/core/Plugin_social
+src/core/Plugin_state
+src/core/Plugin_history
+# OASIS_STOP
