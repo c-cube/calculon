@@ -1,7 +1,7 @@
 
 (** {1 Core IRC state} *)
 
-module Msg = Irc_message
+type irc_msg = Irc_message.t
 
 (** A message sent on some IRC channel, or in query.
     The message content is [message], its sender is [nick] (a nickname),
@@ -26,7 +26,7 @@ val reply_to : privmsg -> string
 val nick : privmsg -> string
 (** The author of the message *)
 
-val privmsg_of_msg : Msg.t -> privmsg option
+val privmsg_of_msg : irc_msg -> privmsg option
 (** Try to parse a {!privmsg} from a raw IRC message *)
 
 val string_of_privmsg : privmsg -> string
@@ -45,7 +45,7 @@ module type S = sig
   val send_exit : unit -> unit
   (** trigger the {!exit} signal (only at the end!) *)
 
-  val messages : Msg.t Signal.t
+  val messages : irc_msg Signal.t
   (** Signal triggered every time any IRC message is received *)
 
   val privmsg : privmsg Signal.t
