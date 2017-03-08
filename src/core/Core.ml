@@ -6,6 +6,7 @@ open Containers
 open Lwt.Infix
 
 module Msg = Irc_message
+type irc_msg = Irc_message.t
 
 type privmsg = {
   nick: string; (* author *)
