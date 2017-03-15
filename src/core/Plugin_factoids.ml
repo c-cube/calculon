@@ -108,7 +108,15 @@ let parse_op msg : (op * string option) option =
 let () =
   let test_ok s = CCOpt.is_some (parse_op s) in
   assert (test_ok "!foo2 = bar");
+  assert (test_ok "!foo2 = bar ");
   assert (test_ok "!foo2 += bar");
+  assert (test_ok "!foo2 += bar hello world");
+  assert (test_ok "!foo ++");
+  assert (test_ok "!foo ++ ");
+  assert (test_ok "!foo --");
+  assert (test_ok "!foo -- ");
+  assert (test_ok "!foo");
+  assert (test_ok "!foo ");
   ()
 
 (* read the json file *)
@@ -153,21 +161,26 @@ let append {key;value} (fcs:t): t =
   in
   StrMap.add key {key; value = value'} fcs
 
+let as_int v = match v with
+  | Int i -> Some i
+  | StrList [s] -> (try Some (int_of_string s) with _ -> None)
+  | _ -> None
+
 let incr key (fcs:t): int option * t =
   let value = try (StrMap.find key fcs).value with Not_found -> Int 0 in
-  match value with
-  | Int i ->
+  match as_int value with
+  | Some i ->
     let count = i + 1 in
     (Some count, StrMap.add key {key; value = Int count} fcs)
-  | _ -> (None, fcs)
+  | None -> (None, fcs)
 
 let decr key (fcs:t): int option * t =
   let value = try (StrMap.find key fcs).value with Not_found -> Int 0 in
-  match value with
-  | Int i ->
+  match as_int value with
+  | Some i ->
     let count = i - 1 in
     (Some count, StrMap.add key {key; value = Int count} fcs)
-  | _ -> (None, fcs)
+  | None -> (None, fcs)
 
 let search tokens (fcs:t): string list =
   (* list pairs [key, value] that match all the given tokens? *)
