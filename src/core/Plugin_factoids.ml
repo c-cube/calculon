@@ -46,12 +46,21 @@ let mk_factoid key value =
   try {key; value = Int (int_of_string value)}
   with Failure _ -> {key; value = StrList [value]}
 
-let re_set = Re_perl.compile_pat "^![ ]*([^!=+ :-]+)[ ]*=(.*)$"
-let re_set_force = Re_perl.compile_pat "^![ ]*([^!=+ :-]+)[ ]*:=(.*)$"
-let re_append = Re_perl.compile_pat "^![ ]*([^!=+ :-]+)[ ]*\\+=(.*)$"
-let re_get = Re_perl.compile_pat "^![ ]*([^!=+ :-]+)[ ]*$"
-let re_incr = Re_perl.compile_pat "^![ ]*([^!=+ :-]+)[ ]*\\+\\+[ ]*$"
-let re_decr = Re_perl.compile_pat "^![ ]*([^!=+ :-]+)[ ]*--[ ]*$"
+(* joins the result of Re_perl.split_full back together*)
+let group_join list =
+  let buf = Buffer.create 80 in
+  let rec aux = function
+    | (`Text t) :: r ->
+      Buffer.add_string buf t;
+      aux  r
+    | (`Delim d) :: r ->
+      Buffer.add_string buf (Re.Group.get d 0);
+      aux r
+    | [] -> Buffer.contents buf
+  in aux list
+
+let re_split_pat = Re_perl.compile_pat "(^!)|([+:]?=)|(\\+\\+)|(--)"
+let re_factoid = Re_perl.compile_pat "^[ ]*[a-zA-Z0-9\\-+_]+[ ]*$"
 
 let parse_op msg : (op * string option) option =
   let msg, hl = match Command.extract_hl msg with
@@ -65,23 +74,36 @@ let parse_op msg : (op * string option) option =
   let mk_append k v = Append (mk_factoid k v) in
   let mk_incr k = Incr (mk_key k) in
   let mk_decr k = Decr (mk_key k) in
+  let is_command prefix = Re.Group.get prefix 0 = "!" in (*TODO: generalize to
+                                                           any prefix *)
+  let is_factoid f = match Re.exec_opt re_factoid f with
+    | None -> false
+    | Some _ -> true
+  in
   if String.contains msg '\x01' then None
   else
-  (
-    (re_match2 mk_append re_append msg)
-    <+>
-      (re_match2 mk_set re_set msg)
-    <+>
-      (re_match2 mk_set_force re_set_force msg)
-    <+>
-      (re_match1 mk_get re_get msg)
-    <+>
-      (re_match1 mk_incr re_incr msg)
-    <+>
-      (re_match1 mk_decr re_decr msg)
-    <+>
-      None
-  ) |> Prelude.map_opt (fun x->x, hl)
+    (
+      Re.split_full re_split_pat msg |> (function
+          | (`Delim prefix) :: (`Text factoid) :: (`Delim op) :: rest
+            when (is_command prefix) && (is_factoid factoid)->
+            let op = Re.Group.get op 0 in
+            let fact = group_join rest |> String.trim in
+            let tfactoid = String.trim factoid in
+            return (op, tfactoid, fact )
+          | [`Delim prefix; `Text factoid; ]
+            when (is_command prefix) && (is_factoid factoid)->
+            return ("", String.trim factoid, "")
+          | _ -> None
+        ) >>= (function
+          | ("=",  factoid, fact) -> mk_set factoid fact |> return
+          | ("+=", factoid, fact) -> mk_append factoid fact |> return
+          | (":=", factoid, fact) -> mk_set_force factoid fact |> return
+          | ("++", factoid, "" )  -> mk_incr factoid |> return
+          | ("--", factoid, "" )  -> mk_decr factoid |> return
+          | ("",   factoid, _ )   -> mk_get factoid |> return
+          | _ -> None
+        )
+    ) |> Prelude.map_opt (fun x->x, hl)
 
 let () =
   let test_ok s = CCOpt.is_some (parse_op s) in
