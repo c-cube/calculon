@@ -1,10 +1,20 @@
 
 type json <ocaml module="Yojson.Safe"> = abstract
 
+type image = {
+  i_url <json name="url">: string;
+}
+
+type images = {
+  ?images_original <json name="original">: image option;
+  ?images_downsized <json name="downsized">: image option;
+}
+
 type search_entry = {
   type_ <json name="type">: string;
   url: string;
   embed_url: string;
+  images: images;
 }
 
 type search_result = {

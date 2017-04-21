@@ -1,10 +1,18 @@
 (* Auto-generated from "giphy.atd" *)
 
 
+type image = Giphy_t.image = { i_url: string }
+
+type images = Giphy_t.images = {
+  images_original: image option;
+  images_downsized: image option
+}
+
 type search_entry = Giphy_t.search_entry = {
   type_: string;
   url: string;
-  embed_url: string
+  embed_url: string;
+  images: images
 }
 
 type json = Yojson.Safe.json
@@ -14,6 +22,46 @@ type search_result = Giphy_t.search_result = {
   meta: json;
   pagination: json
 }
+
+val write_image :
+  Bi_outbuf.t -> image -> unit
+  (** Output a JSON value of type {!image}. *)
+
+val string_of_image :
+  ?len:int -> image -> string
+  (** Serialize a value of type {!image}
+      into a JSON string.
+      @param len specifies the initial length
+                 of the buffer used internally.
+                 Default: 1024. *)
+
+val read_image :
+  Yojson.Safe.lexer_state -> Lexing.lexbuf -> image
+  (** Input JSON data of type {!image}. *)
+
+val image_of_string :
+  string -> image
+  (** Deserialize JSON data of type {!image}. *)
+
+val write_images :
+  Bi_outbuf.t -> images -> unit
+  (** Output a JSON value of type {!images}. *)
+
+val string_of_images :
+  ?len:int -> images -> string
+  (** Serialize a value of type {!images}
+      into a JSON string.
+      @param len specifies the initial length
+                 of the buffer used internally.
+                 Default: 1024. *)
+
+val read_images :
+  Yojson.Safe.lexer_state -> Lexing.lexbuf -> images
+  (** Input JSON data of type {!images}. *)
+
+val images_of_string :
+  string -> images
+  (** Deserialize JSON data of type {!images}. *)
 
 val write_search_entry :
   Bi_outbuf.t -> search_entry -> unit

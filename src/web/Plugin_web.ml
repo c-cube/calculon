@@ -95,12 +95,14 @@ let cmd_yt_search =
 module Giphy = struct
   let api_key = "dc6zaTOxFJmzC"
 
+  let limit = 5
+
   let mk_query s: Uri.t =
     Uri.add_query_params
       (Uri.of_string"http://api.giphy.com/v1/gifs/search")
       [ "q", [s];
         "api_key", [api_key];
-        "limit", ["10"]
+        "limit", [string_of_int limit]
       ]
 
   let search s: string option Lwt.t =
@@ -115,7 +117,19 @@ module Giphy = struct
             | [] -> None
             | l ->
               let r = Prelude.random_l l in
-              Some r.Giphy_j.embed_url
+              Log.logf "giphy: pick `%s` in list of len %d"
+                r.Giphy_j.url (List.length l);
+              let images = r.Giphy_j.images in
+              begin match images.Giphy_j.images_original, images.Giphy_j.images_downsized with
+                | Some i, _ -> Some i.Giphy_j.i_url
+                | None, Some i -> Some i.Giphy_j.i_url
+                | None, None ->
+                  (* default: return the embed_url *)
+                  Log.logf
+                    "giphy: could not get `original` or `downsized` picture for `%s`"
+                    r.Giphy_j.url;
+                  Some r.Giphy_j.embed_url
+              end
           end
         with _ -> None
       )
