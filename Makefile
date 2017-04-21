@@ -56,8 +56,8 @@ atdgen:
 	fi
 
 clean-atdgen:
-	rm src/web/movie_t.ml*
-	rm src/web/movie_j.ml*
+	rm src/web/*_t.ml*
+	rm src/web/*_j.ml*
 
 watch:
 	while find src/ -print0 | xargs -0 inotifywait -e delete_self -e modify ; do \
