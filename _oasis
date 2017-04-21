@@ -42,7 +42,8 @@ Library "calculon_web"
   FindlibParent:    calculon
   Build$:           flag(web)
   Install$:         flag(web)
-  Modules:          Plugin_web, Plugin_movie, Movie_j, Movie_t, Movie_schema, Og
+  Modules:          Plugin_web, Og, Giphy_j, Giphy_t,
+                    Plugin_movie, Movie_j, Movie_t, Movie_schema
   BuildDepends:     calculon, atdgen, cohttp, lwt, cohttp.lwt, lambdasoup, uri
 
 Executable "demo_bot"

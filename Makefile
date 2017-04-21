@@ -45,10 +45,14 @@ setup.exe: setup.ml _oasis
 
 # OASIS_STOP
 
+ATDGEN=movie giphy
+
 atdgen:
 	if which atdgen > /dev/null ; then \
-	  atdgen -t src/web/movie.atd; \
-	  atdgen -j -j-std src/web/movie.atd; \
+	  for i in ${ATDGEN} ; do \
+	    atdgen -t src/web/$$i.atd; \
+	    atdgen -j -j-std src/web/$$i.atd; \
+	   done; \
 	fi
 
 clean-atdgen:

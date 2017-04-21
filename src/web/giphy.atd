@@ -1,0 +1,13 @@
+
+type json <ocaml module="Yojson.Safe"> = abstract
+
+type search_entry = {
+  type_ <json name="type">: string;
+  url: string;
+}
+
+type search_result = {
+  ~data <json name="data">: search_entry list;
+  ~meta <ocaml default="`Null">: json;
+  ~pagination <ocaml default="`Null">: json;
+}

@@ -91,7 +91,48 @@ let cmd_yt_search =
          ) [] urls
     )
 
+(* see https://github.com/Giphy/GiphyAPI *)
+module Giphy = struct
+  let api_key = "dc6zaTOxFJmzC"
+
+  let mk_query s: Uri.t =
+    Uri.add_query_params
+      (Uri.of_string"http://api.giphy.com/v1/gifs/search")
+      [ "q", [s];
+        "api_key", [api_key];
+      ]
+
+  let search s: string option Lwt.t =
+    let uri = mk_query s in
+    Lwt.catch
+      (fun () ->
+        Cohttp_lwt_unix.Client.get uri >>= fun (_,body) ->
+        Cohttp_lwt_body.to_string body >|= fun s ->
+        try
+          let r = Giphy_j.search_result_of_string s in
+          begin match r.Giphy_j.data with
+            | r :: _ -> Some r.Giphy_j.url
+            | [] -> None
+          end
+        with _ -> None
+      )
+      (fun _ -> Lwt.return None)
+
+  let cmd =
+    Command.make_simple
+      ~prio:10 ~prefix:"giphy" ~descr:"lookup on giphy (Powered by Giphy)"
+      (fun _ s ->
+         let s = String.trim s in
+         if s=""
+         then Lwt.return_none
+         else search (String.trim s) >>= function
+           | Some x -> Lwt.return (Some x)
+           | None -> Lwt.return (Some "not found")
+      )
+end
+
 let plugin =
   [ cmd_yt;
     cmd_yt_search;
+    Giphy.cmd;
   ] |> Plugin.of_cmds
