@@ -100,7 +100,7 @@ module Giphy = struct
       (Uri.of_string"http://api.giphy.com/v1/gifs/search")
       [ "q", [s];
         "api_key", [api_key];
-        "limit", ["1"]
+        "limit", ["10"]
       ]
 
   let search s: string option Lwt.t =
@@ -112,8 +112,10 @@ module Giphy = struct
         try
           let r = Giphy_j.search_result_of_string s in
           begin match r.Giphy_j.data with
-            | r :: _ -> Some r.Giphy_j.embed_url
             | [] -> None
+            | l ->
+              let r = Prelude.random_l l in
+              Some r.Giphy_j.embed_url
           end
         with _ -> None
       )
