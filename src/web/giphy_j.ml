@@ -1,7 +1,11 @@
 (* Auto-generated from "giphy.atd" *)
 
 
-type search_entry = Giphy_t.search_entry = { type_: string; url: string }
+type search_entry = Giphy_t.search_entry = {
+  type_: string;
+  url: string;
+  embed_url: string
+}
 
 type json = Yojson.Safe.json
 
@@ -33,6 +37,15 @@ let write_search_entry : _ -> search_entry -> _ = (
       Yojson.Safe.write_string
     )
       ob x.url;
+    if !is_first then
+      is_first := false
+    else
+      Bi_outbuf.add_char ob ',';
+    Bi_outbuf.add_string ob "\"embed_url\":";
+    (
+      Yojson.Safe.write_string
+    )
+      ob x.embed_url;
     Bi_outbuf.add_char ob '}';
 )
 let string_of_search_entry ?(len = 1024) x =
@@ -45,6 +58,7 @@ let read_search_entry = (
     Yojson.Safe.read_lcurl p lb;
     let field_type_ = ref (Obj.magic (Sys.opaque_identity 0.0)) in
     let field_url = ref (Obj.magic (Sys.opaque_identity 0.0)) in
+    let field_embed_url = ref (Obj.magic (Sys.opaque_identity 0.0)) in
     let bits0 = ref 0 in
     try
       Yojson.Safe.read_space p lb;
@@ -66,6 +80,14 @@ let read_search_entry = (
             | 4 -> (
                 if String.unsafe_get s pos = 't' && String.unsafe_get s (pos+1) = 'y' && String.unsafe_get s (pos+2) = 'p' && String.unsafe_get s (pos+3) = 'e' then (
                   0
+                )
+                else (
+                  -1
+                )
+              )
+            | 9 -> (
+                if String.unsafe_get s pos = 'e' && String.unsafe_get s (pos+1) = 'm' && String.unsafe_get s (pos+2) = 'b' && String.unsafe_get s (pos+3) = 'e' && String.unsafe_get s (pos+4) = 'd' && String.unsafe_get s (pos+5) = '_' && String.unsafe_get s (pos+6) = 'u' && String.unsafe_get s (pos+7) = 'r' && String.unsafe_get s (pos+8) = 'l' then (
+                  2
                 )
                 else (
                   -1
@@ -93,6 +115,13 @@ let read_search_entry = (
               ) p lb
             );
             bits0 := !bits0 lor 0x2;
+          | 2 ->
+            field_embed_url := (
+              (
+                Ag_oj_run.read_string
+              ) p lb
+            );
+            bits0 := !bits0 lor 0x4;
           | _ -> (
               Yojson.Safe.skip_json p lb
             )
@@ -122,6 +151,14 @@ let read_search_entry = (
                     -1
                   )
                 )
+              | 9 -> (
+                  if String.unsafe_get s pos = 'e' && String.unsafe_get s (pos+1) = 'm' && String.unsafe_get s (pos+2) = 'b' && String.unsafe_get s (pos+3) = 'e' && String.unsafe_get s (pos+4) = 'd' && String.unsafe_get s (pos+5) = '_' && String.unsafe_get s (pos+6) = 'u' && String.unsafe_get s (pos+7) = 'r' && String.unsafe_get s (pos+8) = 'l' then (
+                    2
+                  )
+                  else (
+                    -1
+                  )
+                )
               | _ -> (
                   -1
                 )
@@ -144,6 +181,13 @@ let read_search_entry = (
                 ) p lb
               );
               bits0 := !bits0 lor 0x2;
+            | 2 ->
+              field_embed_url := (
+                (
+                  Ag_oj_run.read_string
+                ) p lb
+              );
+              bits0 := !bits0 lor 0x4;
             | _ -> (
                 Yojson.Safe.skip_json p lb
               )
@@ -151,11 +195,12 @@ let read_search_entry = (
       done;
       assert false;
     with Yojson.End_of_object -> (
-        if !bits0 <> 0x3 then Ag_oj_run.missing_fields p [| !bits0 |] [| "type_"; "url" |];
+        if !bits0 <> 0x7 then Ag_oj_run.missing_fields p [| !bits0 |] [| "type_"; "url"; "embed_url" |];
         (
           {
             type_ = !field_type_;
             url = !field_url;
+            embed_url = !field_embed_url;
           }
          : search_entry)
       )

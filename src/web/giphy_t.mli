@@ -1,7 +1,7 @@
 (* Auto-generated from "giphy.atd" *)
 
 
-type search_entry = { type_: string; url: string }
+type search_entry = { type_: string; url: string; embed_url: string }
 
 type json = Yojson.Safe.json
 

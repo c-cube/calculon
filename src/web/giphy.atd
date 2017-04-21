@@ -4,6 +4,7 @@ type json <ocaml module="Yojson.Safe"> = abstract
 type search_entry = {
   type_ <json name="type">: string;
   url: string;
+  embed_url: string;
 }
 
 type search_result = {
