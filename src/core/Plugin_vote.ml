@@ -192,7 +192,7 @@ let reply polls msg s =
         (match purpose with [] -> "" | purpose :: _ -> purpose)
       |> reply_res
     | "status" :: name :: _ -> vote_status polls name |> reply_res
-    | ("pour" | "contre" as v) :: name :: _ ->
+    | ("for" | "against" as v) :: name :: _ ->
       vote polls msg.Core.nick name v |> reply_res
     | _ -> Error "what did you say ?" |> reply_res
   end
