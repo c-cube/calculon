@@ -151,11 +151,11 @@ let set ({key;_} as f) (fcs:t): t =
   StrMap.add key f fcs
 
 let append {key;value} (fcs:t): t =
-  let value' = match try Some ((StrMap.find key fcs).value, value) with Not_found -> None with
-    | Some (`Int i, Int j) -> Int (i+j)
-    | Some (`StrList l, StrList l') -> StrList (l @ l')
-    | Some (`StrList l, Int j) -> StrList (string_of_int j :: l)
-    | Some (`Int i, StrList l) -> StrList (string_of_int i :: l)
+  let value' = match try Some (StrMap.find key fcs).value, value with Not_found -> None, value with
+    | Some (`Int i), Int j -> Int (i+j)
+    | Some (`StrList l), StrList l' -> StrList (l @ l')
+    | Some (`StrList l), Int j -> StrList (string_of_int j :: l)
+    | Some (`Int i), StrList l -> StrList (string_of_int i :: l)
     | None -> value
   in
   StrMap.add key {key; value = value'} fcs
