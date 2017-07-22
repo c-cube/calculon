@@ -156,7 +156,7 @@ let append {key;value} (fcs:t): t =
     | Some (StrList l), StrList l' -> StrList (l @ l')
     | Some (StrList l), Int j -> StrList (string_of_int j :: l)
     | Some (Int i), StrList l -> StrList (string_of_int i :: l)
-    | None -> value
+    | None, _ -> value
   in
   StrMap.add key {key; value = value'} fcs
 
