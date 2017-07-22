@@ -30,7 +30,7 @@ let parse_search body =
     Movie_j.search_result_of_string body 
   with exn ->
     Printf.printf "invalid imdb search response (%s) : %S" (Printexc.to_string exn) body;
-    Movie_t.{ results = []; count = 0 }
+    { Movie_t.results = []; count = 0 }
 
 let parse_get body =
   try
