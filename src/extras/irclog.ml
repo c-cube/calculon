@@ -40,9 +40,9 @@ let fmt_l = List.map string_of_fmt [Irssi; Weechat]
 
 (* read lines *)
 let rec seq_lines_ ic yield =
-  match input_line ic with
-    | s -> yield s; seq_lines_ ic yield
-    | exception End_of_file -> ()
+  match try Some (input_line ic) with End_of_file -> None with
+    | Some s -> yield s; seq_lines_ ic yield
+    | None -> ()
 
 let norm_author s =
   if s="" then s
@@ -79,8 +79,8 @@ let rec seq_files_ dir yield =
   CCFun.finally1
     ~h:(fun () -> Unix.closedir d)
     (fun d ->
-       let rec aux () = match Unix.readdir d with
-         | s ->
+       let rec aux () = match try Some (Unix.readdir d) with End_of_file -> None with
+         | Some s ->
            let abs_s = Filename.concat dir s in
            begin
              if s = "." || s = ".."  then ()
@@ -89,7 +89,7 @@ let rec seq_files_ dir yield =
              else yield abs_s
            end;
            aux ()
-         | exception End_of_file -> ()
+         | None -> ()
        in
        aux ())
     d
