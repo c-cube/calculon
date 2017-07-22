@@ -33,9 +33,9 @@ module Vote = struct
       expire = Time.(now () +. duration); quorum }
 
   let add_vote t nick vote =
-    match Hashtbl.find t.status nick with
-    | exception Not_found -> Hashtbl.add t.status nick vote
-    | old_vote when old_vote = vote -> ()
+    match CCHashtbl.get t.status nick with
+    | None -> Hashtbl.add t.status nick vote
+    | Some old_vote when old_vote = vote -> ()
     | _ -> Hashtbl.replace t.status nick vote
 
   (* results for one poll *)
@@ -120,16 +120,16 @@ let create_poll polls nick name purpose =
           (Printf.sprintf "cannot create more than %d polls simultaneously"
              max_polls_per_nick)
       | _ ->
-        match Hashtbl.find polls name with
-          | poll -> Error (show_status name poll)
-          | exception Not_found ->
+        match CCHashtbl.get polls name with
+          | Some poll -> Error (show_status name poll)
+          | none ->
             Hashtbl.add polls name { creator = nick; vote = Vote.start purpose };
             Ok None
 
 let vote polls nick name vote =
-  match Hashtbl.find polls name with
-  | exception Not_found -> Error (Printf.sprintf "no such poll '%s'" name)
-  | poll ->
+  match CCHashtbl.get polls name with
+  | None -> Error (Printf.sprintf "no such poll '%s'" name)
+  | Some poll ->
     match Vote.vote_of_string vote with
     | Error _ as e -> e
     | Ok vote ->
@@ -143,10 +143,10 @@ let vote polls nick name vote =
       | _ -> Ok (Some (Vote.show_status poll.vote))
 
 let show_vote polls name nick =
-  match Hashtbl.find polls name with
-    | exception Not_found ->
+  match CCHashtbl.get polls name with
+    | None ->
       Error (Printf.sprintf "no such active poll '%s'" name)
-    | poll ->
+    | Some poll ->
       let vote =
         CCOpt.get_or ~default:"draw"
         @@ CCOpt.map Vote.string_of_vote
@@ -155,9 +155,9 @@ let show_vote polls name nick =
       Ok (Some (Printf.sprintf "%s is %s %s" nick vote name))
 
 let vote_status polls name =
-  match Hashtbl.find polls name with
-  | exception Not_found -> Error (Printf.sprintf "no active poll '%s'" name)
-  | poll ->
+  match CCHashtbl.get polls name with
+  | None -> Error (Printf.sprintf "no active poll '%s'" name)
+  | Some poll ->
     Ok (Some (show_status name poll))
 
 let rec collector polls =
