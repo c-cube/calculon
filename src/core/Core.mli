@@ -42,6 +42,20 @@ module type S = sig
   val init : unit Lwt.t
   val exit : unit Lwt.t
 
+  val log : string -> unit Lwt.t
+  (** Log a message (see field [irc_log] of {!Config.config}),
+      typically for debugging purpose.
+      @since NEXT_RELEASE *)
+
+  val logf : ('a, Containers.Format.formatter, unit, unit Lwt.t) format4 -> 'a
+  (** Pretty logger (calling {!log} to print the formatted message).
+      Example: [logf "answer to %s is %d" "life" 42]
+      @since NEXT_RELEASE *)
+
+  val set_log : (string -> unit Lwt.t) -> unit
+  (** Set logger (default is the empty logger) that will be used by {!log}
+      @since NEXT_RELEASE *)
+
   val send_exit : unit -> unit
   (** trigger the {!exit} signal (only at the end!) *)
 

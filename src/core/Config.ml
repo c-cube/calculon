@@ -1,5 +1,11 @@
 open Prelude
 
+type irc_log =
+  [ `None
+  | `Chan of Lwt_io.output_channel
+  | `Custom of (string -> unit Lwt.t)
+  ]
+
 type t = {
   server : string;
   port : int;
@@ -9,6 +15,7 @@ type t = {
   tls: bool;
   channel : string;
   state_file : string;
+  irc_log: irc_log; (* log IRC events *)
 }
 
 let default = {
@@ -20,6 +27,7 @@ let default = {
   tls = true;
   channel = "#ocaml";
   state_file = "state.json";
+  irc_log = `None;
 }
 
 let parse conf args =
@@ -29,6 +37,7 @@ let parse conf args =
   let custom_state = ref None in
   let custom_port = ref 7000 in
   let custom_tls = ref None in
+  let debug_stderr = ref false in
   let options = Arg.align
       [ "--nick", Arg.String (fun s -> custom_nick := Some s),
         " custom nickname (default: " ^ default.nick ^ ")"
@@ -41,6 +50,7 @@ let parse conf args =
         " file containing factoids (default: " ^ default.state_file ^ ")"
       ; "--tls", Arg.Unit (fun () -> custom_tls := Some true), " enable TLS"
       ; "--no-tls", Arg.Unit (fun () -> custom_tls := Some false), " disable TLS"
+      ; "--debug", Arg.Set debug_stderr, " print IRC debug messages on stderr"
       ]
   in
   Arg.parse_argv args options ignore "parse options";
@@ -51,6 +61,7 @@ let parse conf args =
     tls = !custom_tls |? conf.tls;
     port = !custom_port;
     state_file = !custom_state |? conf.state_file;
+    irc_log = (if !debug_stderr then `Chan Lwt_io.stderr else `None);
   }
 
 let of_argv () =

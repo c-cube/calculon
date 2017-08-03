@@ -1,5 +1,11 @@
 (* User-defined config *)
 
+type irc_log =
+  [ `None
+  | `Chan of Lwt_io.output_channel
+  | `Custom of (string -> unit Lwt.t)
+  ]
+
 type t = {
   server : string;
   port : int;
@@ -9,6 +15,7 @@ type t = {
   tls: bool;
   channel : string;
   state_file : string; (* where plugins' state is stored *)
+  irc_log: irc_log; (* log IRC events *)
 }
 
 val default : t

@@ -46,6 +46,10 @@ module type S = sig
   val init : unit Lwt.t
   val exit : unit Lwt.t
 
+  val log : string -> unit Lwt.t
+  val logf : ('a, Containers.Format.formatter, unit, unit Lwt.t) format4 -> 'a
+  val set_log : (string -> unit Lwt.t) -> unit
+
   val send_exit : unit -> unit
 
   val messages : Msg.t Signal.t
@@ -98,6 +102,17 @@ module Make
   let exit, send_exit = Lwt.wait ()
 
   let send_exit () = Lwt.wakeup send_exit ()
+
+  let set_log, log =
+    let _log = ref (fun _ -> Lwt.return_unit) in
+    (fun l -> _log := l), (fun s -> !_log s)
+
+  let logf msg =
+    let buf = Buffer.create 32 in
+    let fmt = Format.formatter_of_buffer buf in
+    Format.kfprintf
+      (fun fmt -> Format.pp_print_flush fmt (); log (Buffer.contents buf))
+      fmt msg
 
   let messages = Signal.create ()
   let privmsg = Signal.filter_map messages privmsg_of_msg
@@ -182,7 +197,9 @@ module Run
         | None -> Lwt.return_unit
         | Some (module C) ->
           begin match msg_or_err with
-            | Result.Ok msg -> Signal.send C.messages msg
+            | Result.Ok msg ->
+              C.logf "got message %s" (Irc_message.to_string msg) >>= fun () ->
+              Signal.send C.messages msg
             | Result.Error err ->
               Printf.eprintf "%s\n%!" err;
               Lwt.return ()
@@ -211,6 +228,18 @@ let loop_unsafe ~connect ~init () : unit Lwt.t =
 
 let run conf ~init () =
   let module C = Config in
+  let init (core:t) =
+    let (module C) = core in
+    (* setup log *)
+    begin match conf.Config.irc_log with
+      | `None -> ()
+      | `Custom f -> C.I.set_log f; C.set_log f
+      | `Chan c ->
+        let log s = Lwt_io.fprintl c s >>= fun () -> Lwt_io.flush c in
+        C.I.set_log log; C.set_log log
+    end;
+    init core
+  in
   if conf.C.tls
   then (
     let connect () =
