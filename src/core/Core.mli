@@ -32,7 +32,7 @@ val privmsg_of_msg : irc_msg -> privmsg option
 val string_of_privmsg : privmsg -> string
 
 module type S = sig
-  module I : Irc_client.CLIENT
+  module I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t
 
   type connection = I.connection_t
 

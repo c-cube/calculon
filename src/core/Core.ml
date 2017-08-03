@@ -37,7 +37,7 @@ let string_of_privmsg msg =
   Printf.sprintf "{nick:%s, to:%s, msg: %s}" msg.nick msg.to_ msg.message
 
 module type S = sig
-  module I : Irc_client.CLIENT
+  module I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t
 
   type connection = I.connection_t
 
