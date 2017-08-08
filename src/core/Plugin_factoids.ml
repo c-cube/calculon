@@ -182,8 +182,9 @@ let decr key (fcs:t): int option * t =
   | None -> (None, fcs)
 
 let search tokens (fcs:t): string list =
+  let tokens = List.map CCString.lowercase_ascii tokens in
   (* list pairs [key, value] that match all the given tokens? *)
-  let check_str s tok = CCString.mem ~sub:tok s in
+  let check_str s tok = CCString.mem ~sub:tok (CCString.lowercase_ascii s) in
   let check_int i tok = tok = string_of_int i in
   let mk_pair k v = Printf.sprintf "%s -> %s" k v in
   let tok_matches key value : string list = match value with
