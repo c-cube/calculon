@@ -6,7 +6,7 @@ maintainer: "c-cube"
 build: [
   ["./configure"
     "--bindir" "%{bin}%"
-    "--%{uri+lambdasoup+cohttp+atdgen:enable}%-web"
+    "--%{uri+lambdasoup+cohttp+cohttp-lwt+cohttp-lwt-unix+atdgen:enable}%-web"
     "--%{re+sequence:enable}%-extras"
     ]
   [make "build"]
@@ -37,6 +37,8 @@ depends: [
 depopts: [
   "uri"
   "cohttp"
+  "cohttp-lwt"
+  "cohttp-lwt-unix"
   "atdgen"
   "lambdasoup"
   "sequence"
