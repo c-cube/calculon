@@ -145,28 +145,61 @@ let print_diff (f:float) : string =
     [spf "%d seconds" s];
   ] |> List.flatten |> String.concat ", "
 
+
+let create_message_for_user now (user,last) =
+  let diff = now -. last in
+  CCFormat.sprintf "seen %s last: %s ago" user (print_diff diff)
+
 let cmd_seen (state:state) =
-  Command.make_simple
+  Command.make_simple_l
     ~descr:"ask for the last time someone talked on this chan"
     ~prio:10 ~prefix:"seen"
     (fun _msg s ->
        try
-         let dest = String.trim s in
+         let dest = CCString.trim s |> CCString.uppercase_ascii in
          Log.logf "query: seen `%s`" dest;
-         begin match StrMap.get dest state.map with
-           | Some data ->
-             let last = data.last_seen in
-             let now = Unix.time () in
-             let diff = now -. last in
-             let msg =
-               CCFormat.sprintf "seen %s last: %s ago" dest (print_diff diff)
-             in
-             Lwt.return_some msg
-           | None ->
-             Lwt.return_some "who?"
-         end
+         let now = Unix.time () in
+         StrMap.fold (fun name data acc ->
+             if dest = String.uppercase name then
+               (name, data.last_seen) :: acc
+             else
+               acc )
+           state.map []
+         |> CCList.sort (fun a b -> - (compare (snd a) (snd b)) )
+         |> CCList.map (create_message_for_user now)
+         |> Lwt.return
        with e ->
          Lwt.fail (Command.Fail ("seen: " ^ Printexc.to_string e)))
+
+
+let cmd_last (state:state) =
+  Command.make_simple_l
+    ~descr:"ask for the last n people talking on this chan (default: n=3)"
+    ~prio:10 ~prefix:"last"
+    (fun _msg s ->
+       try
+         let default_n = 4 in
+         let dest = String.trim s in
+         Log.logf "query: last `%s`" dest;
+         let top_n = try match int_of_string dest with
+           | x when x > 0 -> x+1
+           | _ -> default_n
+           with
+           | Failure _ -> default_n
+         in
+         let now = Unix.time () in
+         let user_times =
+           StrMap.fold (fun key contact acc -> (key, contact.last_seen) :: acc)
+             state.map []
+           |> CCList.sort (fun a b -> - (compare (snd a) (snd b)) )
+           |> CCList.take top_n
+           |> CCList.tl (* remove person who asked *)
+           |> CCList.map (create_message_for_user now)
+         in
+         Lwt.return user_times
+       with e ->
+         Lwt.fail (Command.Fail ("last_seen: " ^ Printexc.to_string e)))
+
 
 (* callback to update state, notify users of their messages, etc. *)
 let on_message state (module C:Core.S) msg =
@@ -230,10 +263,10 @@ let plugin =
     [ cmd_tell state;
       cmd_tell_at state;
       cmd_seen state;
+      cmd_last state;
     ]
   in
   Plugin.stateful
     ~name:"social"
     ~on_msg:(fun st -> [on_message st])
     ~of_json ~to_json ~commands ()
-
