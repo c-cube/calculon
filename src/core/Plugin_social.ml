@@ -176,20 +176,25 @@ let cmd_last (state:state) =
   Command.make_simple_l
     ~descr:"ask for the last n people talking on this chan (default: n=3)"
     ~prio:10 ~prefix:"last"
-    (fun _msg s ->
+    (fun msg s ->
        try
-         let default_n = 4 in
+         let default_n = 3 in
          let dest = String.trim s in
          Log.logf "query: last `%s`" dest;
          let top_n = try match int_of_string dest with
-           | x when x > 0 -> x+1
+           | x when x > 0 -> x
            | _ -> default_n
            with
            | Failure _ -> default_n
          in
          let now = Unix.time () in
          let user_times =
-           StrMap.fold (fun key contact acc -> (key, contact.last_seen) :: acc)
+           StrMap.fold (fun key contact acc ->
+               if key != msg.nick then
+                 (key, contact.last_seen) :: acc
+               else
+                 acc
+             )
              state.map []
            |> CCList.sort (fun a b -> - (compare (snd a) (snd b)) )
            |> CCList.take top_n
