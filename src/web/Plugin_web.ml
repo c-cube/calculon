@@ -17,7 +17,7 @@ let page_title ~with_description uri =
       |> Uri.of_string
       |> get_body
     else
-      Cohttp_lwt_body.to_string body
+      Cohttp_lwt.Body.to_string body
   in
   get_body uri >>= fun body ->
   let tags = Og.Parser.parse_string body in
@@ -71,7 +71,7 @@ let get_youtube_search (query:string): string Lwt.t =
   in
   let uri = Uri.add_query_params' uri ["sp","EgIQAQ%3D%3D"; "q", query] in
   Cohttp_lwt_unix.Client.get uri >>= fun (_,body) ->
-  Cohttp_lwt_body.to_string body
+  Cohttp_lwt.Body.to_string body
 
 let cmd_yt_search =
   Command.make_simple_l
@@ -110,7 +110,7 @@ module Giphy = struct
     Lwt.catch
       (fun () ->
         Cohttp_lwt_unix.Client.get uri >>= fun (_,body) ->
-        Cohttp_lwt_body.to_string body >|= fun s ->
+        Cohttp_lwt.Body.to_string body >|= fun s ->
         try
           let r = Giphy_j.search_result_of_string s in
           begin match r.Giphy_j.data with

@@ -42,13 +42,13 @@ let parse_get body =
 let search query =
   make_search_uri query |>
   Client.get >>= fun (_, body) ->
-  Cohttp_lwt_body.to_string body >|=
+  Cohttp_lwt.Body.to_string body >|=
   parse_search
 
 let get_infos id =
   make_get_uri id |>
   Client.get >>= fun (_, body) ->
-  Cohttp_lwt_body.to_string body >|=
+  Cohttp_lwt.Body.to_string body >|=
   parse_get
 
 let ellipsis n s =
