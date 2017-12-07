@@ -16,7 +16,7 @@ PKG yojson
 PKG stringext
 PKG irc-client.tls
 PKG ISO8601
-FLG -w +a-4-44-48
+FLG -w +a-4-44-48-60
 
 PKG uri
 PKG cohttp.lwt
