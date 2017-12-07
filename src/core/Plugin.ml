@@ -25,6 +25,8 @@ and 'st stateful_ = {
   of_json : action_callback -> json option -> ('st, string) Result.result Lwt.t;
   (* how to deserialize the state. [None] is passed for a fresh
      initialization *)
+  background_tasks: ('st -> unit Lwt.t) list;
+  (* list of background tasks *)
   stop: 'st -> unit Lwt.t;
   (* stop the plugin.
      It is NOT the responsibility of this command to save the state,
@@ -47,11 +49,13 @@ let stateful
     ~name
     ~commands
     ?(on_msg=fun _ -> [])
+    ?(background_tasks=[])
     ~to_json
     ~of_json
     ?(stop=fun _ -> Lwt.return_unit)
     () =
-  Stateful (St { name; on_msg; to_json; of_json; stop; commands; })
+  Stateful (St { name; on_msg; to_json; of_json; stop;
+                 commands; background_tasks; })
 
 (** {2 Collection of Plugins} *)
 module Set = struct
@@ -63,6 +67,7 @@ module Set = struct
     config: Config.t;
     plugins: plugin list;
     actions: action Signal.t;
+    mutable tasks: (unit Lwt.u * unit Lwt.t) list; (* to kill plugins *)
     mutable active : active_plugin list;
     mutable commands_l: Command.t list; (* sorted by prio *)
     mutable on_msg_l: (Core.t -> Irc_message.t -> unit Lwt.t) list;

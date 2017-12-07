@@ -29,6 +29,8 @@ and 'st stateful_ = private {
   of_json : action_callback -> json option -> ('st, string) Result.result Lwt.t;
   (* how to deserialize the state. [None] is passed for a fresh
      initialization *)
+  background_tasks: ('st -> unit Lwt.t) list;
+  (* list of background tasks *)
   stop: 'st -> unit Lwt.t;
   (* stop the plugin.
      It is NOT the responsibility of this command to save the state,
@@ -53,6 +55,7 @@ val stateful :
   name:string ->
   commands:('st -> Command.t list) ->
   ?on_msg:('st -> (Core.t -> Irc_message.t -> unit Lwt.t) list) ->
+  ?background_tasks: ('st -> unit Lwt.t) list ->
   to_json:('st -> json option) ->
   of_json:(action_callback -> json option -> ('st, string) Result.result Lwt.t) ->
   ?stop:('st -> unit Lwt.t) ->
