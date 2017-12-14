@@ -15,6 +15,7 @@ type to_tell = {
 type contact = {
   last_seen: float;
   to_tell: to_tell list;
+  ignore_user: bool;    (* user does not turn up in searches etc. *)
 }
 
 exception Bad_json
@@ -34,7 +35,11 @@ let contact_of_json (json: json): contact option =
             | [from; on_channel; msg; tell_after] ->
               let tell_after = Some (float_of_string tell_after) in
               {from; on_channel; msg; tell_after;}
-          | _ -> raise Bad_json);
+            | _ -> raise Bad_json);
+      ignore_user = match J.member "ignore_user" json with
+        | `Null -> false;
+        | v -> J.to_bool_option v
+               |> CCOpt.get_or ~default:false
     } |> some
   with Bad_json | J.Type_error (_, _) -> None
 
@@ -50,6 +55,7 @@ let json_of_contact (c: contact): json =
         `List ([`String from; `String on_channel; `String msg] @ last)
       ) c.to_tell
     );
+    "ignore_user", `Bool c.ignore_user
   ]
 
 (* Contacts db *)
@@ -73,6 +79,7 @@ let new_contact state nick =
     set_data state nick {
       last_seen = Unix.time ();
       to_tell = [];
+      ignore_user = false;
     }
 
 let data state nick =
@@ -190,7 +197,7 @@ let cmd_last (state:state) =
          let now = Unix.time () in
          let user_times =
            StrMap.fold (fun key contact acc ->
-               if key != msg.nick then
+               if key != msg.nick && contact.ignore_user |> not then
                  (key, contact.last_seen) :: acc
                else
                  acc
@@ -204,6 +211,54 @@ let cmd_last (state:state) =
          Lwt.return user_times
        with e ->
          Lwt.fail (Command.Fail ("last_seen: " ^ Printexc.to_string e)))
+
+let cmd_ignore_template ~prefix prefix_stem ignore (state:state) =
+  Command.make_simple
+    ~descr:(prefix ^ " nick")
+    ~prio:10 ~prefix
+    (fun msg s ->
+       try
+         let dest = String.trim s in
+         Log.logf "query: ignore `%s`" dest;
+         if dest = ""
+         then Lwt.return None
+         else (
+           let contact = data state dest in
+           let msg =
+             if contact.ignore_user = ignore then
+               CCFormat.sprintf "already %sing %s" prefix_stem dest |> some
+             else (
+               set_data ~force_sync:true state dest
+                 { contact with ignore_user = ignore };
+               CCFormat.sprintf "%sing %s" prefix_stem dest |> some )
+           in
+           Lwt.return msg )
+       with e ->
+         Lwt.fail (Command.Fail (prefix ^ ": " ^ Printexc.to_string e)))
+
+let cmd_ignore = cmd_ignore_template ~prefix:"ignore" "ignor" true
+let cmd_unignore = cmd_ignore_template ~prefix:"unignore" "unignor" false
+
+let cmd_ignore_list (state:state) =
+  Command.make_simple_l
+    ~descr:"add nick to list of ignored people"
+    ~prio:10 ~prefix:"ignore_list"
+    (fun msg s ->
+       try
+         Log.logf "query: ignore_list";
+         let ignored =
+           StrMap.fold (fun name -> function
+               | { ignore_user = true; _ } -> fun x -> name :: x
+               | (* ignore_user = false; *) _ -> fun x -> x
+             ) state.map [] in
+         let msg =
+           if CCList.is_empty ignored
+           then ["noone ignored!"]
+           else "ignoring:" :: ignored
+         in
+         Lwt.return msg
+       with e ->
+         Lwt.fail (Command.Fail ("ignore_list: " ^ Printexc.to_string e)))
 
 
 (* callback to update state, notify users of their messages, etc. *)
@@ -244,7 +299,7 @@ let on_message state (module C:Core.S) msg =
 
 let of_json actions = function
   | None ->
-    Lwt_err.return {actions; map=StrMap.empty}
+    Lwt_err.return {actions; map=StrMap.empty; }
   | Some j ->
     let map = match j with
       | `Assoc l ->
@@ -269,6 +324,9 @@ let plugin =
       cmd_tell_at state;
       cmd_seen state;
       cmd_last state;
+      cmd_ignore state;
+      cmd_unignore state;
+      cmd_ignore_list state;
     ]
   in
   Plugin.stateful
