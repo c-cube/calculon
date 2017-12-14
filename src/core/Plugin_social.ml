@@ -197,8 +197,8 @@ let cmd_last (state:state) =
              )
              state.map []
            |> CCList.sort (fun a b -> - (compare (snd a) (snd b)) )
-           |> CCList.take top_n
            |> CCList.tl (* remove person who asked *)
+           |> CCList.take top_n
            |> CCList.map (create_message_for_user now)
          in
          Lwt.return user_times
