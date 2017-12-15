@@ -167,7 +167,7 @@ let cmd_seen (state:state) =
          Log.logf "query: seen `%s`" dest;
          let now = Unix.time () in
          StrMap.fold (fun name data acc ->
-             if dest = String.uppercase name then
+             if dest = CCString.uppercase_ascii name then
                (name, data.last_seen) :: acc
              else
                acc )
@@ -197,7 +197,7 @@ let cmd_last (state:state) =
          let now = Unix.time () in
          let user_times =
            StrMap.fold (fun key contact acc ->
-               if key != msg.nick && contact.ignore_user |> not then
+               if key != msg.Core.nick && contact.ignore_user |> not then
                  (key, contact.last_seen) :: acc
                else
                  acc
@@ -216,7 +216,7 @@ let cmd_ignore_template ~prefix prefix_stem ignore (state:state) =
   Command.make_simple
     ~descr:(prefix ^ " nick")
     ~prio:10 ~prefix
-    (fun msg s ->
+    (fun _ s ->
        try
          let dest = String.trim s in
          Log.logf "query: ignore `%s`" dest;
@@ -243,7 +243,7 @@ let cmd_ignore_list (state:state) =
   Command.make_simple_l
     ~descr:"add nick to list of ignored people"
     ~prio:10 ~prefix:"ignore_list"
-    (fun msg s ->
+    (fun _ _ ->
        try
          Log.logf "query: ignore_list";
          let ignored =

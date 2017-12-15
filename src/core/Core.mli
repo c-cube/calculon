@@ -106,8 +106,6 @@ end
 
 type t = (module S)
 
-type connection
-
 val loop_tls :
   connect:(unit -> Irc_client_tls.connection_t option Lwt.t) ->
   init:(t -> unit Lwt.t) ->

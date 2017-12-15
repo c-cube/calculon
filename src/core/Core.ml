@@ -176,10 +176,6 @@ module Make
     I.set_log (fun s -> Log.log s; Lwt.return_unit)
 end
 
-type connection =
-  | Conn_unsafe of Irc_client_lwt.connection_t
-  | Conn_tls of Irc_client_tls.connection_t
-
 module Run
     (I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t)
     (F : sig

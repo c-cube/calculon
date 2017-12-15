@@ -5,7 +5,7 @@ open Lwt.Infix
 module Time = struct
   type t = float
 
-  let minutes x = (float_of_int x) *. 60.
+  let minutes x : t = (float_of_int x) *. 60.
 
   let as_mins x = int_of_float @@ x /. 60.
 
@@ -122,7 +122,7 @@ let create_poll polls nick name purpose =
       | _ ->
         match CCHashtbl.get polls name with
           | Some poll -> Error (show_status name poll)
-          | none ->
+          | None ->
             Hashtbl.add polls name { creator = nick; vote = Vote.start purpose };
             Ok None
 

@@ -119,17 +119,6 @@ let () =
   assert (test_ok "!foo ");
   ()
 
-(* read the json file *)
-let read_json (file:string) : json option Lwt.t =
-  Lwt.catch
-    (fun () ->
-       Lwt_io.with_file ~mode:Lwt_io.input file
-         (fun ic ->
-            Lwt_io.read ic >|= fun s ->
-            try Yojson.Safe.from_string s |> some
-            with _ -> None))
-    (fun _ -> Lwt.return_none)
-
 exception Could_not_parse
 
 let as_str (j:json) : string = match j with
@@ -288,10 +277,6 @@ let pick_list (l:'a list): 'a option = match l with
   | [] -> None
   | [message] -> Some message
   | l -> Some (Rand_distrib.uniform l |> Rand_distrib.run)
-
-let msg_of_value_pick (v:value): string option = match v with
-  | Int i -> Some (string_of_int i)
-  | StrList l -> pick_list l
 
 (* maximum size of returned lists *)
 let list_size_limit = 4
