@@ -22,6 +22,7 @@ type to_tell = {
 type contact = {
   last_seen: float;
   to_tell: to_tell list;
+  ignore_user: bool;
 }
 
 type state
