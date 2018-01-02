@@ -1,5 +1,7 @@
 (** {1 Core IRC state} *)
 
+module Format_ = Format
+
 open Prelude
 open Containers
 
@@ -47,7 +49,7 @@ module type S = sig
   val exit : unit Lwt.t
 
   val log : string -> unit Lwt.t
-  val logf : ('a, Containers.Format.formatter, unit, unit Lwt.t) format4 -> 'a
+  val logf : ('a, Format.t, unit, unit Lwt.t) format4 -> 'a
   val set_log : (string -> unit Lwt.t) -> unit
 
   val send_exit : unit -> unit
@@ -109,9 +111,9 @@ module Make
 
   let logf msg =
     let buf = Buffer.create 32 in
-    let fmt = Format.formatter_of_buffer buf in
-    Format.kfprintf
-      (fun fmt -> Format.pp_print_flush fmt (); log (Buffer.contents buf))
+    let fmt = Format_.formatter_of_buffer buf in
+    Format_.kfprintf
+      (fun fmt -> Format_.pp_print_flush fmt (); log (Buffer.contents buf))
       fmt msg
 
   let messages = Signal.create ()

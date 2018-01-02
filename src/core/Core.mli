@@ -47,7 +47,7 @@ module type S = sig
       typically for debugging purpose.
       @since NEXT_RELEASE *)
 
-  val logf : ('a, Containers.Format.formatter, unit, unit Lwt.t) format4 -> 'a
+  val logf : ('a, Format.formatter, unit, unit Lwt.t) format4 -> 'a
   (** Pretty logger (calling {!log} to print the formatted message).
       Example: [logf "answer to %s is %d" "life" 42]
       @since NEXT_RELEASE *)
