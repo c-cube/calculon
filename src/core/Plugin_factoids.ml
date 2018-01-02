@@ -273,11 +273,6 @@ type state = {
   actions: Plugin.action Signal.Send_ref.t;
 }
 
-let pick_list (l:'a list): 'a option = match l with
-  | [] -> None
-  | [message] -> Some message
-  | l -> Some (Rand_distrib.uniform l |> Rand_distrib.run)
-
 (* maximum size of returned lists *)
 let list_size_limit = 4
 
