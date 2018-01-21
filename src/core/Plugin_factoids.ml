@@ -74,7 +74,8 @@ let parse_op msg : (op * string option) option =
   let mk_append k v = Append (mk_factoid k v) in
   let mk_incr k = Incr (mk_key k) in
   let mk_decr k = Decr (mk_key k) in
-  let is_command prefix = Re.Group.get prefix 0 = "!" in (*TODO: generalize to
+  let is_command prefix =
+    String.equal "!" (Re.Group.get prefix 0) in  (*TODO: generalize to
                                                            any prefix *)
   let is_factoid f = match Re.exec_opt re_factoid f with
     | None -> false
@@ -174,7 +175,7 @@ let search tokens (fcs:t): string list =
   let tokens = List.map CCString.lowercase_ascii tokens in
   (* list pairs [key, value] that match all the given tokens? *)
   let check_str s tok = CCString.mem ~sub:tok (CCString.lowercase_ascii s) in
-  let check_int i tok = tok = string_of_int i in
+  let check_int i tok = String.equal tok (string_of_int i) in
   let mk_pair k v = Printf.sprintf "%s -> %s" k v in
   let tok_matches key value : string list = match value with
     | Int i ->

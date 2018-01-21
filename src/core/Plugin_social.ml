@@ -167,12 +167,12 @@ let cmd_seen (state:state) =
          Log.logf "query: seen `%s`" dest;
          let now = Unix.time () in
          StrMap.fold (fun name data acc ->
-             if dest = CCString.uppercase_ascii name then
+             if String.equal dest (CCString.uppercase_ascii name) then
                (name, data.last_seen) :: acc
              else
                acc )
            state.map []
-         |> CCList.sort (fun a b -> - (compare (snd a) (snd b)) )
+         |> CCList.sort (fun a b -> - (Float.compare (snd a) (snd b)) )
          |> CCList.map (create_message_for_user now)
          |> Lwt.return
        with e ->
@@ -203,7 +203,7 @@ let cmd_last (state:state) =
                  acc
              )
              state.map []
-           |> CCList.sort (fun a b -> - (compare (snd a) (snd b)) )
+           |> CCList.sort (fun a b -> - (Float.compare (snd a) (snd b)) )
            |> CCList.tl (* remove person who asked *)
            |> CCList.take top_n
            |> CCList.map (create_message_for_user now)
@@ -220,12 +220,12 @@ let cmd_ignore_template ~prefix prefix_stem ignore (state:state) =
        try
          let dest = String.trim s in
          Log.logf "query: ignore `%s`" dest;
-         if dest = ""
+         if String.equal dest ""
          then Lwt.return None
          else (
            let contact = data state dest in
            let msg =
-             if contact.ignore_user = ignore then
+             if Bool.equal contact.ignore_user ignore then
                CCFormat.sprintf "already %sing %s" prefix_stem dest |> some
              else (
                set_data ~force_sync:true state dest
@@ -285,10 +285,10 @@ let on_message state (module C:Core.S) msg =
         |> List.partition
           (fun t -> match t.tell_after with
              | None -> true
-             | Some f when now > f -> true
+             | Some f when Float.(now > f) -> true
              | Some _ -> false)
       in
-      if to_tell <> [] then (
+      if not (List.is_empty to_tell) then (
         set_data state nick {contact with to_tell = remaining};
       );
       Lwt_list.iter_s (fun {from=author; on_channel; msg=m; _} ->

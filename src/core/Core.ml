@@ -17,6 +17,7 @@ type privmsg = {
 }
 
 let is_chan s =
+  let open Pervasives in
   s<>"" && s.[0] = '#' && not (String.contains s ' ')
 
 let nick msg = msg.nick
