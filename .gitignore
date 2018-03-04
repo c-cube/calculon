@@ -13,3 +13,4 @@ qtest*
 *_t.*
 .merlin
 *.install
+*.json
