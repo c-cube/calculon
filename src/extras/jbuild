@@ -1,0 +1,10 @@
+
+(jbuild_version 1)
+
+(library
+  ((name calculon_extras)
+   (public_name calculon.extras)
+   (optional)
+   (flags (:standard -w +a-4-42-44-48-29@8))
+   (libraries (calculon re sequence unix))
+   ))

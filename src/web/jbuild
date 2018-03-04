@@ -1,0 +1,30 @@
+
+(jbuild_version 1)
+
+(library
+  ((name calculon_web)
+   (public_name calculon-web)
+   (flags (:standard -w +a-4-32-42-44-48-29@8))
+   (libraries (calculon atdgen cohttp cohttp-lwt-unix lwt cohttp.lwt
+               irc-client.lwt lambdasoup uri))
+   ))
+
+(rule
+ ((targets (Movie_j.ml Movie_j.mli))
+  (deps    (Movie.atd))
+  (action  (run atdgen -j -j-std ${^}))))
+
+(rule
+ ((targets (Movie_t.ml Movie_t.mli))
+  (deps    (Movie.atd))
+  (action  (run atdgen -t -j-std ${^}))))
+
+(rule
+ ((targets (Giphy_j.ml Giphy_j.mli))
+  (deps    (Giphy.atd))
+  (action  (run atdgen -j -j-std ${^}))))
+
+(rule
+ ((targets (Giphy_t.ml Giphy_t.mli))
+  (deps    (Giphy.atd))
+  (action  (run atdgen -t -j-std ${^}))))

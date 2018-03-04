@@ -1,0 +1,10 @@
+
+(jbuild_version 1)
+
+(library
+  ((name calculon)
+   (public_name calculon)
+   (flags (:standard -w +a-4-42-44-48-29@8))
+   (libraries (containers containers.data yojson re re.perl
+               irc-client.lwt irc-client.tls lwt.unix stringext ISO8601))
+   ))
