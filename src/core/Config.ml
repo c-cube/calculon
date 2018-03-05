@@ -54,6 +54,7 @@ let parse conf args =
       ]
   in
   Arg.parse_argv args options ignore "parse options";
+  if !debug_stderr then Log.verbose := true;
   { conf with
     nick = !custom_nick |? conf.nick;
     channel = !custom_chan |? conf.channel;
