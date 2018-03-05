@@ -31,7 +31,7 @@ let extract_hl s =
   with Not_found -> None
 
 let match_prefix1_full ~prefix msg : (string * string option) option =
-  let re = Re_perl.compile_pat
+  let re = Re.Perl.compile_pat
       (Printf.sprintf "^![ ]*%s\\b[ ]*(.*)$" prefix)
   in
   begin match Prelude.re_match1 Prelude.id re msg.Core.message with

@@ -115,7 +115,7 @@ let format_metadata formatter = function
 
 module Parser = struct
   open Soup
-  let og_prefix = Re_perl.compile_pat "^og:"
+  let og_prefix = Re.Perl.compile_pat "^og:"
 
   let og_parser list elem =
     let prop constructor x list =

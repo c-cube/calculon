@@ -20,7 +20,7 @@ depends: [
   "containers" { >= "1.0" }
   "ISO8601"
   "stringext"
-  "re"
+  "re" { >= "1.7.2" }
 ]
 depopts: [
   "uri"
