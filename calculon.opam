@@ -21,6 +21,7 @@ depends: [
   "ISO8601"
   "stringext"
   "re" { >= "1.7.2" }
+  "odoc" {doc}
 ]
 tags: [ "irc" "bot" "factoids" ]
 homepage: "https://github.com/c-cube/calculon"
