@@ -198,7 +198,7 @@ module Parse_logs = struct
       Buffer.clear b;
       res
 
-  let re_split = Re_posix.compile_pat "[ \t,.?!]"
+  let re_split = Re.Posix.compile_pat "[ \t,.?!]"
 
   (* tokenize the string *)
   let tokenize s =

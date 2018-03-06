@@ -11,7 +11,7 @@ build-test: [ "jbuilder" "runtest" "-p" name ]
 depends: [
   "jbuilder" {build}
   "calculon"
-  "re"
+  "re" { >= "1.7.2" }
   "uri"
   "cohttp"
   "cohttp-lwt"

@@ -20,7 +20,7 @@ depends: [
   "containers" { >= "1.0" }
   "ISO8601"
   "stringext"
-  "re"
+  "re" { >= "1.7.2" }
 ]
 tags: [ "irc" "bot" "factoids" ]
 homepage: "https://github.com/c-cube/calculon"

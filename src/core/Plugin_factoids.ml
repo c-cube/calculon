@@ -59,8 +59,8 @@ let group_join list =
     | [] -> Buffer.contents buf
   in aux list
 
-let re_split_pat = Re_perl.compile_pat "(^!)|([+:]?=)|(\\+\\+)|(--)"
-let re_factoid = Re_perl.compile_pat "^[ ]*[a-zA-Z0-9\\-+_]+[ ]*$"
+let re_split_pat = Re.Perl.compile_pat "(^!)|([+:]?=)|(\\+\\+)|(--)"
+let re_factoid = Re.Perl.compile_pat "^[ ]*[a-zA-Z0-9\\-+_]+[ ]*$"
 
 let parse_op msg : (op * string option) option =
   let msg, hl = match Command.extract_hl msg with
@@ -290,7 +290,7 @@ let insert_noresult = function
 (* tokenize message into search tokens *)
 let search_tokenize s =
   String.trim s
-  |> Re.split (Re_perl.compile_pat "[ \t]+")
+  |> Re.split (Re.Perl.compile_pat "[ \t]+")
 
 let cmd_search state =
   Command.make_simple_l ~descr:"search in factoids" ~prefix:"search" ~prio:10

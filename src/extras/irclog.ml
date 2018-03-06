@@ -15,9 +15,9 @@ let string_of_record r =
 let pp_record out r =
   Format.fprintf out "{author=%s, time=%s, msg=%s}" r.author r.time r.msg
 
-let re_irssi = Re_posix.re "([0-9:]*)<([^>]*)> (.*)" |> Re.compile
+let re_irssi = Re.Posix.re "([0-9:]*)<([^>]*)> (.*)" |> Re.compile
 
-let re_weechat = Re_posix.re "([0-9 :]*)\t([^>]*)\t(.*)" |> Re.compile
+let re_weechat = Re.Posix.re "([0-9 :]*)\t([^>]*)\t(.*)" |> Re.compile
 
 type fmt =
   | Irssi
