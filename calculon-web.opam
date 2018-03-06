@@ -19,6 +19,7 @@ depends: [
   "atdgen"
   "lambdasoup"
   "sequence"
+  "odoc" {doc}
 ]
 tags: [ "irc" "bot" "factoids" ]
 homepage: "https://github.com/c-cube/calculon"
