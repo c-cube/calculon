@@ -22,15 +22,6 @@ depends: [
   "stringext"
   "re"
 ]
-depopts: [
-  "uri"
-  "cohttp"
-  "cohttp-lwt"
-  "cohttp-lwt-unix"
-  "atdgen"
-  "lambdasoup"
-  "sequence"
-]
 tags: [ "irc" "bot" "factoids" ]
 homepage: "https://github.com/c-cube/calculon"
 bug-reports: "https://github.com/c-cube/calculon/issues"
