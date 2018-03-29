@@ -197,7 +197,7 @@ let cmd_last (state:state) =
          let now = Unix.time () in
          let user_times =
            StrMap.fold (fun key contact acc ->
-               if key != msg.Core.nick && contact.ignore_user |> not then
+               if Pervasives.(<>) key msg.Core.nick && contact.ignore_user |> not then
                  (key, contact.last_seen) :: acc
                else
                  acc
