@@ -17,6 +17,7 @@ type op =
   | Set of factoid
   | Set_force of factoid
   | Append of factoid
+  | Remove of factoid
   | Incr of key
   | Decr of key
 
@@ -32,6 +33,7 @@ val mem : key -> t -> bool
 val get : key -> t -> value
 val set : factoid -> t -> t
 val append : factoid -> t -> t
+val remove : factoid -> t -> t
 val incr : key -> t -> int option * t
 val decr : key -> t -> int option * t
 
