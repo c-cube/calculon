@@ -157,7 +157,8 @@ let append {key;value} (fcs:t): t =
   StrMap.add key {key; value = value'} fcs
 
 let remove {key;value} (fcs:t): t =
-  let value' = match try Some (StrMap.find key fcs).value, value with Not_found -> None, value with
+  let value' =
+    match try Some (StrMap.find key fcs).value, value with Not_found -> None, value with
     | Some (Int i), Int j -> Int (i-j)
     | Some (StrList l), StrList l' ->
       StrList (List.filter (fun s -> not (List.exists (String.equal s) l')) l)
@@ -168,7 +169,9 @@ let remove {key;value} (fcs:t): t =
     | None, Int j -> Int (-j)
     | None, _ -> value
   in
-  StrMap.add key {key; value = value'} fcs
+  match value' with
+    | StrList [] -> StrMap.remove key fcs
+    | _ -> StrMap.add key {key; value = value'} fcs
 
 let as_int v = match v with
   | Int i -> Some i
