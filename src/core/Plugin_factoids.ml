@@ -442,7 +442,10 @@ let cmd_factoids state =
     - `!foo` will retrieve one of the factoids associated with `foo`, if any
     - `!foo = bar` maps `foo` to `bar`, unless `foo` is mapped yet
       (in which case it fails)
-    - `!foo += bar` adds `bar` to the mappings of `foo`
+    - `!foo += bar` adds `bar` to the mappings of `foo`, or adds integer value bar to the integer value foo
+    - `!foo -= bar` removes `bar` from the mappings of `foo`, or subtracts bar to the integer value foo
+    - `!foo++` adds 1 to the integer value foo
+    - `!foo--` subtracts 1 to the integer value foo
     - `!foo := bar` maps `foo` to `bar` even if `foo` is already mapped
     - `!search term` looks up `term` in the database
     - `!search_all` looks up all terms in the database
