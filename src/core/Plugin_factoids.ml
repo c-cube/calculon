@@ -61,7 +61,7 @@ let group_join list =
     | [] -> Buffer.contents buf
   in aux list
 
-let re_split_pat = Re.Perl.compile_pat "(^!)|([+:]?=)|(\\+\\+)|(--)"
+let re_split_pat = Re.Perl.compile_pat "(^!)|([+-:]?=)|(\\+\\+)|(--)"
 let re_factoid = Re.Perl.compile_pat "^[ ]*[a-zA-Z0-9\\-+_]+[ ]*$"
 
 let parse_op msg : (op * string option) option =
@@ -116,6 +116,8 @@ let () =
   assert (test_ok "!foo2 = bar ");
   assert (test_ok "!foo2 += bar");
   assert (test_ok "!foo2 += bar hello world");
+  assert (test_ok "!foo2 -= bar");
+  assert (test_ok "!foo2 -= bar hello world");
   assert (test_ok "!foo ++");
   assert (test_ok "!foo ++ ");
   assert (test_ok "!foo --");
@@ -156,11 +158,12 @@ let append {key;value} (fcs:t): t =
 
 let remove {key;value} (fcs:t): t =
   let value' = match try Some (StrMap.find key fcs).value, value with Not_found -> None, value with
-    | Some (Int i), Int j -> Int (i+j)
+    | Some (Int i), Int j -> Int (i-j)
     | Some (StrList l), StrList l' ->
       StrList (List.filter (fun s -> not (List.exists (String.equal s) l')) l)
-    | Some (StrList l), Int j -> StrList (List.filter (String.equal (string_of_int j)) l)
-    | Some (Int i), StrList l ->
+    | Some (StrList l), Int j ->
+      StrList (List.filter (fun s -> not (String.equal (string_of_int j) s)) l)
+    | Some (Int _), StrList _ ->
       Printf.printf "Hé non, on enlève pas des strings à une valeur entière !"; value
     | None, Int j -> Int (-j)
     | None, _ -> value
