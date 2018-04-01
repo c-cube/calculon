@@ -15,6 +15,7 @@ type op =
   | Set of factoid
   | Set_force of factoid
   | Append of factoid
+  | Remove of factoid
   | Incr of key
   | Decr of key
 
@@ -32,6 +33,7 @@ let string_of_op = function
   | Set {key;value} -> "set " ^ key ^ " = " ^ string_of_value value
   | Set_force {key;value} -> "set_force " ^ key ^ " := " ^ string_of_value value
   | Append {key;value} -> "append " ^ key ^ " += " ^ string_of_value value
+  | Remove {key;value} -> "remove " ^ key ^ " -= " ^ string_of_value value
   | Incr k -> "incr " ^ k
   | Decr k -> "decr " ^ k
 
@@ -72,6 +74,7 @@ let parse_op msg : (op * string option) option =
   let mk_set k v = Set (mk_factoid k v) in
   let mk_set_force k v = Set_force (mk_factoid k v) in
   let mk_append k v = Append (mk_factoid k v) in
+  let mk_remove k v = Remove (mk_factoid k v) in
   let mk_incr k = Incr (mk_key k) in
   let mk_decr k = Decr (mk_key k) in
   let is_command prefix =
@@ -98,6 +101,7 @@ let parse_op msg : (op * string option) option =
         ) >>= (function
           | ("=",  factoid, fact) -> mk_set factoid fact |> return
           | ("+=", factoid, fact) -> mk_append factoid fact |> return
+          | ("-=", factoid, fact) -> mk_remove factoid fact |> return
           | (":=", factoid, fact) -> mk_set_force factoid fact |> return
           | ("++", factoid, "" )  -> mk_incr factoid |> return
           | ("--", factoid, "" )  -> mk_decr factoid |> return
@@ -146,6 +150,19 @@ let append {key;value} (fcs:t): t =
     | Some (StrList l), StrList l' -> StrList (l @ l')
     | Some (StrList l), Int j -> StrList (string_of_int j :: l)
     | Some (Int i), StrList l -> StrList (string_of_int i :: l)
+    | None, _ -> value
+  in
+  StrMap.add key {key; value = value'} fcs
+
+let remove {key;value} (fcs:t): t =
+  let value' = match try Some (StrMap.find key fcs).value, value with Not_found -> None, value with
+    | Some (Int i), Int j -> Int (i+j)
+    | Some (StrList l), StrList l' ->
+      StrList (List.filter (fun s -> not (List.exists (String.equal s) l')) l)
+    | Some (StrList l), Int j -> StrList (List.filter (String.equal (string_of_int j)) l)
+    | Some (Int i), StrList l ->
+      Printf.printf "Hé non, on enlève pas des strings à une valeur entière !"; value
+    | None, Int j -> Int (-j)
     | None, _ -> value
   in
   StrMap.add key {key; value = value'} fcs
@@ -400,6 +417,9 @@ let cmd_factoids state =
         (save state >>= fun () -> C.talk ~target Talk.Ack) |> matched
       | Some (Append f, _) ->
         state.st_cur <- append f state.st_cur;
+        (save state >>= fun () -> C.talk ~target Talk.Ack) |> matched
+      | Some (Remove f, _) ->
+        state.st_cur <- remove f state.st_cur;
         (save state >>= fun () -> C.talk ~target Talk.Ack) |> matched
       | Some (Incr k, _) ->
         let count, state' = incr k state.st_cur in
