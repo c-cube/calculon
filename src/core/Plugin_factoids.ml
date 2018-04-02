@@ -170,7 +170,7 @@ let remove {key;value} (fcs:t): t =
     | None, _ -> value
   in
   match value' with
-    | StrList [] -> StrMap.remove key fcs
+    | StrList [] | Int 0 -> StrMap.remove key fcs
     | _ -> StrMap.add key {key; value = value'} fcs
 
 let as_int v = match v with
