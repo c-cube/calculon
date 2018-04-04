@@ -62,7 +62,7 @@ let group_join list =
   in aux list
 
 let re_split_pat = Re.Perl.compile_pat "(^!)|([+-:]?=)|(\\+\\+)|(--)"
-let re_factoid = Re.Perl.compile_pat "^[ ]*[a-zA-Z0-9\\-+_]+[ ]*$"
+let re_factoid = Re.Perl.compile_pat "^[ ]*[^ \n\t]+[ ]*$"
 
 let parse_op msg : (op * string option) option =
   let msg, hl = match Command.extract_hl msg with
