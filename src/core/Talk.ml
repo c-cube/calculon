@@ -8,10 +8,14 @@ type t =
 let ack = [
   "OK.";
   "done.";
+  "Success"
 ]
 
 let error = [
   "oops";
+  "uh";
+  "hmm";
+  "Failure";
 ]
 
 let talk_base = function

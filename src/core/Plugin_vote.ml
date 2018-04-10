@@ -55,12 +55,10 @@ module Vote = struct
   let vote_status t nick =
     try Some (Hashtbl.find t.status nick) with Not_found -> None
 
-  let explain { purpose; _ } = purpose
-
   let show_status t =
     let r = count_votes t in
-    Printf.sprintf "%s : expressed %d / for %d / against %d (expires in %s)"
-      (explain t) (Hashtbl.length t.status) r.for_ r.against
+    Printf.sprintf "expressed %d / for %d / against %d (expires in %s)"
+      (Hashtbl.length t.status) r.for_ r.against
       Time.(display_mins @@ t.expire -. now ())
 
   let missing_votes t : int option =
@@ -94,7 +92,7 @@ module Vote = struct
     | _ -> Error "wrong vote (expected 'for' or 'against')"
 end
 
-type poll = { creator : string; vote : Vote.t }
+type poll = { purpose : string; creator : string; vote : Vote.t }
 
 type state = (string, poll) Hashtbl.t
 
@@ -106,29 +104,31 @@ let nb_polls_per_nick polls nick =
     begin fun _ { creator;_ } count -> if creator = nick then count + 1 else count end
     polls 0
 
-let show_status name { creator; vote } =
-  Printf.sprintf "poll %s created by %s : %s"
-    name creator (Vote.show_status vote)
+let show_status name { creator; vote;_ } =
+  Printf.sprintf "Poll %s (created by %s) : %s" name creator (Vote.show_status vote)
 
 let create_poll polls nick name purpose =
   match Hashtbl.length polls with
-  | cur_len when cur_len >= max_polls -> Error "too many active polls"
+  | cur_len when cur_len >= max_polls ->
+    Error "cannot create a new poll: max number has been reached, \
+      please delete one before proceeding"
   | _ ->
     match nb_polls_per_nick polls nick with
       | cur_polls when cur_polls >= max_polls_per_nick ->
         Error
-          (Printf.sprintf "cannot create more than %d polls simultaneously"
-             max_polls_per_nick)
+          (Printf.sprintf "cannot create a new poll: max number by user has been reached: %d, \
+            please delete one before proceeding" max_polls_per_nick)
       | _ ->
         match CCHashtbl.get polls name with
-          | Some poll -> Error (show_status name poll)
+          | Some poll -> Error (Printf.sprintf("a poll already exists with this name: %s" (show_status name poll)))
           | None ->
-            Hashtbl.add polls name { creator = nick; vote = Vote.start purpose };
-            Ok None
+            let poll = { purpose = name; creator = nick; vote = Vote.start purpose } in
+            Hashtbl.add polls name poll;
+            Ok (Some (Printf.sprintf "Poll %s successfully created! %s" name (show_status name poll)))
 
 let vote polls nick name vote =
   match CCHashtbl.get polls name with
-  | None -> Error (Printf.sprintf "no such poll '%s'" name)
+  | None -> Error (Printf.sprintf "no poll called '%s'" name)
   | Some poll ->
     match Vote.vote_of_string vote with
     | Error _ as e -> e
@@ -137,7 +137,7 @@ let vote polls nick name vote =
       match Vote.is_complete poll.vote with
       | true ->
         Hashtbl.remove polls name;
-        Ok (Some (Printf.sprintf "poll done : result %s"
+        Ok (Some (Printf.sprintf "Poll time has ended!: The final result is %s"
               (CCOpt.get_or ~default:"draw" @@ CCOpt.map Vote.string_of_vote
                @@ Vote.get_winner poll.vote)))
       | _ -> Ok (Some (Vote.show_status poll.vote))
@@ -145,7 +145,7 @@ let vote polls nick name vote =
 let show_vote polls name nick =
   match CCHashtbl.get polls name with
     | None ->
-      Error (Printf.sprintf "no such active poll '%s'" name)
+      Error (Printf.sprintf "no active poll named '%s'" name)
     | Some poll ->
       let vote =
         CCOpt.get_or ~default:"draw"
@@ -156,7 +156,7 @@ let show_vote polls name nick =
 
 let vote_status polls name =
   match CCHashtbl.get polls name with
-  | None -> Error (Printf.sprintf "no active poll '%s'" name)
+  | None -> Error (Printf.sprintf "no active poll named '%s'" name)
   | Some poll ->
     Ok (Some (show_status name poll))
 
@@ -178,6 +178,10 @@ let help =
   "
 
 let reply polls msg s =
+  let message_usage =
+    "Please use `!vote for VOTE_NAME` or `!vote against VOTE_NAME` to vote; or start a new vote \
+    with `!vote start VOTE_NAME`. (run !help vote for the complete list of commands)"
+  in
   let reply_res = function
     | Error msg ->
       let message = Printf.sprintf "%s: %s" Talk.(select Err) msg in
@@ -194,7 +198,10 @@ let reply polls msg s =
     | "status" :: name :: _ -> vote_status polls name |> reply_res
     | ("for" | "against" as v) :: name :: _ ->
       vote polls msg.Core.nick name v |> reply_res
-    | _ -> Error "what did you say ?" |> reply_res
+    | [("show" | "start" | "status" | "for" | "against" as v)] ->
+       Error (Printf.sprintf "this command is missing the vote name. Please specify one as in `vote %sVOTE_NAME" v) |> reply_res
+    | _ ->
+      Error ("invalid command. " ^ message_usage) |> reply_res
   end
 
 let cmd_vote state : Command.t =
