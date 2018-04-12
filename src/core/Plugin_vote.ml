@@ -120,7 +120,7 @@ let create_poll polls nick name purpose =
             please delete one before proceeding" max_polls_per_nick)
       | _ ->
         match CCHashtbl.get polls name with
-          | Some poll -> Error (Printf.sprintf("a poll already exists with this name: %s" (show_status name poll)))
+          | Some poll -> Error (Printf.sprintf "a poll already exists with this name: %s" (show_status name poll))
           | None ->
             let poll = { purpose = name; creator = nick; vote = Vote.start purpose } in
             Hashtbl.add polls name poll;
