@@ -29,7 +29,7 @@ type t = {
   descr: string; (* for !help *)
 }
 
-val match_prefix1 : prefix:string -> Core.privmsg -> string option
+val match_prefix1 : ?prefix:string -> cmd:string -> Core.privmsg -> string option
 (** [match_prefix1 ~prefix:"foo" msg]
 
     - if [msg="!foo bar"], returns [Some bar]
@@ -40,7 +40,7 @@ val extract_hl : string -> (string * string) option
 (** [extract_hl "foo > bar"] returns [Some ("foo", "bar")].
     Returns [None] if it cannot split on ">" cleanly. *)
 
-val match_prefix1_full : prefix:string -> Core.privmsg -> (string * string option) option
+val match_prefix1_full : ?prefix:string -> cmd:string -> Core.privmsg -> (string * string option) option
 (* @returns [Some (msg, hl)] if [msg] matches the regex,
    and [hl] is either [Some foo] if the message ended with "> hl",
    [None] otherwise *)
@@ -59,7 +59,8 @@ exception Fail of string
 val make_simple :
   ?descr:string ->
   ?prio:int ->
-  prefix:string ->
+  ?prefix:string ->
+  cmd:string ->
   (Core.privmsg -> string -> string option Lwt.t) ->
   t
 (** [make_simple ~pre f] matches messages of the form "!pre xxx",
@@ -69,7 +70,8 @@ val make_simple :
 val make_simple_l :
   ?descr:string ->
   ?prio:int ->
-  prefix:string ->
+  ?prefix:string ->
+  cmd:string ->
   (Core.privmsg -> string -> string list Lwt.t) ->
   t
 (** Same as {!make_simple} but replies lines
@@ -78,7 +80,8 @@ val make_simple_l :
 val make_simple_query_l :
   ?descr:string ->
   ?prio:int ->
-  prefix:string ->
+  ?prefix:string ->
+  cmd:string ->
   (Core.privmsg -> string -> string list Lwt.t) ->
   t
 (** Same as {!make_simple_l} but replies lines in query (private)

@@ -30,9 +30,9 @@ let extract_hl s =
     ) else None
   with Not_found -> None
 
-let match_prefix1_full ~prefix msg : (string * string option) option =
+let match_prefix1_full ?(prefix="!") ~cmd msg : (string * string option) option =
   let re = Re.Perl.compile_pat
-      (Printf.sprintf "^![ ]*%s\\b[ ]*(.*)$" prefix)
+      (Printf.sprintf "^%s[ ]*%s\\b[ ]*(.*)$" prefix cmd)
   in
   begin match Prelude.re_match1 Prelude.id re msg.Core.message with
     | None -> None
@@ -43,14 +43,14 @@ let match_prefix1_full ~prefix msg : (string * string option) option =
         | Some (a,b) -> Some (a, Some b)
   end
 
-let match_prefix1 ~prefix msg =
-  Prelude.map_opt fst (match_prefix1_full ~prefix msg)
+let match_prefix1 ?prefix ~cmd msg =
+  Prelude.map_opt fst (match_prefix1_full ?prefix ~cmd msg)
 
 exception Fail of string
 
-let make_simple_inner_ ~query ?descr ?prio ~prefix f : t =
+let make_simple_inner_ ~query ?descr ?prio ?prefix ~cmd f : t =
   let match_ (module C:Core.S) msg =
-    match match_prefix1_full ~prefix msg with
+    match match_prefix1_full ?prefix ~cmd msg with
       | None -> Cmd_skip
       | Some (sub, hl) ->
         (* Log.logf "command `%s` matched with %s, hl=%s"
@@ -70,16 +70,16 @@ let make_simple_inner_ ~query ?descr ?prio ~prefix f : t =
         with Fail msg ->
           Cmd_fail msg
   in
-  make ?descr ?prio ~name:prefix match_
+  make ?descr ?prio ~name:cmd match_
 
-let make_simple_l ?descr ?prio ~prefix f : t =
-  make_simple_inner_ ~query:false ?descr ?prio ~prefix f
+let make_simple_l ?descr ?prio ?prefix ~cmd f : t =
+  make_simple_inner_ ~query:false ?descr ?prio ?prefix ~cmd f
 
-let make_simple_query_l ?descr ?prio ~prefix f : t =
-  make_simple_inner_ ~query:true ?descr ?prio ~prefix f
+let make_simple_query_l ?descr ?prio ?prefix ~cmd f : t =
+  make_simple_inner_ ~query:true ?descr ?prio ?prefix ~cmd f
 
-let make_simple ?descr ?prio ~prefix f : t =
-  make_simple_l ?descr ?prio ~prefix
+let make_simple ?descr ?prio ?prefix ~cmd f : t =
+  make_simple_l ?descr ?prio ?prefix ~cmd
     (fun msg s -> f msg s >|= function
        | None -> []
        | Some x -> [x])
@@ -88,7 +88,7 @@ let compare_prio c1 c2 = compare c1.prio c2.prio
 
 (* help command *)
 let cmd_help (l:t list): t =
-  make_simple ~descr:"help message" ~prefix:"help" ~prio:5
+  make_simple ~descr:"help message" ~cmd:"help" ~prio:5
     (fun _ s ->
        let s = String.trim s in
        let res =

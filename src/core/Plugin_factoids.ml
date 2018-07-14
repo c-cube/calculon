@@ -316,7 +316,7 @@ let search_tokenize s =
   |> Re.split (Re.Perl.compile_pat "[ \t]+")
 
 let cmd_search state =
-  Command.make_simple_l ~descr:"search in factoids" ~prefix:"search" ~prio:10
+  Command.make_simple_l ~descr:"search in factoids" ~prefix:"!" ~cmd:"search" ~prio:10
     (fun _ s ->
        let tokens = search_tokenize s in
        search tokens state.st_cur
@@ -328,7 +328,7 @@ let cmd_search state =
 let cmd_search_all state =
   Command.make_simple_query_l
     ~descr:"search all matches in factoids (reply in pv)"
-    ~prefix:"search_all" ~prio:10
+    ~prefix:"!" ~cmd:"search_all" ~prio:10
     (fun _ s ->
        let tokens = search_tokenize s in
        search tokens state.st_cur
@@ -337,7 +337,7 @@ let cmd_search_all state =
     )
 
 let cmd_see state =
-  Command.make_simple_l ~descr:"see a factoid's content" ~prefix:"see" ~prio:10
+  Command.make_simple_l ~descr:"see a factoid's content" ~prefix:"!" ~cmd:"see" ~prio:10
     (fun _ s ->
        let v = get (mk_key s) state.st_cur in
        let msg = match v with
@@ -351,7 +351,8 @@ let cmd_see state =
 let cmd_see_all state =
   Command.make_simple_query_l
     ~descr:"see all of a factoid's content (in pv)"
-    ~prefix:"see_all"
+    ~prefix:"!"
+    ~cmd:"see_all"
     ~prio:10
     (fun _ s ->
        let v = get (mk_key s) state.st_cur in
@@ -364,7 +365,7 @@ let cmd_see_all state =
     )
 
 let cmd_random state =
-  Command.make_simple ~descr:"random factoid" ~prefix:"random" ~prio:10
+  Command.make_simple ~descr:"random factoid" ~prefix:"!" ~cmd:"random" ~prio:10
     (fun _ _ ->
        let msg = random state.st_cur in
        Some msg |> Lwt.return
