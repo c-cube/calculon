@@ -51,7 +51,8 @@ let cmd_history st =
     ~descr:(Printf.sprintf
         "give back <n> lines of history in query (max %d)" st.size)
     ~prio:10
-    ~prefix:"history"
+    ~prefix:"!"
+    ~cmd:"history"
     (fun _ msg ->
        let msg = String.trim msg in
        if msg="" then Lwt.return (reply_history st st.default_len)

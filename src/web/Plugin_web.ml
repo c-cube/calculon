@@ -48,7 +48,7 @@ let youtube_hosts = [
 
 let cmd_yt =
   Command.make_simple
-    ~prio:10 ~prefix:"yt" ~descr:"lookup description of given youtube URL"
+    ~prio:10 ~prefix:"!" ~cmd:"yt" ~descr:"lookup description of given youtube URL"
     (fun _ s ->
        let uri = Uri.of_string (String.trim s) in
        match Uri.host uri with
@@ -75,7 +75,7 @@ let get_youtube_search (query:string): string Lwt.t =
 
 let cmd_yt_search =
   Command.make_simple_l
-    ~prio:10 ~prefix:"yt_search" ~descr:"lookup on youtube"
+    ~prio:10 ~prefix:"!" ~cmd:"yt_search" ~descr:"lookup on youtube"
     (fun _ s ->
        (get_youtube_search (String.trim s) >|= fun body ->
         find_yt_ids ~n:1 body)
@@ -137,7 +137,7 @@ module Giphy = struct
 
   let cmd =
     Command.make_simple
-      ~prio:10 ~prefix:"giphy" ~descr:"lookup on giphy (Powered by Giphy)"
+      ~prio:10 ~prefix:"!" ~cmd:"giphy" ~descr:"lookup on giphy (Powered by Giphy)"
       (fun _ s ->
          let s = String.trim s in
          if s=""

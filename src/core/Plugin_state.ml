@@ -10,7 +10,8 @@ let cmd_reload st =
   Command.make_simple
     ~descr:"reload state from disk"
     ~prio:10
-    ~prefix:"reload"
+    ~prefix:"!"
+    ~cmd:"reload"
     (fun _ _ ->
        Signal.Send_ref.send st.actions Plugin.Require_reload >|= fun () ->
        Some (Talk.select Talk.Ack)
@@ -21,7 +22,8 @@ let cmd_save st =
   Command.make_simple
     ~descr:"save state to disk"
     ~prio:10
-    ~prefix:"save"
+    ~prefix:"!"
+    ~cmd:"save"
     (fun _ _ ->
        Signal.Send_ref.send st.actions Plugin.Require_save >|= fun () ->
        Some (Talk.select Talk.Ack)
