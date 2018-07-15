@@ -10,7 +10,7 @@ build-doc: [ "jbuilder" "build" "@doc" "-p" name ]
 build-test: [ "jbuilder" "runtest" "-p" name ]
 depends: [
   "jbuilder" {build}
-  "calculon"
+  "calculon" { >= "0.3" }
   "re" { >= "1.7.2" }
   "uri"
   "cohttp"
