@@ -90,6 +90,13 @@ val make_simple_query_l :
 val compare_prio : t -> t -> int
 (** Compare by priority. Used to sort a list of commands by their priority. *)
 
+val cmd_help :
+  prefix:string ->
+  t list ->
+  t
+(** [cmd_help ~prefix l] build a command [\[prefix\]help] that print a help
+    message about the plugin in l. *)
+
 val run : Core.t -> t list -> Core.privmsg -> unit Lwt.t
 (** Execute the commands, in given order, on the message. First command
     to succeed shortcuts the other ones. *)

@@ -42,10 +42,10 @@ type t =
 
 type plugin = t
 
-val of_cmd : Command.t -> t
+val of_cmd : ?prefix:string -> Command.t -> t
 (** Stateless plugin with 1 command *)
 
-val of_cmds : Command.t list -> t
+val of_cmds : ?prefix:string -> Command.t list -> t
 (** Stateless plugin with several commands
     @raise Invalid_argument if the list is empty *)
 
