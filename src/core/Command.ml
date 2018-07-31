@@ -30,7 +30,7 @@ let extract_hl s =
     ) else None
   with Not_found -> None
 
-let match_prefix1_full ?(prefix="!") ~cmd msg : (string * string option) option =
+let match_prefix1_full ~prefix ~cmd msg : (string * string option) option =
   let re = Re.Perl.compile_pat
       (Printf.sprintf "^%s[ ]*%s\\b[ ]*(.*)$" prefix cmd)
   in
@@ -43,14 +43,14 @@ let match_prefix1_full ?(prefix="!") ~cmd msg : (string * string option) option 
         | Some (a,b) -> Some (a, Some b)
   end
 
-let match_prefix1 ?prefix ~cmd msg =
-  Prelude.map_opt fst (match_prefix1_full ?prefix ~cmd msg)
+let match_prefix1 ~prefix ~cmd msg =
+  Prelude.map_opt fst (match_prefix1_full ~prefix ~cmd msg)
 
 exception Fail of string
 
-let make_simple_inner_ ~query ?descr ?prio ?prefix ~cmd f : t =
+let make_simple_inner_ ~query ?descr ?prio ~prefix ~cmd f : t =
   let match_ (module C:Core.S) msg =
-    match match_prefix1_full ?prefix ~cmd msg with
+    match match_prefix1_full ~prefix ~cmd msg with
       | None -> Cmd_skip
       | Some (sub, hl) ->
         (* Log.logf "command `%s` matched with %s, hl=%s"
@@ -72,11 +72,19 @@ let make_simple_inner_ ~query ?descr ?prio ?prefix ~cmd f : t =
   in
   make ?descr ?prio ~name:cmd match_
 
-let make_simple_l ?descr ?prio ?prefix ~cmd f : t =
-  make_simple_inner_ ~query:false ?descr ?prio ?prefix ~cmd f
+let make_simple_l ?descr ?prio ?(prefix="!") ~cmd f : t =
+  let descr = match descr with
+    | None -> Printf.sprintf "(prefix: %s)" prefix
+    | Some s -> Printf.sprintf "%s (prefix: %s)" s prefix
+  in
+  make_simple_inner_ ~query:false ~descr ?prio ~prefix ~cmd f
 
-let make_simple_query_l ?descr ?prio ?prefix ~cmd f : t =
-  make_simple_inner_ ~query:true ?descr ?prio ?prefix ~cmd f
+let make_simple_query_l ?descr ?prio ?(prefix="!") ~cmd f : t =
+  let descr = match descr with
+    | None -> Printf.sprintf "(prefix: %s)" prefix
+    | Some s -> Printf.sprintf "%s (prefix: %s)" s prefix
+  in
+  make_simple_inner_ ~query:true ~descr ?prio ~prefix ~cmd f
 
 let make_simple ?descr ?prio ?prefix ~cmd f : t =
   make_simple_l ?descr ?prio ?prefix ~cmd
