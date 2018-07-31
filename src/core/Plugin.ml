@@ -38,10 +38,10 @@ type t =
 
 type plugin = t
 
-let of_cmd c = Stateless [c]
-let of_cmds l =
+let of_cmd ?(prefix="!") c = Stateless [Command.cmd_help ~prefix [c];c]
+let of_cmds ?(prefix="!") l =
   if l=[] then invalid_arg "Plugin.of_cmds";
-  Stateless l
+  Stateless (Command.cmd_help ~prefix l::l)
 
 let stateful
     ~name

@@ -95,8 +95,8 @@ let make_simple ?descr ?prio ?prefix ~cmd f : t =
 let compare_prio c1 c2 = compare c1.prio c2.prio
 
 (* help command *)
-let cmd_help (l:t list): t =
-  make_simple ~descr:"help message" ~cmd:"help" ~prio:5
+let cmd_help ~prefix (l:t list): t =
+  make_simple ~descr:"help message" ~prefix  ~cmd:"help" ~prio:5
     (fun _ s ->
        let s = String.trim s in
        let res =
@@ -104,7 +104,7 @@ let cmd_help (l:t list): t =
          then
            let l = List.map (fun c -> c.name) l in
            let message =
-             "!help: commands are " ^ Prelude.string_list_to_string l
+             prefix ^ "help: commands are " ^ Prelude.string_list_to_string l
            in
            Some message
          else
@@ -135,4 +135,4 @@ let run core l msg : unit Lwt.t =
           aux tail
       end
   in
-  aux (cmd_help l :: l)
+  aux l
