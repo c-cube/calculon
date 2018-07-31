@@ -43,10 +43,14 @@ type t =
 type plugin = t
 
 val of_cmd : ?prefix:string -> Command.t -> t
-(** Stateless plugin with 1 command *)
+(** Stateless plugin with 1 command. [of_cmd] include automatically a help
+    command. The optional argument [prefix] define the prefix of the help
+    command which is [!] by default. *)
 
 val of_cmds : ?prefix:string -> Command.t list -> t
-(** Stateless plugin with several commands
+(** Stateless plugin with several commands. [of_cmd] include automatically a help
+    command. The optional argument [prefix] define the prefix of the help
+    command which is [!] by default.
     @raise Invalid_argument if the list is empty *)
 
 val stateful :
