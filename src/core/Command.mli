@@ -95,7 +95,7 @@ val cmd_help :
   t list ->
   t
 (** [cmd_help ~prefix l] build a command [\[prefix\]help] that print a help
-    message about the plugin in l. *)
+    message about plugins in l. *)
 
 val run : Core.t -> t list -> Core.privmsg -> unit Lwt.t
 (** Execute the commands, in given order, on the message. First command
