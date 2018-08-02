@@ -241,18 +241,21 @@ let run conf ~init () =
   in
   if conf.C.tls
   then (
-    let certificates = match conf.C.tls_cert with
-      | Some certchain -> `Single certchain
-      | None -> `None in
     let tls_config =
-      Tls.Config.client
-        ~authenticator:X509.Authenticator.null
-        ~certificates
-        () in
+      match conf.C.tls_cert with
+        | Some certchain ->
+          let certificates = `Single certchain in
+          Some
+            (Tls.Config.client
+               ~authenticator:X509.Authenticator.null
+               ~certificates
+               ())
+        | None -> None
+    in
     let connect () =
       Irc_client_tls.connect_by_name
         ~username:conf.C.username ~realname:conf.C.realname ~nick:conf.C.nick
-        ~server:conf.C.server ~port:conf.C.port ~config:tls_config
+        ~server:conf.C.server ~port:conf.C.port ?config:tls_config
         ()
     in
     loop_tls ~connect ~init ()
