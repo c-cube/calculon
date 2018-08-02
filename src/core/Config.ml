@@ -13,6 +13,7 @@ type t = {
   realname : string;
   nick : string;
   tls: bool;
+  tls_cert : Tls.Config.certchain option;
   channel : string;
   state_file : string;
   irc_log: irc_log; (* log IRC events *)
@@ -25,6 +26,7 @@ let default = {
   realname = "calculon";
   nick = "calculon";
   tls = true;
+  tls_cert = None;
   channel = "#ocaml";
   state_file = "state.json";
   irc_log = `None;
