@@ -13,6 +13,7 @@ type t = {
   realname : string;
   nick : string;
   tls: bool;
+  tls_cert : Tls.Config.certchain option;
   channel : string;
   state_file : string; (* where plugins' state is stored *)
   irc_log: irc_log; (* log IRC events *)
