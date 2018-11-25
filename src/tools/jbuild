@@ -1,8 +1,0 @@
-
-(jbuild_version 1)
-
-(executables
-  ((names (markcough_learn markcough_show))
-   (flags (:standard -w +a-4-42-44-48-29@8))
-   (libraries (calculon.extras re.posix))
-   ))

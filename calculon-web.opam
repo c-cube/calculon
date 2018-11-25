@@ -4,12 +4,12 @@ version: "0.3"
 authors: ["Armael" "Enjolras" "c-cube"]
 maintainer: "c-cube"
 build: [
-  ["jbuilder" "build" "-p" name]
+  ["dune" "build" "-p" name]
 ]
-build-doc: [ "jbuilder" "build" "@doc" "-p" name ]
-build-test: [ "jbuilder" "runtest" "-p" name ]
+build-doc: [ "dune" "build" "@doc" "-p" name ]
+build-test: [ "dune" "runtest" "-p" name ]
 depends: [
-  "jbuilder" {build}
+  "dune" {build}
   "calculon" { >= "0.3" }
   "re" { >= "1.7.2" }
   "uri"
