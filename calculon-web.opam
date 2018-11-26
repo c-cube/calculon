@@ -1,13 +1,14 @@
-opam-version: "1.2"
+opam-version: "2.0"
 name: "calculon-web"
 version: "0.3"
+synopsis: "A collection of web plugins for Calculon"
 authors: ["Armael" "Enjolras" "c-cube"]
 maintainer: "c-cube"
 build: [
-  ["dune" "build" "-p" name]
+  ["dune" "build" "-p" name "-j" jobs]
+  [ "dune" "build" "@doc" "-p" name ] {with-doc}
+  [ "dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
-build-doc: [ "dune" "build" "@doc" "-p" name ]
-build-test: [ "dune" "runtest" "-p" name ]
 depends: [
   "dune" {build}
   "calculon" { >= "0.3" }
@@ -19,11 +20,10 @@ depends: [
   "atdgen"
   "lambdasoup"
   "sequence"
-  "odoc" {doc}
+  "odoc" {with-doc}
+  "ocaml" { >= "4.02.0" }
 ]
 tags: [ "irc" "bot" "factoids" ]
 homepage: "https://github.com/c-cube/calculon"
 bug-reports: "https://github.com/c-cube/calculon/issues"
-dev-repo: "https://github.com/c-cube/calculon.git"
-available: [ocaml-version >= "4.02.0"]
-
+dev-repo: "git+https://github.com/c-cube/calculon.git"
