@@ -21,7 +21,7 @@ depends: [
   "lambdasoup"
   "sequence"
   "odoc" {with-doc}
-  "ocaml" { >= "4.02.0" }
+  "ocaml" { >= "4.03.0" }
 ]
 tags: [ "irc" "bot" "factoids" ]
 homepage: "https://github.com/c-cube/calculon"
