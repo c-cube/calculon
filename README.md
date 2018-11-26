@@ -1,5 +1,5 @@
 
-# Calculon
+# Calculon [![Build Status](https://travis-ci.org/c-cube/calculon.svg?branch=master)](https://travis-ci.org/c-cube/calculon)
 
 Library for writing IRC bots in OCaml, a collection of plugins, and a dramatic robotic actor.
 The core library is called `calculon`.
