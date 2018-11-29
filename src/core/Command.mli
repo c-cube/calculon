@@ -23,10 +23,10 @@ type res =
     a priority (used to run some commands before the others),
     and the answering function itself *)
 type t = {
-  prio: int; (* priority. The lower, the more urgent this command is. *)
-  match_: Core.t -> Core.privmsg -> res; (* how to react to incoming messages *)
-  name: string; (* name of the command *)
-  descr: string; (* for !help *)
+  prio: int; (** Priority. The lower, the more urgent this command is. *)
+  match_: Core.t -> Core.privmsg -> res; (** How to react to incoming messages *)
+  name: string; (** Name of the command *)
+  descr: string; (** For !help *)
 }
 
 val match_prefix1 : prefix:string -> cmd:string -> Core.privmsg -> string option
@@ -41,7 +41,7 @@ val extract_hl : string -> (string * string) option
     Returns [None] if it cannot split on ">" cleanly. *)
 
 val match_prefix1_full : prefix:string -> cmd:string -> Core.privmsg -> (string * string option) option
-(* @returns [Some (msg, hl)] if [msg] matches the regex,
+(** @returns [Some (msg, hl)] if [msg] matches the regex,
    and [hl] is either [Some foo] if the message ended with "> hl",
    [None] otherwise *)
 

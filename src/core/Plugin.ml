@@ -14,19 +14,19 @@ type stateful = St : 'st stateful_ -> stateful
 
 and 'st stateful_ = {
   name: string;
-  (* namespace for storing state. Must be distinct for every plugin. *)
+  (** Namespace for storing state. Must be distinct for every plugin. *)
   commands: 'st -> Command.t list;
-  (* commands parametrized by some (mutable) state, with the ability
+  (** Commands parametrized by some (mutable) state, with the ability
      to trigger a signal *)
   on_msg:'st -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
-  (* executed on each incoming message *)
+  (** Executed on each incoming message *)
   to_json : 'st -> json option;
-  (* how to serialize (part of) the state into JSON, if need be. *)
+  (** How to serialize (part of) the state into JSON, if need be. *)
   of_json : action_callback -> json option -> ('st, string) Result.result Lwt.t;
-  (* how to deserialize the state. [None] is passed for a fresh
+  (** How to deserialize the state. [None] is passed for a fresh
      initialization *)
   stop: 'st -> unit Lwt.t;
-  (* stop the plugin.
+  (** Stop the plugin.
      It is NOT the responsibility of this command to save the state,
      as the core engine will have called {!to_json} before. *)
 }

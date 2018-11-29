@@ -9,10 +9,10 @@ type res =
   | Cmd_fail of string
 
 type t = {
-  prio: int; (* priority. The lower, the more urgent this command is. *)
+  prio: int;
   match_: Core.t -> Core.privmsg -> res;
   name: string;
-  descr: string; (* for !help *)
+  descr: string;
 }
 
 let make ?(descr="") ?(prio=99) ~name f =
@@ -94,7 +94,7 @@ let make_simple ?descr ?prio ?prefix ~cmd f : t =
 
 let compare_prio c1 c2 = compare c1.prio c2.prio
 
-(* help command *)
+(** Help command *)
 let cmd_help ~prefix (l:t list): t =
   make_simple ~descr:"help message" ~prefix  ~cmd:"help" ~prio:5
     (fun _ s ->
