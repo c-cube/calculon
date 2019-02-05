@@ -8,7 +8,6 @@ env:
   - PINS="calculon:. calculon-web:. lambdasoup:git+https://github.com/aantron/lambda-soup.git"
   - DISTRO="debian-stable"
   matrix:
-  - PACKAGE="calculon" OCAML_VERSION="4.02.3"
   - PACKAGE="calculon" OCAML_VERSION="4.03.0"
   - PACKAGE="calculon" OCAML_VERSION="4.04.2"
   - PACKAGE="calculon" OCAML_VERSION="4.05.0"
