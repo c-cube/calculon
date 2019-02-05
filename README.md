@@ -14,6 +14,12 @@ make build
 
 ## Introduction to the Code
 
+Let's assume calculon is loaded, via:
+
+```ocaml
+# #require "calculon";;
+```
+
 ### Main
 
 The typical `main` entry point would look like  this.
@@ -21,21 +27,19 @@ Calculon works by gathering a list of
 *plugins* (see the module `Plugin`), some configuration (see `Config`)
 and running the package in a loop using [irc-client](https://github.com/johnelse/ocaml-irc-client/).
 
-```ocaml
+```ocaml non-deterministic=command
 
 module C = Calculon
 
 let plugins : C.Plugin.t list = [
   C.Plugin_social.plugin;
   C.Plugin_factoids.plugin;
-  my_own_plugin;
   (* etc. *)
 ]
 
 let () =
   let conf = C.Config.of_argv () in
   C.Run_main.main conf plugins |> Lwt_main.run
-
 
 ```
 
@@ -53,14 +57,16 @@ option` to indicate whether or not to respond to any line starting with
 
 ```ocaml
 
+open Calculon
+
 let cmd_hello : Command.t =
-  Command.make_simple ~descr:"hello world" ~prefix:"hello" ~prio:10
+  Command.make_simple ~descr:"hello world" ~cmd:"hello" ~prio:10
     (fun (input_msg:Core.privmsg) _ ->
        let who = input_msg.Core.nick in
        Lwt.return (Some ("hello " ^ who))
     )
 
-let plugin_hello = Plugin.of_cmd cmd_hello
+let plugin_hello : Plugin.t = Plugin.of_cmd cmd_hello
 ```
 
 Basic plugins are stateless, built from one or more commands with `Plugin.of_cmd`
