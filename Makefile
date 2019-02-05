@@ -1,17 +1,17 @@
 all: build test
 
 build:
-	dune build @install
+	@dune build @all
 
 install:
-	dune install
+	@dune install
 
 test: build
-	dune runtest --no-buffer --force
+	@dune runtest --no-buffer --force
 
 clean:
-	dune clean
+	@dune clean
 
 doc:
-	dune build @doc
+	@dune build @doc
 
