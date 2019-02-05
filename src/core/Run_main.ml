@@ -1,10 +1,10 @@
 
-let main conf all : unit Lwt.t =
+let main ?cmd_help conf all : unit Lwt.t =
   let init_or_err (core:Core.t): unit Lwt_err.t =
     let open Lwt_err in
     let (module C) = core in
     (* setup plugins *)
-    Plugin.Set.create conf all >>= fun plugins ->
+    Plugin.Set.create ?cmd_help conf all >>= fun plugins ->
     (* connect to chan *)
     C.send_join ~channel:conf.Config.channel |> ok >|= fun () ->
     Log.logf "run %d plugins" (List.length all);

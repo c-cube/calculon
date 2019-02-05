@@ -100,14 +100,15 @@ let cmd_help ~prefix (l:t list): t =
     (fun _ s ->
        let s = String.trim s in
        let res =
-         if s=""
-         then
-           let l = List.map (fun c -> c.name) l in
+         match s with
+         | "" ->
+           let l = "help" :: List.map (fun c -> c.name) l in
            let message =
              prefix ^ "help: commands are " ^ Prelude.string_list_to_string l
            in
            Some message
-         else
+         | "help" -> Some "displays help for commands"
+         | _ ->
            try
              let c = List.find (fun c -> c.name = s) l in
              Some (Printf.sprintf "%s: %s (prio %d)" c.name c.descr c.prio)

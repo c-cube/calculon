@@ -1,8 +1,4 @@
 
-(env
-  (dev
-    (flags (:standard -warn-error -A))))
-
 (library
    (name calculon)
    (public_name calculon)

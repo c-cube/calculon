@@ -17,6 +17,7 @@ type t = {
   channel : string;
   state_file : string;
   irc_log: irc_log; (* log IRC events *)
+  prefix: string; (** prefix for commands *)
 }
 
 let default = {
@@ -30,6 +31,7 @@ let default = {
   channel = "#ocaml";
   state_file = "state.json";
   irc_log = `None;
+  prefix = "!";
 }
 
 let parse conf args =
@@ -39,6 +41,7 @@ let parse conf args =
   let custom_state = ref None in
   let custom_port = ref 7000 in
   let custom_tls = ref None in
+  let prefix = ref default.prefix in
   let debug_stderr = ref false in
   let options = Arg.align
       [ "--nick", Arg.String (fun s -> custom_nick := Some s),
@@ -53,6 +56,7 @@ let parse conf args =
       ; "--tls", Arg.Unit (fun () -> custom_tls := Some true), " enable TLS"
       ; "--no-tls", Arg.Unit (fun () -> custom_tls := Some false), " disable TLS"
       ; "--debug", Arg.Set debug_stderr, " print IRC debug messages on stderr"
+      ; "--prefix", Arg.Set_string prefix, " set prefix for commands (default \"!\")";
       ]
   in
   Arg.parse_argv args options ignore "parse options";
@@ -65,6 +69,7 @@ let parse conf args =
     port = !custom_port;
     state_file = !custom_state |? conf.state_file;
     irc_log = (if !debug_stderr then `Chan Lwt_io.stderr else `None);
+    prefix = !prefix;
   }
 
 let of_argv () =

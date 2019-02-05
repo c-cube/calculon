@@ -38,10 +38,10 @@ type t =
 
 type plugin = t
 
-let of_cmd ?(prefix="!") c = Stateless [Command.cmd_help ~prefix [c];c]
-let of_cmds ?(prefix="!") l =
+let of_cmd c = Stateless [c]
+let of_cmds l =
   if l=[] then invalid_arg "Plugin.of_cmds";
-  Stateless (Command.cmd_help ~prefix l::l)
+  Stateless l
 
 let stateful
     ~name
@@ -184,12 +184,16 @@ module Set = struct
     in
     loop ()
 
-  let create config (plugins:plugin list) : (t, string) Result.result Lwt.t =
+  let create ?cmd_help:(help=true) config (plugins:plugin list) : (t, string) Result.result Lwt.t =
     let open Lwt_err in
     load_state_ config >>= fun j ->
     let actions = Signal.create() in
     load_from (Signal.Send_ref.make actions) plugins j
     >|= fun (commands_l, on_msg_l, active) ->
+    let commands_l =
+      if help then Command.cmd_help ~prefix:config.Config.prefix commands_l :: commands_l
+      else commands_l
+    in
     let t = {
       config; plugins; actions; active; commands_l; on_msg_l; stopped=false;
     } in

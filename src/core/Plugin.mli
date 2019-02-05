@@ -42,15 +42,11 @@ type t =
 
 type plugin = t
 
-val of_cmd : ?prefix:string -> Command.t -> t
-(** Stateless plugin with 1 command. [of_cmd] include automatically a help
-    command. The optional argument [prefix] define the prefix of the help
-    command which is [!] by default. *)
+val of_cmd : Command.t -> t
+(** Stateless plugin with 1 command. *)
 
-val of_cmds : ?prefix:string -> Command.t list -> t
-(** Stateless plugin with several commands. [of_cmd] include automatically a help
-    command. The optional argument [prefix] define the prefix of the help
-    command which is [!] by default.
+val of_cmds : Command.t list -> t
+(** Stateless plugin with several commands. 
     @raise Invalid_argument if the list is empty *)
 
 val stateful :
@@ -72,11 +68,14 @@ module Set : sig
   type t
 
   val create :
+    ?cmd_help:bool ->
     Config.t ->
     plugin list ->
     (t, string) Result.result Lwt.t
   (** Create a collection of plugins, loading the state, initializing
-      them *)
+      them.
+      @param cmd_help if true, adds a "help" command.
+  *)
 
   val commands : t -> Command.t list
   (** Corresponding list of commands *)

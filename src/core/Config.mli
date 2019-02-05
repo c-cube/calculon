@@ -17,6 +17,7 @@ type t = {
   channel : string; (** Channel to join after the connexion to the server *)
   state_file : string; (** Where plugins' state is stored *)
   irc_log: irc_log; (** Log IRC events *)
+  prefix: string; (** prefix for commands *)
 }
 
 val default : t
@@ -31,6 +32,7 @@ val default : t
 - channel = "#ocaml"
 - state_file = "state.json"
 - irc_log = `None
+- prefix = "!"
  *)
 
 val parse : t -> string array -> t
