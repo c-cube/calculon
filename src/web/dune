@@ -3,7 +3,7 @@
    (name calculon_web)
    (public_name calculon-web)
    (flags :standard -w +a-4-32-42-44-48-29@8)
-   (libraries calculon atdgen cohttp cohttp-lwt-unix lwt cohttp.lwt
+   (libraries calculon atdgen cohttp cohttp-lwt-unix cohttp-lwt lwt
                irc-client-lwt lambdasoup uri)
    )
 
