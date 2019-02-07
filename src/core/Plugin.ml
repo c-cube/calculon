@@ -24,7 +24,7 @@ and 'st stateful_ = {
   (** How to serialize (part of) the state into JSON, if need be. *)
   of_json : action_callback -> json option -> ('st, string) Result.result Lwt.t;
   (** How to deserialize the state. [None] is passed for a fresh
-     initialization *)
+      initialization. *)
   stop: 'st -> unit Lwt.t;
   (** Stop the plugin.
      It is NOT the responsibility of this command to save the state,
@@ -191,7 +191,7 @@ module Set = struct
     load_from (Signal.Send_ref.make actions) plugins j
     >|= fun (commands_l, on_msg_l, active) ->
     let commands_l =
-      if help then Command.cmd_help ~prefix:config.Config.prefix commands_l :: commands_l
+      if help then Command.cmd_help commands_l :: commands_l
       else commands_l
     in
     let t = {

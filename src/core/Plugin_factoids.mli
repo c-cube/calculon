@@ -21,7 +21,7 @@ type op =
   | Incr of key
   | Decr of key
 
-val parse_op : string -> (op * string option) option
+val parse_op : prefix:string -> string -> (op * string option) option
 (** op + hilight *)
 
 val string_of_value : value -> string

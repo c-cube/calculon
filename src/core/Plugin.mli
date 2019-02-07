@@ -28,7 +28,7 @@ and 'st stateful_ = private {
   (** How to serialize (part of) the state into JSON, if need be. *)
   of_json : action_callback -> json option -> ('st, string) Result.result Lwt.t;
   (** How to deserialize the state. [None] is passed for a fresh
-     initialization *)
+      initialization. *)
   stop: 'st -> unit Lwt.t;
   (** Stop the plugin.
      It is NOT the responsibility of this command to save the state,

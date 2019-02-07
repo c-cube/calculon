@@ -50,9 +50,7 @@ let cmd_history st =
   Command.make_simple_query_l
     ~descr:(Printf.sprintf
         "give back <n> lines of history in query (max %d)" st.size)
-    ~prio:10
-    ~prefix:"!"
-    ~cmd:"history"
+    ~prio:10 ~cmd:"history"
     (fun _ msg ->
        let msg = String.trim msg in
        if msg="" then Lwt.return (reply_history st st.default_len)

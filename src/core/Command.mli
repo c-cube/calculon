@@ -24,7 +24,7 @@ type res =
     and the answering function itself *)
 type t = {
   prio: int; (** Priority. The lower, the more urgent this command is. *)
-  match_: Core.t -> Core.privmsg -> res; (** How to react to incoming messages *)
+  match_: prefix:string -> Core.t -> Core.privmsg -> res; (** How to react to incoming messages *)
   name: string; (** Name of the command *)
   descr: string; (** For !help *)
 }
@@ -49,7 +49,7 @@ val make :
   ?descr:string ->
   ?prio:int ->
   name:string ->
-  (Core.t -> Core.privmsg -> res) ->
+  (prefix:string -> Core.t -> Core.privmsg -> res) ->
   t
 (** Make a command using the given methods. Only the name and
     matching rules are requested *)
@@ -59,18 +59,16 @@ exception Fail of string
 val make_simple :
   ?descr:string ->
   ?prio:int ->
-  ?prefix:string ->
   cmd:string ->
   (Core.privmsg -> string -> string option Lwt.t) ->
   t
-(** [make_simple ~pre f] matches messages of the form "!pre xxx",
+(** [make_simple ~cmd f] matches messages of the form "!cmd xxx",
     and call [f msg "xxx"]. The function returns 0 or 1 line to reply to sender.
     The function can raise Fail to indicate failure *)
 
 val make_simple_l :
   ?descr:string ->
   ?prio:int ->
-  ?prefix:string ->
   cmd:string ->
   (Core.privmsg -> string -> string list Lwt.t) ->
   t
@@ -80,7 +78,6 @@ val make_simple_l :
 val make_simple_query_l :
   ?descr:string ->
   ?prio:int ->
-  ?prefix:string ->
   cmd:string ->
   (Core.privmsg -> string -> string list Lwt.t) ->
   t
@@ -90,13 +87,10 @@ val make_simple_query_l :
 val compare_prio : t -> t -> int
 (** Compare by priority. Used to sort a list of commands by their priority. *)
 
-val cmd_help :
-  prefix:string ->
-  t list ->
-  t
-(** [cmd_help ~prefix l] build a command [\[prefix\]help] that print a help
+val cmd_help : t list -> t
+(** [cmd_help l] build a command [help] that print a help
     message about plugins in l. *)
 
-val run : Core.t -> t list -> Core.privmsg -> unit Lwt.t
+val run : prefix:string -> Core.t -> t list -> Core.privmsg -> unit Lwt.t
 (** Execute the commands, in given order, on the message. First command
     to succeed shortcuts the other ones. *)

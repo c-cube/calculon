@@ -64,7 +64,7 @@ let group_join list =
 let re_split_pat = Re.Perl.compile_pat "(^!)|([+-:]?=)|(\\+\\+)|(--)"
 let re_factoid = Re.Perl.compile_pat "^[ ]*[^ \n\t]+[ ]*$"
 
-let parse_op msg : (op * string option) option =
+let parse_op ~prefix msg : (op * string option) option =
   let msg, hl = match Command.extract_hl msg with
     | None -> msg, None
     | Some (a,b) -> a, Some b
@@ -77,9 +77,8 @@ let parse_op msg : (op * string option) option =
   let mk_remove k v = Remove (mk_factoid k v) in
   let mk_incr k = Incr (mk_key k) in
   let mk_decr k = Decr (mk_key k) in
-  let is_command prefix =
-    String.equal "!" (Re.Group.get prefix 0) in  (*TODO: generalize to
-                                                           any prefix *)
+  let is_command l =
+    String.equal prefix (Re.Group.get l 0) in
   let is_factoid f = match Re.exec_opt re_factoid f with
     | None -> false
     | Some _ -> true
@@ -111,7 +110,7 @@ let parse_op msg : (op * string option) option =
     ) |> Prelude.map_opt (fun x->x, hl)
 
 let () =
-  let test_ok s = CCOpt.is_some (parse_op s) in
+  let test_ok s = CCOpt.is_some (parse_op ~prefix:"!" s) in
   assert (test_ok "!foo2 = bar");
   assert (test_ok "!foo2 = bar ");
   assert (test_ok "!foo2 += bar");
@@ -316,7 +315,7 @@ let search_tokenize s =
   |> Re.split (Re.Perl.compile_pat "[ \t]+")
 
 let cmd_search state =
-  Command.make_simple_l ~descr:"search in factoids" ~prefix:"!" ~cmd:"search" ~prio:10
+  Command.make_simple_l ~descr:"search in factoids" ~cmd:"search" ~prio:10
     (fun _ s ->
        let tokens = search_tokenize s in
        search tokens state.st_cur
@@ -328,7 +327,7 @@ let cmd_search state =
 let cmd_search_all state =
   Command.make_simple_query_l
     ~descr:"search all matches in factoids (reply in pv)"
-    ~prefix:"!" ~cmd:"search_all" ~prio:10
+    ~cmd:"search_all" ~prio:10
     (fun _ s ->
        let tokens = search_tokenize s in
        search tokens state.st_cur
@@ -337,7 +336,7 @@ let cmd_search_all state =
     )
 
 let cmd_see state =
-  Command.make_simple_l ~descr:"see a factoid's content" ~prefix:"!" ~cmd:"see" ~prio:10
+  Command.make_simple_l ~descr:"see a factoid's content" ~cmd:"see" ~prio:10
     (fun _ s ->
        let v = get (mk_key s) state.st_cur in
        let msg = match v with
@@ -351,7 +350,6 @@ let cmd_see state =
 let cmd_see_all state =
   Command.make_simple_query_l
     ~descr:"see all of a factoid's content (in pv)"
-    ~prefix:"!"
     ~cmd:"see_all"
     ~prio:10
     (fun _ s ->
@@ -365,7 +363,7 @@ let cmd_see_all state =
     )
 
 let cmd_random state =
-  Command.make_simple ~descr:"random factoid" ~prefix:"!" ~cmd:"random" ~prio:10
+  Command.make_simple ~descr:"random factoid" ~cmd:"random" ~prio:10
     (fun _ _ ->
        let msg = random state.st_cur in
        Some msg |> Lwt.return
@@ -375,7 +373,7 @@ let save state =
   Signal.Send_ref.send state.actions Plugin.Require_save
 
 let cmd_factoids state =
-  let reply (module C:Core.S) msg =
+  let reply ~prefix (module C:Core.S) msg =
     let target = Core.reply_to msg in
     let matched x = Command.Cmd_match x in
     let add_hl hl line = match hl with
@@ -397,7 +395,7 @@ let cmd_factoids state =
         C.send_privmsg ~target
           ~message:(Printf.sprintf "%s : %d" (k :> string) count)
     in
-    let op = parse_op msg.Core.message in
+    let op = parse_op ~prefix msg.Core.message in
     CCOpt.iter (fun (c,_) -> Log.logf "parsed command `%s`" (string_of_op c)) op;
     begin match op with
       | Some (Get k, hl) ->

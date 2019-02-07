@@ -207,7 +207,7 @@ let reply polls msg s =
 let cmd_vote state : Command.t =
   Command.make_simple
     ~descr:("vote system for yes/no questions\n" ^ help)
-    ~prefix:"!" ~cmd:"vote" ~prio:10
+    ~cmd:"vote" ~prio:10
     (reply state)
 
 let of_json _ _ : state Lwt_err.t =

@@ -274,7 +274,7 @@ type state = {
 
 let cmd_markov (state:state): Command.t =
   Command.make_simple
-    ~descr:"generate random chains" ~prio:15 ~prefix:"!" ~cmd:"markcough"
+    ~descr:"generate random chains" ~prio:15 ~cmd:"markcough"
     (fun _ msg ->
        let msg = String.trim msg in
        let author = if msg="" then None else Some msg in

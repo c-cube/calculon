@@ -98,9 +98,9 @@ let format_seq ?n results =
   CCList.map (show_result ~buffer) |>
   Lwt.return
 
-let mk_movie_cmd prefix cmd q_of_str =
+let mk_movie_cmd cmd q_of_str =
   Command.make_simple_l
-    ~descr:"look for movies/series" ~prio:10 ?prefix ~cmd
+    ~descr:"look for movies/series" ~prio:10 ~cmd
     (fun _ s ->
        String.trim s |>
        q_of_str |>
@@ -108,8 +108,8 @@ let mk_movie_cmd prefix cmd q_of_str =
        format_seq
     )
 
-let cmd_film = mk_movie_cmd (Some "!") "film" query_movie
-let cmd_serie = mk_movie_cmd (Some "!") "serie" query_serie
+let cmd_film = mk_movie_cmd "film" query_movie
+let cmd_serie = mk_movie_cmd "serie" query_serie
 
 let plugin =
   [ cmd_film;

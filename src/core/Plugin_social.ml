@@ -102,7 +102,7 @@ let cmd_tell_inner ~at state =
   Command.make_simple
     ~descr:("ask the bot to transmit a message to someone absent\n"
       ^ if at then "format: <date> <nick> <msg>" else "format: <nick> <msg>")
-    ~prio:10 ~prefix:"!" ~cmd:(if at then "tell_at" else "tell")
+    ~prio:10 ~cmd:(if at then "tell_at" else "tell")
     (fun msg s ->
        let nick = msg.Core.nick in
        let target = Core.reply_to msg in
@@ -160,7 +160,7 @@ let create_message_for_user now (user,last) =
 let cmd_seen (state:state) =
   Command.make_simple_l
     ~descr:"ask for the last time someone talked on this chan"
-    ~prio:10 ~prefix:"!" ~cmd:"seen"
+    ~prio:10 ~cmd:"seen"
     (fun _msg s ->
        try
          let dest = CCString.trim s |> CCString.uppercase_ascii in
@@ -182,7 +182,7 @@ let cmd_seen (state:state) =
 let cmd_last (state:state) =
   Command.make_simple_l
     ~descr:"ask for the last n people talking on this chan (default: n=3)"
-    ~prio:10 ~prefix:"!" ~cmd:"last"
+    ~prio:10 ~cmd:"last"
     (fun msg s ->
        try
          let default_n = 3 in
@@ -214,8 +214,7 @@ let cmd_last (state:state) =
 
 let cmd_ignore_template ~cmd prefix_stem ignore (state:state) =
   Command.make_simple
-    ~descr:(cmd ^ " nick")
-    ~prio:10 ~prefix:"!" ~cmd
+    ~descr:(cmd ^ " nick") ~prio:10 ~cmd
     (fun _ s ->
        try
          let dest = String.trim s in
@@ -241,8 +240,7 @@ let cmd_unignore = cmd_ignore_template ~cmd:"unignore" "unignor" false
 
 let cmd_ignore_list (state:state) =
   Command.make_simple_l
-    ~descr:"add nick to list of ignored people"
-    ~prio:10 ~prefix:"!" ~cmd:"ignore_list"
+    ~descr:"add nick to list of ignored people" ~prio:10 ~cmd:"ignore_list"
     (fun _ _ ->
        try
          Log.logf "query: ignore_list";

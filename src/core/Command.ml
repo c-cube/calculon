@@ -10,7 +10,7 @@ type res =
 
 type t = {
   prio: int;
-  match_: Core.t -> Core.privmsg -> res;
+  match_: prefix:string -> Core.t -> Core.privmsg -> res; (** How to react to incoming messages *)
   name: string;
   descr: string;
 }
@@ -48,8 +48,8 @@ let match_prefix1 ~prefix ~cmd msg =
 
 exception Fail of string
 
-let make_simple_inner_ ~query ?descr ?prio ~prefix ~cmd f : t =
-  let match_ (module C:Core.S) msg =
+let make_simple_inner_ ~query ?descr ?prio ~cmd f : t =
+  let match_ ~prefix (module C:Core.S) msg =
     match match_prefix1_full ~prefix ~cmd msg with
       | None -> Cmd_skip
       | Some (sub, hl) ->
@@ -72,22 +72,19 @@ let make_simple_inner_ ~query ?descr ?prio ~prefix ~cmd f : t =
   in
   make ?descr ?prio ~name:cmd match_
 
-let make_simple_l ?descr ?prio ?(prefix="!") ~cmd f : t =
+let make_simple_l ?descr ?prio ~cmd f : t =
   let descr = match descr with
-    | None -> Printf.sprintf "(prefix: %s)" prefix
-    | Some s -> Printf.sprintf "%s (prefix: %s)" s prefix
+    | None -> cmd
+    | Some s -> s
   in
-  make_simple_inner_ ~query:false ~descr ?prio ~prefix ~cmd f
+  make_simple_inner_ ~query:false ~descr ?prio ~cmd f
 
-let make_simple_query_l ?descr ?prio ?(prefix="!") ~cmd f : t =
-  let descr = match descr with
-    | None -> Printf.sprintf "(prefix: %s)" prefix
-    | Some s -> Printf.sprintf "%s (prefix: %s)" s prefix
-  in
-  make_simple_inner_ ~query:true ~descr ?prio ~prefix ~cmd f
+let make_simple_query_l ?descr ?prio ~cmd f : t =
+  let descr = match descr with Some s -> s | None -> cmd in
+  make_simple_inner_ ~query:true ~descr ?prio ~cmd f
 
-let make_simple ?descr ?prio ?prefix ~cmd f : t =
-  make_simple_l ?descr ?prio ?prefix ~cmd
+let make_simple ?descr ?prio ~cmd f : t =
+  make_simple_l ?descr ?prio ~cmd
     (fun msg s -> f msg s >|= function
        | None -> []
        | Some x -> [x])
@@ -95,17 +92,15 @@ let make_simple ?descr ?prio ?prefix ~cmd f : t =
 let compare_prio c1 c2 = compare c1.prio c2.prio
 
 (** Help command *)
-let cmd_help ~prefix (l:t list): t =
-  make_simple ~descr:"help message" ~prefix  ~cmd:"help" ~prio:5
+let cmd_help (l:t list): t =
+  make_simple ~descr:"help message" ~cmd:"help" ~prio:5
     (fun _ s ->
        let s = String.trim s in
        let res =
          match s with
          | "" ->
            let l = "help" :: List.map (fun c -> c.name) l in
-           let message =
-             prefix ^ "help: commands are " ^ Prelude.string_list_to_string l
-           in
+           let message = "help: commands are " ^ Prelude.string_list_to_string l in
            Some message
          | "help" -> Some "displays help for commands"
          | _ ->
@@ -118,13 +113,13 @@ let cmd_help ~prefix (l:t list): t =
        Lwt.return res
     )
 
-let run core l msg : unit Lwt.t =
+let run ~prefix core l msg : unit Lwt.t =
   let rec aux = function
     | [] ->
       Log.logf "no command found for %s" (Core.string_of_privmsg msg);
       Lwt.return_unit
     | c :: tail ->
-      begin match c.match_ core msg with
+      begin match c.match_ ~prefix core msg with
         | Cmd_skip -> aux tail
         | Cmd_match f ->
           Log.logf "command %s succeeded for %s"
