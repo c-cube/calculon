@@ -104,6 +104,6 @@ let iter_file_or_dir fmt s =
   if Sys.is_directory s
   then
     seq_files_ s
-    |> Sequence.flat_map (iter_file fmt)
+    |> Iter.flat_map (iter_file fmt)
   else iter_file fmt s
 

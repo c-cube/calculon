@@ -24,6 +24,7 @@ depends: [
   "ISO8601"
   "stringext"
   "re" { >= "1.7.2" }
+  "iter"
   "odoc" {with-doc}
   "ocaml" { >= "4.03.0" }
   "mdx" {with-test}

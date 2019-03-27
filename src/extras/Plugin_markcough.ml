@@ -79,7 +79,7 @@ module Table = struct
   let map_weight_get_ ~get_w i m =
     let i = ref i in
     TokenMap.to_seq m
-    |> Sequence.find
+    |> Iter.find
       (fun sub ->
          let w_sub = get_w sub in
          if w_sub <= !i then (
@@ -224,15 +224,15 @@ module Parse_logs = struct
   (* parse the file and add it to the table *)
   let parse_file fmt file tbl =
     I.iter_file fmt file
-    |> Sequence.fold (fun tbl r -> parse_record r tbl) tbl
+    |> Iter.fold (fun tbl r -> parse_record r tbl) tbl
 
   let parse_dir fmt dir tbl =
     I.iter_dir fmt dir
-    |> Sequence.fold (fun tbl (_file,r) -> parse_record r tbl) tbl
+    |> Iter.fold (fun tbl (_file,r) -> parse_record r tbl) tbl
 
   let parse_file_or_dir fmt name tbl =
     I.iter_file_or_dir fmt name
-    |> Sequence.fold (fun tbl r -> parse_record r tbl) tbl
+    |> Iter.fold (fun tbl r -> parse_record r tbl) tbl
 end
 
 (** {2 Generate} *)
