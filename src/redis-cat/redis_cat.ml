@@ -26,6 +26,13 @@ let main ~stdin ~files ~targets ~debug () : unit Lwt.t =
           Lwt_io.printlf "received %s" (CR.Message_j.string_of_message msg));
       R.join c
     ) else (
+      (* join channels *)
+      Lwt_list.iter_s
+        (fun t ->
+           if t.[0] = '#' then (
+             R.send c {CR.Message_t.message=`Join [t]}
+           ) else Lwt.return ())
+        targets >>= fun () ->
       (* write *)
       let stdin = if stdin then cat_in c ~targets Lwt_io.stdin else Lwt.return () in
       let files =
