@@ -12,6 +12,9 @@ test: build
 clean:
 	@dune clean
 
+watch:
+	@dune build @all --watch
+
 doc:
 	@dune build @doc
 

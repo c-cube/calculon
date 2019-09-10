@@ -87,6 +87,8 @@ module type S = sig
 
   val send_join : channel:string -> unit Lwt.t
 
+  val send_part : channel:string -> unit Lwt.t
+
   val talk : target:string -> Talk.t -> unit Lwt.t
 end
 
@@ -170,6 +172,9 @@ module Make
 
   let send_join ~channel =
     I.send_join ~connection ~channel
+
+  let send_part ~channel =
+    I.send ~connection Irc_message.({prefix=None; command=PART ([channel], "bye y'all")})
 
   let talk ~target ty =
     let message = Talk.select ty in

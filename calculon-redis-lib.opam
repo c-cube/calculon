@@ -1,0 +1,21 @@
+opam-version: "2.0"
+name: "calculon-redis-client"
+version: "0.4"
+synopsis: "A library to interact with Calculon via Redis"
+authors: ["c-cube"]
+maintainer: "c-cube"
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "build" "@doc" "-p" name] {with-doc}
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
+]
+depends: [
+  "dune" {build}
+  "calculon-redis-protocol"
+  "redis"
+  "redis-lwt"
+]
+tags: [ "irc" "bot" "redis" ]
+homepage: "https://github.com/c-cube/calculon"
+bug-reports: "https://github.com/c-cube/calculon/issues"
+dev-repo: "git+https://github.com/c-cube/calculon.git"

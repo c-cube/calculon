@@ -100,6 +100,9 @@ module type S = sig
   val send_join : channel:string -> unit Lwt.t
   (** Send a "join" messages to try and join some channel *)
 
+  val send_part : channel:string -> unit Lwt.t
+  (** Send a "part" messages to try and part some channel *)
+
   val talk : target:string -> Talk.t -> unit Lwt.t
   (** Send a pre-formatted answer to the channel. *)
 end

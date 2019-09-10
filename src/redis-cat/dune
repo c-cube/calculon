@@ -1,0 +1,4 @@
+
+(executable
+  (name redis_cat)
+  (libraries unix lwt.unix calculon-redis-lib))

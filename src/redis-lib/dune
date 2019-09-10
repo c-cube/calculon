@@ -1,0 +1,15 @@
+(library
+   (name calculon_redis_lib)
+   (public_name calculon-redis-lib)
+   (flags :standard -warn-error -7)
+   (libraries atdgen-runtime lwt redis redis-lwt))
+
+(rule
+  (targets Message_j.ml Message_j.mli)
+  (deps    Message.atd)
+  (action  (run atdgen -j -j-std %{deps})))
+
+(rule
+  (targets Message_t.ml Message_t.mli)
+  (deps    Message.atd)
+  (action  (run atdgen -t -j-std %{deps})))

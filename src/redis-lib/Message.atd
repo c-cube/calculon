@@ -1,0 +1,16 @@
+
+type message = [
+  | Join <json name="join"> of string list
+  | Part <json name="part"> of string list
+  | Privmsg <json name="privmsg"> of privmsg
+]
+
+type privmsg = {
+  source <json name="source">: string; 
+  dest <json name="dest"> : string;
+  message <json name="message"> : string;
+}
+
+type send = {
+  message <json name = "message">: message;
+}
