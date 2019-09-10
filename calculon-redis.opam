@@ -12,6 +12,7 @@ build: [
 depends: [
   "dune" {build}
   "calculon" { >= "0.4" }
+  "calculon-redis-lib"
   "redis"
   "redis-lwt"
 ]
