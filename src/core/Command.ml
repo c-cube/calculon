@@ -1,4 +1,3 @@
-
 (** {1 Command Type} *)
 
 open Lwt.Infix
@@ -32,7 +31,7 @@ let extract_hl s =
 
 let match_prefix1_full ~prefix ~cmd msg : (string * string option) option =
   let re = Re.Perl.compile_pat
-      (Printf.sprintf "^%s[ ]*%s\\b[ ]*(.*)$" prefix cmd)
+      (Printf.sprintf "^%s\\b[ ]*%s\\b[ ]*(.*)$" prefix cmd)
   in
   begin match Prelude.re_match1 Prelude.id re msg.Core.message with
     | None -> None
