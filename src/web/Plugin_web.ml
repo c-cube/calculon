@@ -3,22 +3,16 @@
 
 open Calculon
 
-open Cohttp_lwt_unix
 open Soup
 open Lwt.Infix
 
+let get_body uri =
+  Ezcurl_lwt.get ~url:(Uri.to_string uri) ()
+  >>= function
+  | Ok {Ezcurl_lwt.body; _} -> Lwt.return body
+  | Error (_, msg) -> Lwt.fail (Failure msg)
+
 let page_title ~with_description uri =
-  let open Cohttp in
-  let rec get_body uri =
-    Client.get uri >>= fun (resp, body) ->
-    if Code.(is_redirection (code_of_status resp.Response.status)) then
-      Header.get resp.Response.headers "location"
-      |> CCOpt.get_exn
-      |> Uri.of_string
-      |> get_body
-    else
-      Cohttp_lwt.Body.to_string body
-  in
   get_body uri >>= fun body ->
   let tags = Og.Parser.parse_string body in
   let title_descr = List.fold_left (fun (t,d) -> function
@@ -70,8 +64,7 @@ let get_youtube_search (query:string): string Lwt.t =
     Uri.of_string "https://www.youtube.com/results"
   in
   let uri = Uri.add_query_params' uri ["sp","EgIQAQ%3D%3D"; "q", query] in
-  Cohttp_lwt_unix.Client.get uri >>= fun (_,body) ->
-  Cohttp_lwt.Body.to_string body
+  get_body uri
 
 let cmd_yt_search =
   Command.make_simple_l
@@ -109,8 +102,7 @@ module Giphy = struct
     let uri = mk_query s in
     Lwt.catch
       (fun () ->
-        Cohttp_lwt_unix.Client.get uri >>= fun (_,body) ->
-        Cohttp_lwt.Body.to_string body >|= fun s ->
+        get_body uri >|= fun s ->
         try
           let r = Giphy_j.search_result_of_string s in
           begin match r.Giphy_j.data with

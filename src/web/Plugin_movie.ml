@@ -2,8 +2,13 @@
 open Calculon
 
 open Lwt.Infix
-open Cohttp_lwt_unix
 open CCFun
+
+let get_body uri =
+  Ezcurl_lwt.get ~url:(Uri.to_string uri) ()
+  >>= function
+  | Ok {Ezcurl_lwt.body; _} -> Lwt.return body
+  | Error (_, msg) -> Lwt.fail (Failure msg)
 
 type query =
   | Movie of string
@@ -40,16 +45,11 @@ let parse_get body =
     None
 
 let search query =
-  make_search_uri query |>
-  Client.get >>= fun (_, body) ->
-  Cohttp_lwt.Body.to_string body >|=
+  make_search_uri query |> get_body  >|=
   parse_search
 
 let get_infos id =
-  make_get_uri id |>
-  Client.get >>= fun (_, body) ->
-  Cohttp_lwt.Body.to_string body >|=
-  parse_get
+  make_get_uri id |> get_body >|= parse_get
 
 let ellipsis n s =
   if String.length s > n then begin

@@ -13,6 +13,8 @@ depends: [
   "dune" {build}
   "redis"
   "redis-lwt"
+  "atdgen"
+  "yojson"
 ]
 tags: [ "irc" "bot" "redis" ]
 homepage: "https://github.com/c-cube/calculon"

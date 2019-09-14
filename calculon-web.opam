@@ -14,9 +14,7 @@ depends: [
   "calculon" { >= "0.4" }
   "re" { >= "1.7.2" }
   "uri"
-  "cohttp"
-  "cohttp-lwt"
-  "cohttp-lwt-unix"
+  "ezcurl-lwt"
   "atdgen"
   "lambdasoup"
   "sequence"
