@@ -109,8 +109,8 @@ end
 
 type t = (module S)
 
-val loop_tls :
-  connect:(unit -> Irc_client_tls.connection_t option Lwt.t) ->
+val loop_ssl :
+  connect:(unit -> Irc_client_lwt_ssl.connection_t option Lwt.t) ->
   init:(t -> unit Lwt.t) ->
   unit ->
   unit Lwt.t

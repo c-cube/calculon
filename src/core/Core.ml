@@ -216,8 +216,8 @@ module Run
       ()
 end
 
-let loop_tls ~connect ~init () : unit Lwt.t =
-  let module R = Run(Irc_client_tls)(struct
+let loop_ssl ~connect ~init () : unit Lwt.t =
+  let module R = Run(Irc_client_lwt_ssl)(struct
       let connect = connect
       let init = init
     end) in
@@ -246,24 +246,14 @@ let run conf ~init () =
   in
   if conf.C.tls
   then (
-    let tls_config =
-      match conf.C.tls_cert with
-        | Some certchain ->
-          let certificates = `Single certchain in
-          Some
-            (Tls.Config.client
-               ~authenticator:X509.Authenticator.null
-               ~certificates
-               ())
-        | None -> None
-    in
+    let tls_config = Irc_client_lwt_ssl.Config.default in
     let connect () =
-      Irc_client_tls.connect_by_name
+      Irc_client_lwt_ssl.connect_by_name
         ~username:conf.C.username ~realname:conf.C.realname ~nick:conf.C.nick
-        ~server:conf.C.server ~port:conf.C.port ?config:tls_config
+        ~server:conf.C.server ~port:conf.C.port ~config:tls_config
         ()
     in
-    loop_tls ~connect ~init ()
+    loop_ssl ~connect ~init ()
   ) else (
     let connect () =
       Irc_client_lwt.connect_by_name

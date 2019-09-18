@@ -13,7 +13,7 @@ type t = {
   realname : string;
   nick : string;
   tls: bool;
-  tls_cert : Tls.Config.certchain option;
+  tls_cert : Ssl.certificate option;
   channel : string;
   state_file : string;
   irc_log: irc_log; (* log IRC events *)
