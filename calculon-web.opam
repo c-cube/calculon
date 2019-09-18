@@ -17,7 +17,6 @@ depends: [
   "ezcurl-lwt"
   "atdgen"
   "lambdasoup"
-  "sequence"
   "odoc" {with-doc}
   "ocaml" { >= "4.03.0" }
 ]
