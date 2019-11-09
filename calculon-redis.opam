@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "calculon-redis"
-version: "0.4"
+version: "0.5"
 synopsis: "A redis plugin for Calculon"
 authors: ["c-cube"]
 maintainer: "c-cube"
@@ -10,10 +10,10 @@ build: [
   ["dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
 depends: [
-  "dune" {build}
-  "calculon" { >= "0.4" }
-  "calculon-redis-lib"
-  "redis"
+  "dune" { >= "1.1" }
+  "calculon" { = version }
+  "calculon-redis-lib" { = version }
+  "redis" { >= "0.3" }
   "redis-lwt"
 ]
 tags: [ "irc" "bot" "redis" ]

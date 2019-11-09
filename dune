@@ -2,10 +2,3 @@
 (env
   (dev
     (flags (:standard -warn-error -a))))
-
-(alias
- (name runtest)
- (deps README.md)
- (action (progn
-          (run ocaml-mdx test %{deps})
-          (diff? %{deps} %{deps}.corrected))))

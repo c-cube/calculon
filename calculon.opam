@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "calculon"
-version: "0.4"
+version: "0.5"
 synopsis: "Library for writing IRC bots in OCaml and a collection of plugins"
 authors: ["Armael" "Enjolras" "c-cube"]
 maintainer: "c-cube"
@@ -10,7 +10,7 @@ build: [
   [ "dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
 depends: [
-  "dune" {build}
+  "dune" { >= "1.1" }
   "base-bytes"
   "base-unix"
   "result"
@@ -26,7 +26,6 @@ depends: [
   "iter"
   "odoc" {with-doc}
   "ocaml" { >= "4.03.0" }
-  "mdx" {with-test}
 ]
 tags: [ "irc" "bot" "factoids" ]
 homepage: "https://github.com/c-cube/calculon"
