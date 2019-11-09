@@ -14,7 +14,7 @@ depends: [
   "calculon" { >= "0.4" }
   "re" { >= "1.7.2" }
   "uri"
-  "ezcurl-lwt"
+  "curly"
   "atdgen"
   "lambdasoup"
   "odoc" {with-doc}

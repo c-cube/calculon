@@ -7,10 +7,14 @@ open Soup
 open Lwt.Infix
 
 let get_body uri =
-  Ezcurl_lwt.get ~url:(Uri.to_string uri) ()
+  Lwt_preemptive.detach
+    (fun () ->
+       Curly.run ~args:["-L"]
+         Curly.(Request.make ~url:(Uri.to_string uri) ~meth:`GET ()))
+    ()
   >>= function
-  | Ok {Ezcurl_lwt.body; _} -> Lwt.return body
-  | Error (_, msg) -> Lwt.fail (Failure msg)
+  | Ok {Curly.Response. body;_ } -> Lwt.return body
+  | Error e -> Lwt.fail (Failure (Format.asprintf "%a" Curly.Error.pp e))
 
 let page_title ~with_description uri =
   get_body uri >>= fun body ->

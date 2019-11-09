@@ -5,10 +5,14 @@ open Lwt.Infix
 open CCFun
 
 let get_body uri =
-  Ezcurl_lwt.get ~url:(Uri.to_string uri) ()
+  Lwt_preemptive.detach
+    (fun () ->
+       Curly.run ~args:["-L"]
+         Curly.(Request.make ~url:(Uri.to_string uri) ~meth:`GET ()))
+    ()
   >>= function
-  | Ok {Ezcurl_lwt.body; _} -> Lwt.return body
-  | Error (_, msg) -> Lwt.fail (Failure msg)
+  | Ok {Curly.Response. body;_ } -> Lwt.return body
+  | Error e -> Lwt.fail (Failure (Format.asprintf "%a" Curly.Error.pp e))
 
 type query =
   | Movie of string
