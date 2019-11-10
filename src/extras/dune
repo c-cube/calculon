@@ -2,6 +2,5 @@
 (library
    (name calculon_extras)
    (public_name calculon.extras)
-   (flags :standard -w +a-4-42-44-48-29@8)
    (libraries calculon re re.posix iter unix)
    )
