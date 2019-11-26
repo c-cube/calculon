@@ -39,7 +39,7 @@ let parse ?(extra_args=[]) conf args =
   let custom_chan = ref None in
   let custom_server = ref None in
   let custom_state = ref None in
-  let custom_port = ref 7000 in
+  let custom_port = ref conf.port in
   let custom_tls = ref None in
   let prefix = ref default.prefix in
   let debug_stderr = ref false in
