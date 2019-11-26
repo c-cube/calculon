@@ -35,10 +35,18 @@ val default : t
 - prefix = "!"
  *)
 
-val parse : t -> string array -> t
+val parse :
+  ?extra_args:(string * Arg.spec * string) list ->
+  t -> string array -> t
 (** [parse conf args] is the same as [conf], but some command line
-    arguments can override its fields *)
+    arguments can override its fields
+    @param extra_args additional command line arguments for {!Arg} (since NEXT_RELEASE)
+*)
 
-val of_argv : unit -> t
+val of_argv :
+  ?extra_args:(string * Arg.spec * string) list ->
+  unit -> t
 (** Parsed from {!Sys.argv}
-    Will call {!exit} if [Arg.parse] fails *)
+    Will call {!exit} if [Arg.parse] fails
+    @param extra_args additional command line arguments for {!Arg} (since NEXT_RELEASE)
+*)

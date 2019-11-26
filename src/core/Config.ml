@@ -34,7 +34,7 @@ let default = {
   prefix = "!";
 }
 
-let parse conf args =
+let parse ?(extra_args=[]) conf args =
   let custom_nick = ref None in
   let custom_chan = ref None in
   let custom_server = ref None in
@@ -43,7 +43,7 @@ let parse conf args =
   let custom_tls = ref None in
   let prefix = ref default.prefix in
   let debug_stderr = ref false in
-  let options = Arg.align
+  let options = Arg.align @@ extra_args @
       [ "--nick", Arg.String (fun s -> custom_nick := Some s),
         " custom nickname (default: " ^ default.nick ^ ")"
       ; "--chan", Arg.String (fun s -> custom_chan := Some s),
@@ -72,8 +72,8 @@ let parse conf args =
     prefix = !prefix;
   }
 
-let of_argv () =
-  try parse default Sys.argv
+let of_argv ?extra_args () =
+  try parse ?extra_args default Sys.argv
   with
     | Arg.Bad msg -> print_endline msg; exit 1
     | Arg.Help msg -> print_endline msg; exit 0
