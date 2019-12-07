@@ -3,7 +3,7 @@
     A plugin is a bunch of commands, and optionally some disk-backed state.
     It will register its commands to the core loop *)
 
-type json = Yojson.Safe.json
+type json = Yojson.Safe.t
 
 type action =
   | Require_reload

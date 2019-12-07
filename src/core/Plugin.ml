@@ -1,6 +1,6 @@
 (** {1 Plugins} *)
 
-type json = Yojson.Safe.json
+type json = Yojson.Safe.t
 
 type action =
   | Require_reload

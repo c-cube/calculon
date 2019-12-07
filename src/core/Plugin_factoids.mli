@@ -9,8 +9,8 @@ type t = factoid StrMap.t
 
 val key_of_string : string -> key option
 
-val factoids_of_json : Yojson.Safe.json -> (t, string) CCResult.t
-val json_of_factoids : t -> Yojson.Safe.json
+val factoids_of_json : Yojson.Safe.t -> (t, string) CCResult.t
+val json_of_factoids : t -> Yojson.Safe.t
 
 type op =
   | Get of key

@@ -8,7 +8,7 @@ type value =
   | Int of int
 type factoid = {key: key; value: value}
 type t = factoid StrMap.t
-type json = Yojson.Safe.json
+type json = Yojson.Safe.t
 
 type op =
   | Get of key

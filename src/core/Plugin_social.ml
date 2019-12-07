@@ -2,7 +2,7 @@ open Prelude
 open Containers
 
 module J = Yojson.Safe.Util
-type json = Yojson.Safe.json
+type json = Yojson.Safe.t
 
 type to_tell = {
   from: string;
