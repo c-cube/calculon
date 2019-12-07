@@ -1,5 +1,5 @@
 
-type json <ocaml module="Yojson.Safe"> = abstract
+type json <ocaml module="Yojson.Safe" t="t"> = abstract
 
 type image = {
   i_url <json name="url">: string;
