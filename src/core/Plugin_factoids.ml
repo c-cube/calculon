@@ -396,7 +396,10 @@ let cmd_factoids state =
           ~message:(Printf.sprintf "%s : %d" (k :> string) count)
     in
     let op = parse_op ~prefix msg.Core.message in
-    CCOpt.iter (fun (c,_) -> Log.logf "parsed command `%s`" (string_of_op c)) op;
+    CCOpt.iter
+      (fun (c,_) ->
+         Logs.debug ~src:Core.logs_src (fun k->k "parsed command `%s`" (string_of_op c)))
+      op;
     begin match op with
       | Some (Get k, hl) ->
         begin match get k state.st_cur with

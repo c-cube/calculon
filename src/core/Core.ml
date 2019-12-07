@@ -9,6 +9,7 @@ open Lwt.Infix
 
 module Msg = Irc_message
 type irc_msg = Irc_message.t
+let logs_src = Logs.Src.create ~doc:"logs for calculon" "calculon"
 
 type privmsg = {
   nick: string; (* author *)
@@ -50,8 +51,13 @@ module type S = sig
   val exit : unit Lwt.t
 
   val log : string -> unit Lwt.t
+  [@@ocaml.deprecated "use library logs instead"]
+
   val logf : ('a, Format.t, unit, unit Lwt.t) format4 -> 'a
+  [@@ocaml.deprecated "use library logs instead"]
+
   val set_log : (string -> unit Lwt.t) -> unit
+  [@@ocaml.deprecated "use library logs instead"]
 
   val send_exit : unit -> unit
 
@@ -108,16 +114,16 @@ module Make
 
   let send_exit () = Lwt.wakeup send_exit ()
 
-  let set_log, log =
-    let _log = ref (fun _ -> Lwt.return_unit) in
-    (fun l -> _log := l), (fun s -> !_log s)
+  let set_log _ =
+    Logs.err ~src:logs_src (fun k->k "call to deprecated `set_log` function");
+    ()
 
-  let logf msg =
-    let buf = Buffer.create 32 in
-    let fmt = Format_.formatter_of_buffer buf in
-    Format_.kfprintf
-      (fun fmt -> Format_.pp_print_flush fmt (); log (Buffer.contents buf))
-      fmt msg
+  let log s =
+    Logs.err ~src:logs_src (fun k->k "call to deprecated `log` function");
+    Logs.debug ~src:logs_src (fun k->k "log(): %s" s);
+    Lwt.return_unit
+
+  let logf msg = Format.kasprintf log msg
 
   let messages = Signal.create ()
   let privmsg = Signal.filter_map messages privmsg_of_msg
@@ -181,7 +187,8 @@ module Make
     send_privmsg ~target ~message
 
   let () =
-    I.set_log (fun s -> Log.log s; Lwt.return_unit)
+    let src = Logs.Src.create "irc-client" ~doc:"ocaml-irc-client" in
+    I.set_log (fun s -> Logs.debug ~src (fun k -> k "%s" s); Lwt.return_unit)
 end
 
 module Run
@@ -196,19 +203,24 @@ module Run
     I.reconnect_loop
       ~keepalive:{I.mode=`Passive; timeout=300}
       ~after:60
-      ~connect:F.connect
-      ~callback:(fun _ msg_or_err -> match !self with
+      ~connect:(fun () ->
+          Logs.info ~src:logs_src (fun k->k "trying to (re)connect…");
+          F.connect ())
+      ~callback:(fun _ msg_or_err ->
+        match !self with
         | None -> Lwt.return_unit
         | Some (module C) ->
           begin match msg_or_err with
             | Result.Ok msg ->
-              C.logf "got message %s" (Irc_message.to_string msg) >>= fun () ->
+              Logs.debug ~src:logs_src
+                (fun k->k "got message %s" (Irc_message.to_string msg));
               Signal.send C.messages msg
             | Result.Error err ->
-              Printf.eprintf "%s\n%!" err;
+              Logs.err ~src:logs_src (fun k->k "error: %s" err);
               Lwt.return ()
           end)
       ~f:(fun conn ->
+        Logs.info ~src:logs_src (fun k->k "connected, instantiate core");
         let module C = Make(I)(struct let c = conn end) in
         let new_c = (module C : S) in
         self := Some new_c;
@@ -234,18 +246,16 @@ let run conf ~init () =
   let module C = Config in
   let init (core:t) =
     let (module C) = core in
-    (* setup log *)
+    (* setup reporter based on config *)
     begin match conf.Config.irc_log with
       | `None -> ()
-      | `Custom f -> C.I.set_log f; C.set_log f
-      | `Chan c ->
-        let log s = Lwt_io.fprintl c s >>= fun () -> Lwt_io.flush c in
-        C.I.set_log log; C.set_log log
+      | `Custom _ | `Chan _ ->
+        Logs.err ~src:logs_src (fun k->k "use of conf.Config.irc-log field");
+        ()
     end;
     init core
   in
-  if conf.C.tls
-  then (
+  if conf.C.tls then (
     let tls_config = Irc_client_lwt_ssl.Config.default in
     let connect () =
       Irc_client_lwt_ssl.connect_by_name

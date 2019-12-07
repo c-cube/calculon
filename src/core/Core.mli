@@ -138,3 +138,9 @@ val run :
 (** Main entry point: use config to pick the connection method,
     then call the appropriate auto-reconnection loop.
     Calls {!init} every time a new connection is opened. *)
+
+(** Logging *)
+
+val logs_src: Logs.Src.t
+(** Logs from Calculon should use this source.
+    @since NEXT_RELEASE *)

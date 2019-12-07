@@ -7,14 +7,15 @@ let main ?cmd_help conf all : unit Lwt.t =
     Plugin.Set.create ?cmd_help conf all >>= fun plugins ->
     (* connect to chan *)
     C.send_join ~channel:conf.Config.channel |> ok >|= fun () ->
-    Log.logf "run %d plugins" (List.length all);
+    Logs.info ~src:Core.logs_src (fun k->k "run %d plugins" (List.length all));
     (* log incoming messages, apply commands to them *)
     let prefix = conf.Config.prefix in
     Signal.on' C.messages
       (fun msg ->
          let cmds = Plugin.Set.commands plugins in
          let on_msg_l = Plugin.Set.on_msg_l plugins in
-         Log.logf "got message: %s" (Irc_message.to_string msg);
+         Logs.info ~src:Core.logs_src
+           (fun k->k "got message: %s" (Irc_message.to_string msg));
          let open Lwt.Infix in
          Lwt_list.iter_s (fun f -> f core msg) on_msg_l >>= fun () ->
          match Core.privmsg_of_msg msg with
@@ -28,6 +29,6 @@ let main ?cmd_help conf all : unit Lwt.t =
     init_or_err core >|= function
     | Result.Ok () -> ()
     | Result.Error msg ->
-      Log.logf "error in main loop: %s" msg;
+      Logs.err ~src:Core.logs_src (fun k->k "error in main loop: %s" msg);
   in
   Core.run conf ~init ()

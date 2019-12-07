@@ -292,7 +292,7 @@ let of_json _ _ : state Lwt_err.t =
     tbl;
     rand=Random.State.make_self_init();
   } in
-  Log.logf "markcough: parsed state, weight %d" (Table.get_weight tbl);
+  Logs.debug (fun k->k  "markcough: parsed state, weight %d" (Table.get_weight tbl));
   Lwt_err.return state
 
 let plugin =

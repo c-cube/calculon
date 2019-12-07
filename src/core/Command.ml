@@ -115,18 +115,18 @@ let cmd_help (l:t list): t =
 let run ~prefix core l msg : unit Lwt.t =
   let rec aux = function
     | [] ->
-      Log.logf "no command found for %s" (Core.string_of_privmsg msg);
+      Logs.debug (fun k->k "no command found for %s" (Core.string_of_privmsg msg));
       Lwt.return_unit
     | c :: tail ->
       begin match c.match_ ~prefix core msg with
         | Cmd_skip -> aux tail
         | Cmd_match f ->
-          Log.logf "command %s succeeded for %s"
-            c.name (Core.string_of_privmsg msg);
+          Logs.debug (fun k->k "command %s succeeded for %s"
+            c.name (Core.string_of_privmsg msg));
           f
         | Cmd_fail e ->
-          Log.logf "command %s failed on %s with %s"
-            c.name (Core.string_of_privmsg msg) e;
+          Logs.debug (fun k->k "command %s failed on %s with %s"
+            c.name (Core.string_of_privmsg msg) e);
           aux tail
       end
   in

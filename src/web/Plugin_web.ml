@@ -78,7 +78,7 @@ let cmd_yt_search =
         find_yt_ids ~n:1 body)
        >>= fun urls ->
        Lwt_list.fold_left_s (fun acc url ->
-           Log.logf "Getting metadata for url %s" url;
+           Logs.debug ~src:Core.logs_src (fun k->k "Getting metadata for url %s" url);
            page_title ~with_description:false (Uri.of_string url) >>= function
            | Some x ->
              let descr = Format.asprintf "%s : %s" url x in
@@ -113,17 +113,18 @@ module Giphy = struct
             | [] -> None
             | l ->
               let r = Prelude.random_l l in
-              Log.logf "giphy: pick `%s` in list of len %d"
-                r.Giphy_j.url (List.length l);
+              Logs.info ~src:Core.logs_src
+                (fun k->k "giphy: pick `%s` in list of len %d"
+                  r.Giphy_j.url (List.length l));
               let images = r.Giphy_j.images in
               begin match images.Giphy_j.images_original, images.Giphy_j.images_downsized with
                 | Some i, _ -> Some i.Giphy_j.i_url
                 | None, Some i -> Some i.Giphy_j.i_url
                 | None, None ->
                   (* default: return the embed_url *)
-                  Log.logf
+                  Logs.err ~src:Core.logs_src (fun k->k 
                     "giphy: could not get `original` or `downsized` picture for `%s`"
-                    r.Giphy_j.url;
+                    r.Giphy_j.url);
                   Some r.Giphy_j.embed_url
               end
           end

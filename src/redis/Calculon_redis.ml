@@ -20,18 +20,18 @@ type t = {
 let fwd_loop (self:t) : unit Lwt.t =
   R.subscribe self.sub [self.config.prefix ^ ":send"] >>= fun () ->
   let process_send s =
-    Log.logf "redis.fwd-loop: process %S" s;
+    Logs.debug ~src:Core.logs_src (fun k->k "redis.fwd-loop: process %S" s);
     match self.core, Message_j.send_of_string s with
     | Some (module C), send ->
       begin match send.message with
         | `Privmsg {Message_t.dest; source=_; message} ->
-          Log.logf "redis.fwd-loop: send-privmsg %s" s;
+          Logs.debug ~src:Core.logs_src (fun k->k "redis.fwd-loop: send-privmsg %s" s);
           C.send_privmsg ~target:dest ~message
         | `Join l ->
-          Log.logf "redis.fwd-loop: join %s" (String.concat "," l);
+          Logs.debug ~src:Core.logs_src (fun k->k "redis.fwd-loop: join %s" (String.concat "," l));
           Lwt_list.iter_s (fun c -> C.send_join ~channel:c) l
         | `Part l ->
-          Log.logf "redis.fwd-loop: join %s" (String.concat "," l);
+          Logs.debug ~src:Core.logs_src (fun k->k "redis.fwd-loop: join %s" (String.concat "," l));
           Lwt_list.iter_s (fun c -> C.send_part ~channel:c) l
       end
     | None, _ -> Lwt.return () (* cannot send *)
@@ -52,10 +52,10 @@ let start (config:config) : (t,_) result Lwt.t =
     (fun () ->
        let {host;port;_} = config in
        let spec = {R.host;port} in
-       Log.logf "connecting to redis on %s:%d..." host port;
+       Logs.info ~src:Core.logs_src (fun k->k "connecting to redis on %s:%d..." host port);
        R.connect spec >>= fun pub ->
        R.connect spec >>= fun sub ->
-       Log.logf "connected to redis on %s:%d" host port;
+       Logs.info ~src:Core.logs_src (fun k->k "connected to redis on %s:%d" host port);
        let st = {config; pub; sub; core=None; fwd=Lwt.return ()} in
        st.fwd <- fwd_loop st;
        Lwt.return (Ok st))

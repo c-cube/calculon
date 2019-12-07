@@ -72,17 +72,18 @@ module Set = struct
   (* "safe" writing to file, using a temporary file + atomic move *)
   let save_state_ config j: unit =
     let file = config.Config.state_file in
-    Log.logf "plugin: save state in '%s'" file;
+    Logs.info ~src:Core.logs_src (fun k->k "plugin: save state in '%s'" file);
     let file' = file ^ ".tmp" in
     try
       Yojson.Safe.to_file file' j;
       try Sys.rename file' file
       with e ->
-        Log.logf "failed to save into '%s' (temp file '%s'): %s"
-          file file' (Printexc.to_string e)
+        Logs.err ~src:Core.logs_src
+          (fun k->k "failed to save into '%s' (temp file '%s'): %s"
+          file file' (Printexc.to_string e))
     with e ->
-      Log.logf "failed to write into temp file '%s': %s"
-        file' (Printexc.to_string e)
+      Logs.err ~src:Core.logs_src
+        (fun k->k "failed to write into temp file '%s': %s" file' (Printexc.to_string e))
 
   let save_ config active =
     let assoc_l =
@@ -105,7 +106,7 @@ module Set = struct
 
   let load_state_ config : (json, string) Result.result Lwt.t =
     let file = config.Config.state_file in
-    Log.logf "load from file '%s'" file;
+    Logs.info ~src:Core.logs_src (fun k->k "load state from file '%s'" file);
     if Sys.file_exists file then (
       try
         let j = Yojson.Safe.from_file file in
@@ -160,7 +161,7 @@ module Set = struct
 
   let reload t =
     let open Lwt_err in
-    Log.log "plugin: reload state";
+    Logs.info ~src:Core.logs_src (fun k->k "plugin: reload state");
     load_state_ t.config >>= fun j ->
     load_from (Signal.Send_ref.make t.actions) t.plugins j
     >|= fun (commands, on_msg_l, active) ->

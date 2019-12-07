@@ -164,7 +164,7 @@ let cmd_seen (state:state) =
     (fun _msg s ->
        try
          let dest = CCString.trim s |> CCString.uppercase_ascii in
-         Log.logf "query: seen `%s`" dest;
+         Logs.debug ~src:Core.logs_src (fun k->k "query: seen `%s`" dest);
          let now = Unix.time () in
          StrMap.fold (fun name data acc ->
              if String.equal dest (CCString.uppercase_ascii name) then
@@ -187,7 +187,7 @@ let cmd_last (state:state) =
        try
          let default_n = 3 in
          let dest = String.trim s in
-         Log.logf "query: last `%s`" dest;
+         Logs.debug ~src:Core.logs_src (fun k->k "query: last `%s`" dest);
          let top_n = try match int_of_string dest with
            | x when x > 0 -> x
            | _ -> default_n
@@ -218,10 +218,10 @@ let cmd_ignore_template ~cmd prefix_stem ignore (state:state) =
     (fun _ s ->
        try
          let dest = String.trim s in
-         Log.logf "query: ignore `%s`" dest;
-         if String.equal dest ""
-         then Lwt.return None
-         else (
+         Logs.debug ~src:Core.logs_src (fun k->k "query: ignore `%s`" dest);
+         if String.equal dest "" then (
+          Lwt.return None
+         ) else (
            let contact = data state dest in
            let msg =
              if Bool.equal contact.ignore_user ignore then
@@ -243,7 +243,7 @@ let cmd_ignore_list (state:state) =
     ~descr:"add nick to list of ignored people" ~prio:10 ~cmd:"ignore_list"
     (fun _ _ ->
        try
-         Log.logf "query: ignore_list";
+         Logs.debug ~src:Core.logs_src (fun k->k "query: ignore_list");
          let ignored =
            StrMap.fold (fun name -> function
                | { ignore_user = true; _ } -> fun x -> name :: x
