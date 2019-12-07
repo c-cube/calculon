@@ -18,10 +18,13 @@ let config = {
   username = "test_bot";
   realname = "test_bot";
   nick = "test_bot";
+  log_level = Logs.Info;
   channel = "##test";
 }
 
 let () =
+  Logs.set_reporter
+    (Logs.format_reporter ~dst:Format.err_formatter ());
   try
     (* update with CLI parameters *)
     let config = C.Config.parse config Sys.argv in

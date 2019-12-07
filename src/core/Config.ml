@@ -61,8 +61,9 @@ let parse ?(extra_args=[]) conf args =
       ; "--prefix", Arg.Set_string prefix, " set prefix for commands (default \"!\")";
       ]
   in
+  let log_level = !log_lvl |? conf.log_level in
   Arg.parse_argv args options ignore "parse options";
-  Logs.set_level ~all:true !log_lvl;
+  Logs.set_level ~all:true (Some log_level);
   { conf with
     nick = !custom_nick |? conf.nick;
     channel = !custom_chan |? conf.channel;
@@ -70,7 +71,7 @@ let parse ?(extra_args=[]) conf args =
     tls = !custom_tls |? conf.tls;
     port = !custom_port;
     state_file = !custom_state |? conf.state_file;
-    log_level = CCOpt.get_or ~default:conf.log_level !log_lvl;
+    log_level;
     irc_log=`None;
     prefix = !prefix;
   }
