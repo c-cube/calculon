@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "calculon"
-version: "0.5"
+version: "0.6"
 synopsis: "Library for writing IRC bots in OCaml and a collection of plugins"
 authors: ["Armael" "Enjolras" "c-cube"]
 maintainer: "c-cube"

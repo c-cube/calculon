@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "calculon-redis"
-version: "0.5"
+version: "0.6"
 synopsis: "A redis plugin for Calculon"
 authors: ["c-cube"]
 maintainer: "c-cube"

@@ -59,7 +59,7 @@ module type S = sig
   val set_log : (string -> unit Lwt.t) -> unit
   [@@ocaml.deprecated "use library logs instead"]
   (** Set logger (default is the empty logger) that will be used by {!log}
-      @deprecate use logs
+      @deprecated use logs
       @since 0.5 *)
 
   val send_exit : unit -> unit
@@ -149,4 +149,4 @@ val run :
 
 val logs_src: Logs.Src.t
 (** Logs from Calculon should use this source.
-    @since NEXT_RELEASE *)
+    @since 0.6 *)

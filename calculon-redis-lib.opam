@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "calculon-redis-lib"
-version: "0.5"
+version: "0.6"
 synopsis: "A library to interact with Calculon via Redis"
 authors: ["c-cube"]
 maintainer: "c-cube"

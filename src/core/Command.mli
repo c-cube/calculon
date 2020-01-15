@@ -41,7 +41,7 @@ val extract_hl : string -> (string * string) option
     Returns [None] if it cannot split on ">" cleanly. *)
 
 val match_prefix1_full : prefix:string -> cmd:string -> Core.privmsg -> (string * string option) option
-(** @returns [Some (msg, hl)] if [msg] matches the regex,
+(** @return [Some (msg, hl)] if [msg] matches the regex,
    and [hl] is either [Some foo] if the message ended with "> hl",
    [None] otherwise *)
 

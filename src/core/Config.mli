@@ -23,7 +23,7 @@ type t = {
 
   log_level: Logs.level;
   (** Level of logging.
-      @since NEXT_RELEASE *)
+      @since 0.6 *)
 
   prefix: string; (** prefix for commands *)
 }
