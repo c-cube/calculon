@@ -43,17 +43,23 @@ module type S = sig
   val exit : unit Lwt.t
 
   val log : string -> unit Lwt.t
+  [@@ocaml.deprecated "use library logs instead"]
   (** Log a message (see field [irc_log] of {!Config.config}),
       typically for debugging purpose.
+      @deprecated use logs
       @since 0.5 *)
 
   val logf : ('a, Format.formatter, unit, unit Lwt.t) format4 -> 'a
+  [@@ocaml.deprecated "use library logs instead"]
   (** Pretty logger (calling {!log} to print the formatted message).
       Example: [logf "answer to %s is %d" "life" 42]
+      @deprecated use logs
       @since 0.5 *)
 
   val set_log : (string -> unit Lwt.t) -> unit
+  [@@ocaml.deprecated "use library logs instead"]
   (** Set logger (default is the empty logger) that will be used by {!log}
+      @deprecate use logs
       @since 0.5 *)
 
   val send_exit : unit -> unit
