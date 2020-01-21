@@ -1,4 +1,11 @@
 
+## 0.6
+
+- use `logs` for logging, deprecate custom logger
+- better irclogs parser
+- use `Yojson.t`
+- add `extra_args` to config parser
+
 ## 0.5
 
 - refactor: use curly for the web plugin
