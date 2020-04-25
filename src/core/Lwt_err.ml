@@ -3,12 +3,12 @@
 
 open Result
 
-type 'a t = ('a,string) Result.result Lwt.t
+type 'a t = ('a,string) result Lwt.t
 
 let return x = Lwt.return (Ok x)
 let fail e = Lwt.return (Error e)
 
-let lift : ('a,string) Result.result -> 'a t = Lwt.return
+let lift : ('a,string) result -> 'a t = Lwt.return
 let ok : 'a Lwt.t -> 'a t = fun x -> Lwt.map (fun y -> Ok y) x
 
 let (>>=) : 'a t -> ('a -> 'b t) -> 'b t
@@ -18,7 +18,7 @@ let (>>=) : 'a t -> ('a -> 'b t) -> 'b t
       | Ok x -> f x
     )
 
-let (>>?=) : 'a t -> ('a -> ('b, string) Result.result) -> 'b t
+let (>>?=) : 'a t -> ('a -> ('b, string) result) -> 'b t
   = fun e f ->
     Lwt.bind e (function
       | Error e -> Lwt.return (Error e)

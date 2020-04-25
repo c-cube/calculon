@@ -1,19 +1,19 @@
 
 (** {1 Lwt+Result Monad} *)
 
-type 'a t = ('a, string) Result.result Lwt.t
+type 'a t = ('a, string) result Lwt.t
 
-val return : 'a -> ('a, 'b) Result.result Lwt.t
+val return : 'a -> ('a, 'b) result Lwt.t
 
-val fail : 'a -> ('b, 'a) Result.result Lwt.t
+val fail : 'a -> ('b, 'a) result Lwt.t
 
-val lift : ('a, string) Result.result -> 'a t
+val lift : ('a, string) result -> 'a t
 
 val ok : 'a Lwt.t -> 'a t
 
 val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
 
-val ( >>?= ) : 'a t -> ('a -> ('b, string) Result.result) -> 'b t
+val ( >>?= ) : 'a t -> ('a -> ('b, string) result) -> 'b t
 
 val ( >|= ) : 'a t -> ('a -> 'b) -> 'b t
 
