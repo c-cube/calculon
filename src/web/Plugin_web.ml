@@ -68,12 +68,22 @@ let get_youtube_search (query:string): string Lwt.t =
     Uri.of_string "https://www.youtube.com/results"
   in
   let uri = Uri.add_query_params' uri ["sp","EgIQAQ%3D%3D"; "q", query] in
-  get_body uri
+  Lwt.catch
+    (fun () -> get_body uri)
+    (function
+      | Failure e ->
+        Logs.err (fun k->k "error in fetching `%s`:\n%s" query e);
+        Lwt.return ""
+      | e ->
+        Logs.err (fun k->k "error in fetching `%s`:\n%s" query @@ Printexc.to_string e);
+        Lwt.return "")
+
 
 let cmd_yt_search =
   Command.make_simple_l
     ~prio:10 ~cmd:"yt_search" ~descr:"lookup on youtube"
     (fun _ s ->
+       Logs.debug ~src:Core.logs_src (fun k->k"yt_search `%s`" s);
        (get_youtube_search (String.trim s) >|= fun body ->
         find_yt_ids ~n:1 body)
        >>= fun urls ->
