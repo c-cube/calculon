@@ -18,8 +18,7 @@ type privmsg = {
 }
 
 let is_chan s =
-  let open Pervasives in
-  s<>"" && s.[0] = '#' && not (String.contains s ' ')
+  not (String.equal s "") && Char.equal s.[0] '#' && not (String.contains s ' ')
 
 let nick msg = msg.nick
 
@@ -246,13 +245,6 @@ let run conf ~init () =
   let module C = Config in
   let init (core:t) =
     let (module C) = core in
-    (* setup reporter based on config *)
-    begin match conf.Config.irc_log with
-      | `None -> ()
-      | `Custom _ | `Chan _ ->
-        Logs.err ~src:logs_src (fun k->k "use of conf.Config.irc-log field");
-        ()
-    end;
     init core
   in
   if conf.C.tls then (

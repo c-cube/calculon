@@ -142,9 +142,9 @@ let cmd_tell_at = cmd_tell_inner ~at:true
 (* human readable display of date *)
 let print_diff (f:float) : string =
   let spf = Printf.sprintf in
-  let s = Pervasives.mod_float f 60. |> int_of_float in
-  let m = Pervasives.mod_float (f /. 60.) 60. |> int_of_float in
-  let h = Pervasives.mod_float (f /. 3600.) 24. |> int_of_float in
+  let s = mod_float f 60. |> int_of_float in
+  let m = mod_float (f /. 60.) 60. |> int_of_float in
+  let h = mod_float (f /. 3600.) 24. |> int_of_float in
   let days = f /. (3600. *. 24.) |> int_of_float in
   [ (if days > 0 then [spf "%d days" days] else []);
     (if h > 0 then [spf "%d hours" h] else []);
@@ -197,7 +197,7 @@ let cmd_last (state:state) =
          let now = Unix.time () in
          let user_times =
            StrMap.fold (fun key contact acc ->
-               if Pervasives.(<>) key msg.Core.nick && contact.ignore_user |> not then
+               if not (String.equal key msg.Core.nick) && contact.ignore_user |> not then
                  (key, contact.last_seen) :: acc
                else
                  acc

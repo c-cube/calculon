@@ -1,12 +1,5 @@
 (** User-defined config *)
 
-type irc_log =
-  [ `None
-  | `Chan of Lwt_io.output_channel
-  | `Custom of (string -> unit Lwt.t)
-  ]
-  [@@ocaml.deprecated "use logs instead"]
-
 type t = {
   server : string; (** Address of the irc server *)
   port : int; (** Port of the server *)
@@ -17,9 +10,6 @@ type t = {
   tls_cert : Ssl.certificate option;
   channel : string; (** Channel to join after the connexion to the server *)
   state_file : string; (** Where plugins' state is stored *)
-  irc_log:
-    irc_log [@ocaml.deprecated "this field will be removed"];
-  (** Log IRC events *)
 
   log_level: Logs.level;
   (** Level of logging.

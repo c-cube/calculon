@@ -1,11 +1,5 @@
 open Prelude
 
-type irc_log =
-  [ `None
-  | `Chan of Lwt_io.output_channel
-  | `Custom of (string -> unit Lwt.t)
-  ]
-
 type t = {
   server : string;
   port : int;
@@ -16,7 +10,6 @@ type t = {
   tls_cert : Ssl.certificate option;
   channel : string;
   state_file : string;
-  irc_log: irc_log; (* log IRC events *)
   log_level: Logs.level;
   prefix: string; (** prefix for commands *)
 }
@@ -32,7 +25,6 @@ let default = {
   channel = "#ocaml";
   state_file = "state.json";
   log_level=Logs.Warning;
-  irc_log = `None;
   prefix = "!";
 }
 
@@ -72,7 +64,6 @@ let parse ?(extra_args=[]) conf args =
     port = !custom_port;
     state_file = !custom_state |? conf.state_file;
     log_level;
-    irc_log=`None;
     prefix = !prefix;
   }
 

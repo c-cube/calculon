@@ -78,7 +78,7 @@ module Table = struct
       @param get_w how to compute the weight of individual elements *)
   let map_weight_get_ ~get_w i m =
     let i = ref i in
-    TokenMap.to_seq m
+    TokenMap.to_iter m
     |> Iter.find
       (fun sub ->
          let w_sub = get_w sub in
@@ -162,14 +162,14 @@ module Table = struct
       in
       Format.fprintf out "@[<v>%a@]"
         (CCFormat.seq pp_pair)
-        (TokenMap.to_seq m)
+        (TokenMap.to_iter m)
     | Node (m,w) ->
       let pp_pair out (tok,m) =
         Format.fprintf out "@[<v1>%a (weight %d): %a@]" print_token tok w print m
       in
       Format.fprintf out "@[<v>%a@]"
         (CCFormat.seq pp_pair)
-        (TokenMap.to_seq m)
+        (TokenMap.to_iter m)
 
   let write_to out t =
     Marshal.to_channel out t [];
