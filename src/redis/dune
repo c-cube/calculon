@@ -1,6 +1,0 @@
-
-(library
-   (name calculon_redis)
-   (public_name calculon-redis)
-   (flags :standard -warn-error -7 -open Calculon)
-   (libraries calculon redis redis-lwt calculon-redis-lib))

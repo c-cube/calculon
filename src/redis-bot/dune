@@ -1,4 +1,0 @@
-(executable
-  (name redis_bot)
-  (modes native)
-  (libraries calculon calculon_redis))

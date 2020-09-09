@@ -18,12 +18,12 @@ depends: [
   "irc-client-lwt-ssl"
   "logs"
   "yojson" { >= "1.6" }
-  "containers" { >= "2.8" }
+  "containers" { >= "3.0" }
   "ISO8601"
   "stringext"
   "re" { >= "1.7.2" }
   "odoc" {with-doc}
-  "ocaml" { >= "4.03.0" }
+  "ocaml" { >= "4.08.0" }
 ]
 depopts: [
   "iter"
