@@ -110,16 +110,19 @@ module Make
   let line_cut_threshold = ref 10
 
   let process_list_ ?(bypass_limit=false) ?sep ~f ~target ~messages:lines () =
-    (* keep at most 4 *)
+    (* keep at most 4, unless [bypass_limit=true] *)
     let lines =
       let len = List.length lines in
       if not bypass_limit && len > !line_cut_threshold
       then CCList.take 4 lines @ [Printf.sprintf "(…%d more lines…)" (len-4)]
       else lines
     in
+    let delay_between = ref 0.3 in
     Lwt_list.iter_s
       (fun message ->
          f ~connection ~target ~message >>= fun () ->
+         Lwt_unix.sleep !delay_between >>= fun () ->
+         delay_between := CCFloat.min (!delay_between +. 0.2) 1.0;
          match sep with
            | None -> Lwt.return_unit
            | Some f -> f())
