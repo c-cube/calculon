@@ -7,7 +7,6 @@ let plugins : C.Plugin.t list = [
   C.Plugin_state.plugin;
   C.Plugin_history.plugin ~n:40 ();
   CW.Plugin_web.plugin;
-  Calculon_extras.Plugin_markcough.plugin;
 ]
 
 let config = {
