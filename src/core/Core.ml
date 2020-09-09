@@ -49,15 +49,6 @@ module type S = sig
   val init : unit Lwt.t
   val exit : unit Lwt.t
 
-  val log : string -> unit Lwt.t
-  [@@ocaml.deprecated "use library logs instead"]
-
-  val logf : ('a, Format.t, unit, unit Lwt.t) format4 -> 'a
-  [@@ocaml.deprecated "use library logs instead"]
-
-  val set_log : (string -> unit Lwt.t) -> unit
-  [@@ocaml.deprecated "use library logs instead"]
-
   val send_exit : unit -> unit
 
   val messages : Msg.t Signal.t
@@ -112,17 +103,6 @@ module Make
   let exit, send_exit = Lwt.wait ()
 
   let send_exit () = Lwt.wakeup send_exit ()
-
-  let set_log _ =
-    Logs.err ~src:logs_src (fun k->k "call to deprecated `set_log` function");
-    ()
-
-  let log s =
-    Logs.err ~src:logs_src (fun k->k "call to deprecated `log` function");
-    Logs.debug ~src:logs_src (fun k->k "log(): %s" s);
-    Lwt.return_unit
-
-  let logf msg = Format.kasprintf log msg
 
   let messages = Signal.create ()
   let privmsg = Signal.filter_map messages privmsg_of_msg
