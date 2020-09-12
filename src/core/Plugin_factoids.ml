@@ -358,7 +358,8 @@ let cmd_see_all state =
        let msg = match v with
          | Int i -> [string_of_int i]
          | StrList [] -> ["not found."]
-         | StrList l -> l
+         | StrList l ->
+           if List.length l > 5 then [String.concat " | " l] else l
        in
        Lwt.return msg
     )
