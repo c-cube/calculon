@@ -332,7 +332,7 @@ let cmd_search_all state =
        let tokens = search_tokenize s in
        search tokens state.st_cur
        |> insert_noresult
-       |> String.concat " | "
+       |> (fun l -> if List.length l > 5 then [String.concat " | " l] else l)
        |> Lwt.return
     )
 
