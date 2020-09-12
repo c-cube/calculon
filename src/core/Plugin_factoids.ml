@@ -332,6 +332,7 @@ let cmd_search_all state =
        let tokens = search_tokenize s in
        search tokens state.st_cur
        |> insert_noresult
+       |> String.concat " | "
        |> Lwt.return
     )
 
@@ -480,3 +481,4 @@ let plugin : Plugin.t =
   Plugin.stateful
     ~name:"factoids" ~to_json ~of_json ~commands
     ~stop:(fun _ -> Lwt.return_unit) ()
+
