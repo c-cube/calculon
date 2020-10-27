@@ -14,7 +14,11 @@ let get_body uri =
     ()
   >>= function
   | Ok {Curly.Response. body;_ } -> Lwt.return body
-  | Error e -> Lwt.fail (Failure (Format.asprintf "%a" Curly.Error.pp e))
+  | Error e ->
+    Logs.err  ~src:Core.logs_src
+      (fun k->k "error when loading body of %a:@ %a"
+                Uri.pp uri Curly.Error.pp e);
+    Lwt.fail (Failure (Format.asprintf "%a" Curly.Error.pp e))
 
 let page_title ~with_description uri =
   get_body uri >>= fun body ->
@@ -56,6 +60,11 @@ let cmd_yt =
     )
 
 let find_yt_ids ?(n=1) (body:string): string list =
+  if Logs.level() = Some Logs.Debug then (
+    let file = "yt-reply.html" in
+    try (CCIO.File.write_exn file body)
+    with _e -> Logs.err (fun k->k "cannot save html reply to %s" file);
+  );
   let ast = parse body in
   Soup.select "#results li li > div" ast
   |> Soup.to_list
@@ -67,15 +76,17 @@ let get_youtube_search (query:string): string Lwt.t =
   let uri =
     Uri.of_string "https://www.youtube.com/results"
   in
-  let uri = Uri.add_query_params' uri ["sp","EgIQAQ%3D%3D"; "q", query] in
+  (*   let uri = Uri.add_query_params' uri ["sp","EgIQAQ%3D%3D"; "q", query] in *)
+  let uri = Uri.add_query_params' uri ["search_query", query] in
+  Logs.debug ~src:Core.logs_src (fun k->k "uri for yt-search query=%S is %a" query Uri.pp uri);
   Lwt.catch
     (fun () -> get_body uri)
     (function
       | Failure e ->
-        Logs.err (fun k->k "error in fetching `%s`:\n%s" query e);
+        Logs.err ~src:Core.logs_src (fun k->k "error in fetching `%s`:\n%s" query e);
         Lwt.return ""
       | e ->
-        Logs.err (fun k->k "error in fetching `%s`:\n%s" query @@ Printexc.to_string e);
+        Logs.err ~src:Core.logs_src (fun k->k "error in fetching `%s`:\n%s" query @@ Printexc.to_string e);
         Lwt.return "")
 
 
@@ -87,6 +98,8 @@ let cmd_yt_search =
        (get_youtube_search (String.trim s) >|= fun body ->
         find_yt_ids ~n:1 body)
        >>= fun urls ->
+       Logs.debug ~src:Core.logs_src
+         (fun k->k "yt_search returns %d URLs" (List.length urls));
        Lwt_list.fold_left_s (fun acc url ->
            Logs.debug ~src:Core.logs_src (fun k->k "Getting metadata for url %s" url);
            page_title ~with_description:false (Uri.of_string url) >>= function
@@ -132,7 +145,7 @@ module Giphy = struct
                 | None, Some i -> Some i.Giphy_j.i_url
                 | None, None ->
                   (* default: return the embed_url *)
-                  Logs.err ~src:Core.logs_src (fun k->k 
+                  Logs.err ~src:Core.logs_src (fun k->k
                     "giphy: could not get `original` or `downsized` picture for `%s`"
                     r.Giphy_j.url);
                   Some r.Giphy_j.embed_url
