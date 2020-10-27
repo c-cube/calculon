@@ -18,10 +18,10 @@ depends: [
   "irc-client-lwt-ssl"
   "logs"
   "yojson" { >= "1.6" }
-  "containers" { >= "3.0" }
+  "containers" { >= "3.0" & < "4.0" }
   "ISO8601"
   "stringext"
-  "re" { >= "1.7.2" }
+  "re" { >= "1.7.2" & < "2.0" }
   "odoc" {with-doc}
   "ocaml" { >= "4.08.0" }
 ]
