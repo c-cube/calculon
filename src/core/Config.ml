@@ -53,8 +53,8 @@ let parse ?(extra_args=[]) conf args =
       ; "--prefix", Arg.Set_string prefix, " set prefix for commands (default \"!\")";
       ]
   in
-  let log_level = !log_lvl |? conf.log_level in
   Arg.parse_argv args options ignore "parse options";
+  let log_level = !log_lvl |? conf.log_level in
   Logs.set_level ~all:true (Some log_level);
   { conf with
     nick = !custom_nick |? conf.nick;
