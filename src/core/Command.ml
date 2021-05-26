@@ -52,8 +52,9 @@ let make_simple_inner_ ~query ?descr ?prio ~cmd f : t =
     match match_prefix1_full ~prefix ~cmd msg with
       | None -> Cmd_skip
       | Some (sub, hl) ->
-        (* Log.logf "command `%s` matched with %s, hl=%s"
-          prefix sub (match hl with None -> "none" | Some h -> h); *)
+        Core.Log.debug
+          (fun k->k "command '%s' matched with %s, hl=%s"
+              prefix sub (match hl with None -> "none" | Some h -> h));
         try
           let fut =
             f msg sub >>= fun lines ->
