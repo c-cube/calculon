@@ -2,6 +2,7 @@
 (library
    (name calculon)
    (public_name calculon)
+   (flags :standard -warn-error -a+8)
    (libraries containers yojson re re.perl logs
               irc-client-lwt irc-client-lwt-ssl lwt.unix stringext
               ISO8601))
