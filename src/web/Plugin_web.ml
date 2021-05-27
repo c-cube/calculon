@@ -85,11 +85,14 @@ let cmd_yt_search =
     ~prio:10 ~cmd:"yt_search" ~descr:"lookup on youtube"
     (fun _ s ->
        Log.debug (fun k->k"yt_search `%s`" s);
-       (get_youtube_search (String.trim s) >|= fun body ->
-        find_yt_ids ~n:1 body)
+       begin
+         get_youtube_search (String.trim s) >|= fun body ->
+         Log.debug (fun k->k"yt_search: body of size %d" (String.length body));
+         find_yt_ids ~n:1 body
+       end
        >>= fun urls ->
        Lwt_list.fold_left_s (fun acc url ->
-           Log.debug (fun k->k "Getting metadata for url %s" url);
+           Log.debug (fun k->k "Getting metadata for url: `%s`" url);
            page_title ~with_description:false (Uri.of_string url) >>= function
            | Some x ->
              let descr = Format.asprintf "%s : %s" url x in
