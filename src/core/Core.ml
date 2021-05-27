@@ -32,13 +32,13 @@ let privmsg_of_msg msg =
   match msg.Msg.command with
   | Msg.PRIVMSG (to_, message) ->
     Some
-      { nick = Option.get_exn msg.Msg.prefix |> get_nick;
+      { nick = Prelude.unwrap_opt "msg prefix" msg.Msg.prefix |> get_nick;
         to_;
         message }
   | _ -> None
 
 let string_of_privmsg msg =
-  Printf.sprintf "{nick:%s, to:%s, msg: %s}" msg.nick msg.to_ msg.message
+  Printf.sprintf "{nick:%S; to:%S; msg: %S}" msg.nick msg.to_ msg.message
 
 module type S = sig
   module I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t
@@ -197,8 +197,6 @@ module Run
         | Some (module C) ->
           begin match msg_or_err with
             | Result.Ok msg ->
-              Log.debug
-                (fun k->k "got message %s" (Irc_message.to_string msg));
               Signal.send C.messages msg
             | Result.Error err ->
               Log.err (fun k->k "error: %s" err);

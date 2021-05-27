@@ -11,6 +11,7 @@ val id : 'a -> 'a
 val some : 'a -> 'a option
 
 val map_opt : ('a -> 'b) -> 'a option -> 'b option
+val unwrap_opt : string -> 'a option -> 'a
 
 val (|?) : 'a option -> 'a -> 'a
 (** [o |? x] is [y] if [o=Some y], [x] otherwise *)

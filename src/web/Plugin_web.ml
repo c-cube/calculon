@@ -5,6 +5,7 @@ open Calculon
 
 open Soup
 open Lwt.Infix
+module Log = Core.Log
 
 let get_body uri =
   Lwt_preemptive.detach
@@ -72,10 +73,10 @@ let get_youtube_search (query:string): string Lwt.t =
     (fun () -> get_body uri)
     (function
       | Failure e ->
-        Logs.err (fun k->k "error in fetching `%s`:\n%s" query e);
+        Log.err (fun k->k "error in fetching `%s`:\n%s" query e);
         Lwt.return ""
       | e ->
-        Logs.err (fun k->k "error in fetching `%s`:\n%s" query @@ Printexc.to_string e);
+        Log.err (fun k->k "error in fetching `%s`:\n%s" query @@ Printexc.to_string e);
         Lwt.return "")
 
 
@@ -83,12 +84,12 @@ let cmd_yt_search =
   Command.make_simple_l
     ~prio:10 ~cmd:"yt_search" ~descr:"lookup on youtube"
     (fun _ s ->
-       Logs.debug ~src:Core.logs_src (fun k->k"yt_search `%s`" s);
+       Log.debug (fun k->k"yt_search `%s`" s);
        (get_youtube_search (String.trim s) >|= fun body ->
         find_yt_ids ~n:1 body)
        >>= fun urls ->
        Lwt_list.fold_left_s (fun acc url ->
-           Logs.debug ~src:Core.logs_src (fun k->k "Getting metadata for url %s" url);
+           Log.debug (fun k->k "Getting metadata for url %s" url);
            page_title ~with_description:false (Uri.of_string url) >>= function
            | Some x ->
              let descr = Format.asprintf "%s : %s" url x in
@@ -118,12 +119,15 @@ module Giphy = struct
       (fun () ->
         get_body uri >|= fun s ->
         try
+          Log.debug (fun k->k"query to giphy returned:@.%s" s);
           let r = Giphy_j.search_result_of_string s in
           begin match r.Giphy_j.data with
-            | [] -> None
+            | [] ->
+              Log.debug (fun k->k"giphy: no data");
+              None
             | l ->
               let r = Prelude.random_l l in
-              Logs.info ~src:Core.logs_src
+              Log.info
                 (fun k->k "giphy: pick `%s` in list of len %d"
                   r.Giphy_j.url (List.length l));
               let images = r.Giphy_j.images in
@@ -132,7 +136,7 @@ module Giphy = struct
                 | None, Some i -> Some i.Giphy_j.i_url
                 | None, None ->
                   (* default: return the embed_url *)
-                  Logs.err ~src:Core.logs_src (fun k->k 
+                  Log.err (fun k->k
                     "giphy: could not get `original` or `downsized` picture for `%s`"
                     r.Giphy_j.url);
                   Some r.Giphy_j.embed_url
