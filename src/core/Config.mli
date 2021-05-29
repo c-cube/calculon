@@ -4,6 +4,7 @@ type t = {
   server : string; (** Address of the irc server *)
   port : int; (** Port of the server *)
   username : string;
+  password : string option;
   realname : string;
   nick : string;
   tls: bool;
@@ -25,6 +26,7 @@ val default : t
 - port = 7000
 - username = "calculon"
 - realname = "calculon"
+- password = None
 - nick = "calculon"
 - tls = true
 - tls_cert = None

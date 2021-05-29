@@ -4,6 +4,7 @@ type t = {
   server : string;
   port : int;
   username : string;
+  password : string option;
   realname : string;
   nick : string;
   tls: bool;
@@ -19,6 +20,7 @@ let default = {
   server = "irc.libera.chat";
   port = 7000;
   username = "calculon";
+  password = None;
   realname = "calculon";
   nick = "calculon";
   tls = true;
@@ -57,8 +59,18 @@ let parse ?(extra_args=[]) conf args =
       ]
   in
   Arg.parse_argv args options ignore "parse options";
+
+  (* env vars are also used *)
+  let user =
+    try Sys.getenv "USER" with _ -> conf.username
+  and password =
+      try Some (Sys.getenv "PASSWORD") with _ -> None
+  in
+
   { conf with
     nick = !custom_nick |? conf.nick;
+    username = user;
+    password;
     channel = !custom_chan |? conf.channel;
     server = !custom_server |? conf.server;
     tls = !custom_tls |? conf.tls;

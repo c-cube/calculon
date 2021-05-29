@@ -235,7 +235,9 @@ let run conf ~init () =
     let connect () =
       Irc_client_lwt_ssl.connect_by_name
         ~username:conf.C.username ~realname:conf.C.realname ~nick:conf.C.nick
+        ?password:conf.C.password
         ~server:conf.C.server ~port:conf.C.port ~config:tls_config
+        ~sasl:conf.C.sasl
         ()
     in
     loop_ssl ~conn_info ~connect ~init ()
