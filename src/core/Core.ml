@@ -167,10 +167,6 @@ module Make
   let talk ~target ty =
     let message = Talk.select ty in
     send_privmsg ~target ~message
-
-  let () =
-    let src = Logs.Src.create "irc-client" ~doc:"ocaml-irc-client" in
-    I.set_log (fun s -> Logs.debug ~src (fun k -> k "%s" s); Lwt.return_unit)
 end
 
 module Run
