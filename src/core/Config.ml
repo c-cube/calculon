@@ -24,7 +24,7 @@ let default = {
   tls_cert = None;
   channel = "#ocaml";
   state_file = "state.json";
-  log_level=Logs.Warning;
+  log_level=Logs.Info;
   prefix = "!";
 }
 
@@ -49,13 +49,11 @@ let parse ?(extra_args=[]) conf args =
         " file containing factoids (default: " ^ default.state_file ^ ")"
       ; "--tls", Arg.Unit (fun () -> custom_tls := Some true), " enable TLS"
       ; "--no-tls", Arg.Unit (fun () -> custom_tls := Some false), " disable TLS"
-      ; "--debug", Arg.Unit (fun() ->log_lvl := Some Logs.Debug), " print debug messages (on stderr)"
+      ; "--debug", Arg.Unit (fun() ->log_lvl := Some Logs.Debug), " set log level to debug"
       ; "--prefix", Arg.Set_string prefix, " set prefix for commands (default \"!\")";
       ]
   in
   Arg.parse_argv args options ignore "parse options";
-  let log_level = !log_lvl |? conf.log_level in
-  Logs.set_level ~all:true (Some log_level);
   { conf with
     nick = !custom_nick |? conf.nick;
     channel = !custom_chan |? conf.channel;
@@ -63,7 +61,7 @@ let parse ?(extra_args=[]) conf args =
     tls = !custom_tls |? conf.tls;
     port = !custom_port;
     state_file = !custom_state |? conf.state_file;
-    log_level;
+    log_level = !log_lvl |? conf.log_level;
     prefix = !prefix;
   }
 
