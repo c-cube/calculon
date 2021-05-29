@@ -8,6 +8,7 @@ type t = {
   nick : string;
   tls: bool;
   tls_cert : Ssl.certificate option;
+  sasl: bool;
   channel : string;
   state_file : string;
   log_level: Logs.level;
@@ -15,13 +16,14 @@ type t = {
 }
 
 let default = {
-  server = "irc.freenode.net";
+  server = "irc.libera.chat";
   port = 7000;
   username = "calculon";
   realname = "calculon";
   nick = "calculon";
   tls = true;
   tls_cert = None;
+  sasl = true;
   channel = "#ocaml";
   state_file = "state.json";
   log_level=Logs.Info;
@@ -35,6 +37,7 @@ let parse ?(extra_args=[]) conf args =
   let custom_state = ref None in
   let custom_port = ref conf.port in
   let custom_tls = ref None in
+  let custom_sasl = ref None in
   let prefix = ref default.prefix in
   let log_lvl = ref None in
   let options = Arg.align @@ extra_args @
@@ -47,8 +50,8 @@ let parse ?(extra_args=[]) conf args =
         " server to join (default: " ^ default.server ^ ")"
       ; "--state", Arg.String (fun s -> custom_state := Some s),
         " file containing factoids (default: " ^ default.state_file ^ ")"
-      ; "--tls", Arg.Unit (fun () -> custom_tls := Some true), " enable TLS"
-      ; "--no-tls", Arg.Unit (fun () -> custom_tls := Some false), " disable TLS"
+      ; "--tls", Arg.Bool (fun b -> custom_tls := Some b), " enable/disable TLS"
+      ; "--sasl", Arg.Bool (fun b -> custom_sasl := Some b), " enable/disable SASL auth"
       ; "--debug", Arg.Unit (fun() ->log_lvl := Some Logs.Debug), " set log level to debug"
       ; "--prefix", Arg.Set_string prefix, " set prefix for commands (default \"!\")";
       ]
@@ -59,6 +62,7 @@ let parse ?(extra_args=[]) conf args =
     channel = !custom_chan |? conf.channel;
     server = !custom_server |? conf.server;
     tls = !custom_tls |? conf.tls;
+    sasl = !custom_sasl |? conf.sasl;
     port = !custom_port;
     state_file = !custom_state |? conf.state_file;
     log_level = !log_lvl |? conf.log_level;
