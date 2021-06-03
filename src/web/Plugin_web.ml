@@ -162,15 +162,27 @@ module Giphy = struct
       )
 end
 
-let find_h1 body =
-  let ast = Soup.parse body in
-  Soup.select "article h1" ast
-  |> Soup.to_list
-  |> CCList.take 1
-  |> CCList.map Soup.to_string
-  |> CCList.head_opt
-
 let cmd_emoji =
+  let find_h1 body =
+    let ast = Soup.parse body in
+    Soup.select "article h1" ast
+    |> Soup.to_list
+    |> CCList.take 1
+    |> CCList.map
+      (fun n ->
+         Soup.select "#emoji" n |> Soup.to_list
+         |> List.map Soup.to_string |> String.concat " ",
+         Soup.children n |> Soup.to_list |> CCList.take 1
+         |> List.map Soup.to_string |> String.concat " ")
+    |> CCList.head_opt
+  and find_search body =
+    let ast = Soup.parse body in
+    ast
+    |> Soup.select "article #search-results li a"
+    |> Soup.to_list |> CCList.take 1
+    |> CCList.find_map (Soup.attribute "href")
+  in
+
   Command.make_simple ~descr:"look for emojis" ~cmd:"emoji" ~prio:10
     (fun _msg s ->
        let s = String.trim s in
@@ -179,10 +191,12 @@ let cmd_emoji =
        Lwt.catch
          (fun () ->
             get_body (Uri.of_string query) >|= fun s ->
-            match find_h1 s with
-            | Some title ->
-              Some (Printf.sprintf "%s (%s)" title query)
-            | None -> Some (Printf.sprintf "not found"))
+            match find_h1 s, find_search s with
+            | Some (em,title), _ ->
+              Some (Printf.sprintf "%s: %s (%s)" em title query)
+            | None, Some href ->
+              Some href
+            | None, None -> Some (Printf.sprintf "not found"))
          (fun e ->
             Log.err (fun k->k "emoji: query failed:@.%s" (Printexc.to_string e));
             Lwt.return None))
