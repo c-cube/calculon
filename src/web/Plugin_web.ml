@@ -171,7 +171,7 @@ let find_h1 body =
   |> CCList.head_opt
 
 let cmd_emoji =
-  Command.make_simple ~descr:"look for emojis" ~cmd:"emoji"
+  Command.make_simple ~descr:"look for emojis" ~cmd:"emoji" ~prio:10
     (fun _msg s ->
        let s = String.trim s in
        let query = Printf.sprintf "https://emojipedia.org/search/?q=%s" s in
