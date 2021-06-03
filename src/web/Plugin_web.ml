@@ -162,8 +162,34 @@ module Giphy = struct
       )
 end
 
+let find_h1 body =
+  let ast = Soup.parse body in
+  Soup.select "article h1" ast
+  |> Soup.to_list
+  |> CCList.take 1
+  |> CCList.map Soup.to_string
+  |> CCList.head_opt
+
+let cmd_emoji =
+  Command.make_simple ~descr:"look for emojis" ~cmd:"emoji"
+    (fun _msg s ->
+       let s = String.trim s in
+       let query = Printf.sprintf "https://emojipedia.org/search/?q=%s" s in
+       Log.debug (fun k->k "emoji: query is '%s'" query);
+       Lwt.catch
+         (fun () ->
+            get_body (Uri.of_string query) >|= fun s ->
+            match find_h1 s with
+            | Some title ->
+              Some (Printf.sprintf "%s (%s)" title query)
+            | None -> Some (Printf.sprintf "not found"))
+         (fun e ->
+            Log.err (fun k->k "emoji: query failed:@.%s" (Printexc.to_string e));
+            Lwt.return None))
+
 let plugin =
   [ cmd_yt;
     cmd_yt_search;
     Giphy.cmd;
+    cmd_emoji;
   ] |> Plugin.of_cmds
