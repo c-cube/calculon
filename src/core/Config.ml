@@ -15,7 +15,7 @@ type t = {
 }
 
 let default = {
-  server = "irc.freenode.net";
+  server = "irc.libera.chat";
   port = 7000;
   username = "calculon";
   realname = "calculon";
