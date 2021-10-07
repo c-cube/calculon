@@ -4,10 +4,12 @@ type t = {
   server : string; (** Address of the irc server *)
   port : int; (** Port of the server *)
   username : string;
+  password : string option;
   realname : string;
   nick : string;
   tls: bool;
   tls_cert : Ssl.certificate option;
+  sasl: bool;
   channel : string; (** Channel to join after the connexion to the server *)
   state_file : string; (** Where plugins' state is stored *)
 
@@ -20,13 +22,15 @@ type t = {
 
 val default : t
 (** Default configuration:
-- server = "irc.freenode.net"
+- server = "irc.libera.chat"
 - port = 7000
 - username = "calculon"
 - realname = "calculon"
+- password = None
 - nick = "calculon"
 - tls = true
 - tls_cert = None
+- sasl = true
 - channel = "#ocaml"
 - state_file = "state.json"
 - irc_log = `None

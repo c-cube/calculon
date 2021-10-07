@@ -15,6 +15,10 @@ let map_opt f = function
   | None -> None
   | Some x -> Some (f x)
 
+let unwrap_opt msg = function
+  | Some x -> x
+  | None -> failwith msg
+
 let (|?) o x = match o with
   | None -> x
   | Some y -> y

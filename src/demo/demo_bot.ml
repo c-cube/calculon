@@ -12,13 +12,14 @@ let plugins : C.Plugin.t list = [
 let config = {
   C.Config.default with
   C.Config.
-  server = "irc.freenode.net";
-  port = 7000;
+  server = "irc.libera.chat";
+  port = 6697;
   username = "test_bot";
   realname = "test_bot";
   nick = "test_bot";
   log_level = Logs.Info;
-  channel = "##test";
+  tls = true;
+  channel = "##test1234";
 }
 
 let () =
@@ -27,6 +28,7 @@ let () =
   try
     (* update with CLI parameters *)
     let config = C.Config.parse config Sys.argv in
+    Logs.set_level ~all:true (Some config.C.Config.log_level);
     C.Run_main.main config plugins |> Lwt_main.run
   with
     | Arg.Help msg -> print_endline msg

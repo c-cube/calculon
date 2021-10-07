@@ -4,10 +4,12 @@ type t = {
   server : string;
   port : int;
   username : string;
+  password : string option;
   realname : string;
   nick : string;
   tls: bool;
   tls_cert : Ssl.certificate option;
+  sasl: bool;
   channel : string;
   state_file : string;
   log_level: Logs.level;
@@ -18,13 +20,15 @@ let default = {
   server = "irc.libera.chat";
   port = 7000;
   username = "calculon";
+  password = None;
   realname = "calculon";
   nick = "calculon";
   tls = true;
   tls_cert = None;
+  sasl = true;
   channel = "#ocaml";
   state_file = "state.json";
-  log_level=Logs.Warning;
+  log_level=Logs.Info;
   prefix = "!";
 }
 
@@ -35,6 +39,7 @@ let parse ?(extra_args=[]) conf args =
   let custom_state = ref None in
   let custom_port = ref conf.port in
   let custom_tls = ref None in
+  let custom_sasl = ref None in
   let prefix = ref default.prefix in
   let log_lvl = ref None in
   let options = Arg.align @@ extra_args @
@@ -47,23 +52,32 @@ let parse ?(extra_args=[]) conf args =
         " server to join (default: " ^ default.server ^ ")"
       ; "--state", Arg.String (fun s -> custom_state := Some s),
         " file containing factoids (default: " ^ default.state_file ^ ")"
-      ; "--tls", Arg.Unit (fun () -> custom_tls := Some true), " enable TLS"
-      ; "--no-tls", Arg.Unit (fun () -> custom_tls := Some false), " disable TLS"
-      ; "--debug", Arg.Unit (fun() ->log_lvl := Some Logs.Debug), " print debug messages (on stderr)"
+      ; "--tls", Arg.Bool (fun b -> custom_tls := Some b), " enable/disable TLS"
+      ; "--sasl", Arg.Bool (fun b -> custom_sasl := Some b), " enable/disable SASL auth"
+      ; "--debug", Arg.Unit (fun() ->log_lvl := Some Logs.Debug), " set log level to debug"
       ; "--prefix", Arg.Set_string prefix, " set prefix for commands (default \"!\")";
       ]
   in
   Arg.parse_argv args options ignore "parse options";
-  let log_level = !log_lvl |? conf.log_level in
-  Logs.set_level ~all:true (Some log_level);
+
+  (* env vars are also used *)
+  let user =
+    try Sys.getenv "USER" with _ -> conf.username
+  and password =
+      try Some (Sys.getenv "PASSWORD") with _ -> None
+  in
+
   { conf with
     nick = !custom_nick |? conf.nick;
+    username = user;
+    password;
     channel = !custom_chan |? conf.channel;
     server = !custom_server |? conf.server;
     tls = !custom_tls |? conf.tls;
+    sasl = !custom_sasl |? conf.sasl;
     port = !custom_port;
     state_file = !custom_state |? conf.state_file;
-    log_level;
+    log_level = !log_lvl |? conf.log_level;
     prefix = !prefix;
   }
 

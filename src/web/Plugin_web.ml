@@ -5,6 +5,7 @@ open Calculon
 
 open Soup
 open Lwt.Infix
+module Log = Core.Log
 
 let get_body uri =
   Lwt_preemptive.detach
@@ -72,10 +73,10 @@ let get_youtube_search (query:string): string Lwt.t =
     (fun () -> get_body uri)
     (function
       | Failure e ->
-        Logs.err (fun k->k "error in fetching `%s`:\n%s" query e);
+        Log.err (fun k->k "error in fetching `%s`:\n%s" query e);
         Lwt.return ""
       | e ->
-        Logs.err (fun k->k "error in fetching `%s`:\n%s" query @@ Printexc.to_string e);
+        Log.err (fun k->k "error in fetching `%s`:\n%s" query @@ Printexc.to_string e);
         Lwt.return "")
 
 
@@ -83,12 +84,15 @@ let cmd_yt_search =
   Command.make_simple_l
     ~prio:10 ~cmd:"yt_search" ~descr:"lookup on youtube"
     (fun _ s ->
-       Logs.debug ~src:Core.logs_src (fun k->k"yt_search `%s`" s);
-       (get_youtube_search (String.trim s) >|= fun body ->
-        find_yt_ids ~n:1 body)
+       Log.debug (fun k->k"yt_search `%s`" s);
+       begin
+         get_youtube_search (String.trim s) >|= fun body ->
+         Log.debug (fun k->k"yt_search: body of size %d" (String.length body));
+         find_yt_ids ~n:1 body
+       end
        >>= fun urls ->
        Lwt_list.fold_left_s (fun acc url ->
-           Logs.debug ~src:Core.logs_src (fun k->k "Getting metadata for url %s" url);
+           Log.debug (fun k->k "Getting metadata for url: `%s`" url);
            page_title ~with_description:false (Uri.of_string url) >>= function
            | Some x ->
              let descr = Format.asprintf "%s : %s" url x in
@@ -118,12 +122,15 @@ module Giphy = struct
       (fun () ->
         get_body uri >|= fun s ->
         try
+          Log.debug (fun k->k"query to giphy returned:@.%s" s);
           let r = Giphy_j.search_result_of_string s in
           begin match r.Giphy_j.data with
-            | [] -> None
+            | [] ->
+              Log.debug (fun k->k"giphy: no data");
+              None
             | l ->
               let r = Prelude.random_l l in
-              Logs.info ~src:Core.logs_src
+              Log.info
                 (fun k->k "giphy: pick `%s` in list of len %d"
                   r.Giphy_j.url (List.length l));
               let images = r.Giphy_j.images in
@@ -132,7 +139,7 @@ module Giphy = struct
                 | None, Some i -> Some i.Giphy_j.i_url
                 | None, None ->
                   (* default: return the embed_url *)
-                  Logs.err ~src:Core.logs_src (fun k->k 
+                  Log.err (fun k->k
                     "giphy: could not get `original` or `downsized` picture for `%s`"
                     r.Giphy_j.url);
                   Some r.Giphy_j.embed_url
@@ -155,8 +162,48 @@ module Giphy = struct
       )
 end
 
+let cmd_emoji =
+  let find_h1 body =
+    let ast = Soup.parse body in
+    Soup.select "article h1" ast
+    |> Soup.to_list
+    |> CCList.take 1
+    |> CCList.map
+      (fun n ->
+         Soup.select "#emoji" n |> Soup.to_list
+         |> List.map Soup.to_string |> String.concat " ",
+         Soup.children n |> Soup.to_list |> CCList.take 1
+         |> List.map Soup.to_string |> String.concat " ")
+    |> CCList.head_opt
+  and find_search body =
+    let ast = Soup.parse body in
+    ast
+    |> Soup.select "article #search-results li a"
+    |> Soup.to_list |> CCList.take 1
+    |> CCList.find_map (Soup.attribute "href")
+  in
+
+  Command.make_simple ~descr:"look for emojis" ~cmd:"emoji" ~prio:10
+    (fun _msg s ->
+       let s = String.trim s in
+       let query = Printf.sprintf "https://emojipedia.org/search/?q=%s" s in
+       Log.debug (fun k->k "emoji: query is '%s'" query);
+       Lwt.catch
+         (fun () ->
+            get_body (Uri.of_string query) >|= fun s ->
+            match find_h1 s, find_search s with
+            | Some (em,title), _ ->
+              Some (Printf.sprintf "%s: %s (%s)" em title query)
+            | None, Some href ->
+              Some href
+            | None, None -> Some (Printf.sprintf "not found"))
+         (fun e ->
+            Log.err (fun k->k "emoji: query failed:@.%s" (Printexc.to_string e));
+            Lwt.return None))
+
 let plugin =
   [ cmd_yt;
     cmd_yt_search;
     Giphy.cmd;
+    cmd_emoji;
   ] |> Plugin.of_cmds

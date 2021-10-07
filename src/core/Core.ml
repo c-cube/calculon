@@ -8,8 +8,9 @@ open Containers
 open Lwt.Infix
 
 module Msg = Irc_message
-type irc_msg = Irc_message.t
 let logs_src = Logs.Src.create ~doc:"logs for calculon" "calculon"
+module Log = (val (Logs.src_log logs_src))
+type irc_msg = Irc_message.t
 
 type privmsg = {
   nick: string; (* author *)
@@ -31,13 +32,13 @@ let privmsg_of_msg msg =
   match msg.Msg.command with
   | Msg.PRIVMSG (to_, message) ->
     Some
-      { nick = Option.get_exn msg.Msg.prefix |> get_nick;
+      { nick = Prelude.unwrap_opt "msg prefix" msg.Msg.prefix |> get_nick;
         to_;
         message }
   | _ -> None
 
 let string_of_privmsg msg =
-  Printf.sprintf "{nick:%s, to:%s, msg: %s}" msg.nick msg.to_ msg.message
+  Printf.sprintf "{nick:%S; to:%S; msg: %S}" msg.nick msg.to_ msg.message
 
 module type S = sig
   module I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t
@@ -129,8 +130,7 @@ module Make
       lines
 
   let split_lines_ = CCString.Split.list_cpy ~by:"\n"
-
-  let flat_map f l = List.map f l |> List.flatten
+  let flat_map = CCList.flat_map
 
   let send_privmsg_l ~target ~messages =
     process_list_
@@ -167,16 +167,13 @@ module Make
   let talk ~target ty =
     let message = Talk.select ty in
     send_privmsg ~target ~message
-
-  let () =
-    let src = Logs.Src.create "irc-client" ~doc:"ocaml-irc-client" in
-    I.set_log (fun s -> Logs.debug ~src (fun k -> k "%s" s); Lwt.return_unit)
 end
 
 module Run
     (I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t)
     (F : sig
        val connect: unit -> I.connection_t option Lwt.t
+       val conn_info: string
        val init: t -> unit Lwt.t
      end)
 = struct
@@ -186,7 +183,9 @@ module Run
       ~keepalive:{I.mode=`Passive; timeout=300}
       ~after:60
       ~connect:(fun () ->
-          Logs.info ~src:logs_src (fun k->k "trying to (re)connect…");
+          Log.info
+            (fun k->k "trying to (re)connect%s…"
+                (if String.equal F.conn_info "" then "" else " to " ^ F.conn_info));
           F.connect ())
       ~callback:(fun _ msg_or_err ->
         match !self with
@@ -194,15 +193,13 @@ module Run
         | Some (module C) ->
           begin match msg_or_err with
             | Result.Ok msg ->
-              Logs.debug ~src:logs_src
-                (fun k->k "got message %s" (Irc_message.to_string msg));
               Signal.send C.messages msg
             | Result.Error err ->
-              Logs.err ~src:logs_src (fun k->k "error: %s" err);
+              Log.err (fun k->k "error: %s" err);
               Lwt.return ()
           end)
       ~f:(fun conn ->
-        Logs.info ~src:logs_src (fun k->k "connected, instantiate core");
+        Log.info (fun k->k "connected, instantiate core");
         let module C = Make(I)(struct let c = conn end) in
         let new_c = (module C : S) in
         self := Some new_c;
@@ -210,16 +207,18 @@ module Run
       ()
 end
 
-let loop_ssl ~connect ~init () : unit Lwt.t =
+let loop_ssl ?(conn_info="") ~connect ~init () : unit Lwt.t =
   let module R = Run(Irc_client_lwt_ssl)(struct
       let connect = connect
+      let conn_info = conn_info
       let init = init
     end) in
   R.run ()
 
-let loop_unsafe ~connect ~init () : unit Lwt.t =
+let loop_unsafe ?(conn_info="") ~connect ~init () : unit Lwt.t =
   let module R = Run(Irc_client_lwt)(struct
       let connect = connect
+      let conn_info = conn_info
       let init = init
     end) in
   R.run ()
@@ -230,15 +229,18 @@ let run conf ~init () =
     let (module C) = core in
     init core
   in
+  let conn_info = Printf.sprintf "%s/%d" conf.C.server conf.C.port in
   if conf.C.tls then (
     let tls_config = Irc_client_lwt_ssl.Config.default in
     let connect () =
       Irc_client_lwt_ssl.connect_by_name
         ~username:conf.C.username ~realname:conf.C.realname ~nick:conf.C.nick
+        ?password:conf.C.password
         ~server:conf.C.server ~port:conf.C.port ~config:tls_config
+        ~sasl:conf.C.sasl
         ()
     in
-    loop_ssl ~connect ~init ()
+    loop_ssl ~conn_info ~connect ~init ()
   ) else (
     let connect () =
       Irc_client_lwt.connect_by_name
@@ -246,5 +248,5 @@ let run conf ~init () =
         ~server:conf.C.server ~port:conf.C.port
         ()
     in
-    loop_unsafe ~connect ~init ()
+    loop_unsafe ~conn_info ~connect ~init ()
   )

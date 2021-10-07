@@ -96,6 +96,7 @@ end
 type t = (module S)
 
 val loop_ssl :
+  ?conn_info:string ->
   connect:(unit -> Irc_client_lwt_ssl.connection_t option Lwt.t) ->
   init:(t -> unit Lwt.t) ->
   unit ->
@@ -106,15 +107,20 @@ val loop_ssl :
     call [init] on this core object (to initialize plugins, etc.)
     then loop on incoming messages.
     If the connection is closed for any reason, this will wait
-    for some time and then re-connect and call {!init} again, etc. *)
+    for some time and then re-connect and call {!init} again, etc.
+    @param conn_info how to display connection info in debug messages
+*)
 
 val loop_unsafe :
+  ?conn_info:string ->
   connect:(unit -> Irc_client_lwt.connection_t option Lwt.t) ->
   init:(t -> unit Lwt.t) ->
   unit ->
   unit Lwt.t
 (** Feed to {!Lwt_main.run}. Same as {!loop_tls} but with a cleartext
-    connection (boo!). *)
+    connection (boo!).
+    @param conn_info how to display connection info in debug messages
+*)
 
 val run :
   Config.t ->
@@ -123,10 +129,15 @@ val run :
   unit Lwt.t
 (** Main entry point: use config to pick the connection method,
     then call the appropriate auto-reconnection loop.
-    Calls {!init} every time a new connection is opened. *)
+    Calls {!init} every time a new connection is opened.
+*)
 
 (** Logging *)
 
 val logs_src: Logs.Src.t
 (** Logs from Calculon should use this source.
     @since 0.6 *)
+
+module Log : Logs.LOG
+(** Logger using {!logs_src}.
+    @since NEXT_RELEASE *)

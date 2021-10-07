@@ -14,8 +14,6 @@ let main ?cmd_help conf all : unit Lwt.t =
       (fun msg ->
          let cmds = Plugin.Set.commands plugins in
          let on_msg_l = Plugin.Set.on_msg_l plugins in
-         Logs.info ~src:Core.logs_src
-           (fun k->k "got message: %s" (Irc_message.to_string msg));
          let open Lwt.Infix in
          Lwt_list.iter_s (fun f -> f core msg) on_msg_l >>= fun () ->
          match Core.privmsg_of_msg msg with

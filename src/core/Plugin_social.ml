@@ -251,7 +251,7 @@ let cmd_ignore_list (state:state) =
              ) state.map [] in
          let msg =
            if CCList.is_empty ignored
-           then ["noone ignored!"]
+           then ["no one ignored!"]
            else "ignoring:" :: ignored
          in
          Lwt.return msg
@@ -264,7 +264,7 @@ let on_message state (module C:Core.S) msg =
   let module Msg = Irc_message in
   let nick = match msg.Msg.command with
     | Msg.JOIN (_, _) | Msg.PRIVMSG (_, _) ->
-      some @@ get_nick @@ Option.get_exn msg.Msg.prefix
+      some @@ get_nick @@ Prelude.unwrap_opt "message prefix" msg.Msg.prefix
     | Msg.NICK newnick ->
       Some newnick
     | _ -> None
