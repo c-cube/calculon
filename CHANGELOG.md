@@ -1,4 +1,10 @@
 
+## 0.7
+
+- add emoji plugin
+- move to irc-client 0.7 with SASL support
+- default to libera.chat
+
 ## 0.6
 
 - use `logs` for logging, deprecate custom logger

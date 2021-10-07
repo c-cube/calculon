@@ -1,6 +1,7 @@
 opam-version: "2.0"
 name: "calculon-web"
-version: "0.6"
+version: "0.7"
+license: "MIT"
 synopsis: "A collection of web plugins for Calculon"
 authors: ["Armael" "Enjolras" "c-cube"]
 maintainer: "c-cube"
