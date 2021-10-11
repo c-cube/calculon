@@ -145,7 +145,7 @@ let print_diff (f:float) : string =
   let s = mod_float f 60. |> int_of_float in
   let m = mod_float (f /. 60.) 60. |> int_of_float in
   let h = mod_float (f /. 3600.) 24. |> int_of_float in
-  let days = mod_float f (3600. *. 24.) |> int_of_float in
+  let days = mod_float (f /. (3600. *. 24.)) 365. |> int_of_float in
   let years = f /. (365. *. 3600. *. 24.) |> int_of_float in
   [ (if years>0 then [spf "%d years" years] else []);
     (if days > 0 then [spf "%d days" days] else []);
