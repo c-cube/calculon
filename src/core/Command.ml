@@ -83,6 +83,19 @@ let make_simple_query_l ?descr ?prio ~cmd f : t =
   let descr = match descr with Some s -> s | None -> cmd in
   make_simple_inner_ ~query:true ~descr ?prio ~cmd f
 
+let make_custom ?descr ?prio ~name f =
+  let match_ ~prefix:_ (module C:Core.S) msg =
+    match f msg msg.Core.message with
+    | None -> Cmd_skip
+    | Some fut ->
+      Cmd_match (
+        fut >>= fun lines ->
+        let target = Core.reply_to msg in
+        C.send_privmsg_l_nolimit ~target ~messages:lines ())
+    | exception e -> Cmd_fail (Printexc.to_string e)
+  in
+  make ?descr ?prio ~name match_
+
 let make_simple ?descr ?prio ~cmd f : t =
   make_simple_l ?descr ?prio ~cmd
     (fun msg s -> f msg s >|= function

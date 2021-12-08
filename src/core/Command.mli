@@ -84,6 +84,21 @@ val make_simple_query_l :
 (** Same as {!make_simple_l} but replies lines in query (private)
     The function can raise Fail to indicate failure *)
 
+val make_custom :
+  ?descr:string ->
+  ?prio:int ->
+  name:string ->
+  (Core.privmsg -> string -> string list Lwt.t option) ->
+  t
+(** [make_custom ~name f] calls [f] on input messages,
+    and returns either:
+    - [future(Some l)] to send some lines in response
+    - [None] to abstain and let other commands handle this message.
+
+    No prefix is considered here.
+    @since 0.8
+*)
+
 val compare_prio : t -> t -> int
 (** Compare by priority. Used to sort a list of commands by their priority. *)
 
