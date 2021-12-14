@@ -36,7 +36,6 @@ let string_of_op = function
   | Remove {key;value} -> "remove " ^ key ^ " -= " ^ string_of_value value
   | Incr k -> "incr " ^ k
   | Decr k -> "decr " ^ k
-  | Max_cardinal_for_force n -> "max-cardinal-for-force " ^ string_of_int n
 
 let mk_key key =
   match key_of_string key with
@@ -427,7 +426,7 @@ let cmd_factoids state =
       | Some (Set_force f, _) ->
         let l = get f.key state.st_cur  in
         begin match l with
-          | StrList l when List.length l >= state.max_cardinal_for_force ->
+          | StrList l when List.length l >= !(state.max_cardinal_for_force) ->
             C.talk ~target Talk.Err |> matched
           | _ ->
             state.st_cur <- set f state.st_cur;
