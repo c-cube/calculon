@@ -40,3 +40,7 @@ val decr : key -> t -> int option * t
 val search : string list -> t -> string list
 
 val plugin : Plugin.t
+
+val set_max_cardinal_for_force : int -> unit
+(** [set_max_cardinal_for_force n] prevents [Set_force] for keys
+    with more than [n] factoids, to not lose too much data. *)

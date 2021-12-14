@@ -36,6 +36,7 @@ let string_of_op = function
   | Remove {key;value} -> "remove " ^ key ^ " -= " ^ string_of_value value
   | Incr k -> "incr " ^ k
   | Decr k -> "decr " ^ k
+  | Max_cardinal_for_force n -> "max-cardinal-for-force " ^ string_of_int n
 
 let mk_key key =
   match key_of_string key with
@@ -293,6 +294,7 @@ let empty = StrMap.empty
 
 type state = {
   mutable st_cur: t;
+  max_cardinal_for_force: int ref;
   actions: Plugin.action Signal.Send_ref.t;
 }
 
@@ -423,8 +425,14 @@ let cmd_factoids state =
             C.talk ~target Talk.Ack) |> matched
         )
       | Some (Set_force f, _) ->
-        state.st_cur <- set f state.st_cur;
-        (save state >>= fun () -> C.talk ~target Talk.Ack) |> matched
+        let l = get f.key state.st_cur  in
+        begin match l with
+          | StrList l when List.length l >= state.max_cardinal_for_force ->
+            C.talk ~target Talk.Err |> matched
+          | _ ->
+            state.st_cur <- set f state.st_cur;
+            (save state >>= fun () -> C.talk ~target Talk.Ack) |> matched
+        end
       | Some (Append f, _) ->
         state.st_cur <- append f state.st_cur;
         (save state >>= fun () -> C.talk ~target Talk.Ack) |> matched
@@ -467,13 +475,16 @@ let commands state: Command.t list =
     cmd_random state;
   ]
 
+let max_card_ = ref 5
+let set_max_cardinal_for_force x = assert (x >= 2); max_card_ := x
+
 let of_json actions j: state Lwt_err.t =
   let open Lwt_err in
   begin match j with
     | None -> Lwt_err.return StrMap.empty
     | Some j -> Lwt.return (factoids_of_json j)
   end
-  >|= fun t -> {st_cur=t; actions}
+  >|= fun t -> {st_cur=t; max_cardinal_for_force=max_card_; actions}
 
 let to_json (st:state): json option =
   Some (json_of_factoids st.st_cur)
