@@ -8,7 +8,6 @@ type t = {
   realname : string;
   nick : string;
   tls: bool;
-  tls_cert : Ssl.certificate option;
   sasl: bool;
   channel : string;
   state_file : string;
@@ -24,7 +23,6 @@ let default = {
   realname = "calculon";
   nick = "calculon";
   tls = true;
-  tls_cert = None;
   sasl = true;
   channel = "#ocaml";
   state_file = "state.json";

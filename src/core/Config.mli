@@ -8,7 +8,6 @@ type t = {
   realname : string;
   nick : string;
   tls: bool;
-  tls_cert : Ssl.certificate option;
   sasl: bool;
   channel : string; (** Channel to join after the connexion to the server *)
   state_file : string; (** Where plugins' state is stored *)
@@ -29,7 +28,6 @@ val default : t
 - password = None
 - nick = "calculon"
 - tls = true
-- tls_cert = None
 - sasl = true
 - channel = "#ocaml"
 - state_file = "state.json"
