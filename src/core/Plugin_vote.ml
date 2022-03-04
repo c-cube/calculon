@@ -210,10 +210,10 @@ let cmd_vote state : Command.t =
     ~cmd:"vote" ~prio:10
     (reply state)
 
-let of_json _ _ : state Lwt_err.t =
+let of_json _ _ : (state,_) result =
   let polls = Hashtbl.create 10 in
   Lwt.async (fun () -> collector polls);
-  Lwt_err.return polls
+  Ok polls
 
 let plugin =
   Plugin.stateful

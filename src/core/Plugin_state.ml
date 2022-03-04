@@ -30,7 +30,7 @@ let cmd_save st =
 let plugin =
   Plugin.stateful
     ~name:"state"
-    ~of_json:(fun actions _ -> Lwt_err.return {actions})
+    ~of_json:(fun actions _ -> Ok {actions})
     ~to_json:(fun _ -> None)
     ~stop:(fun _ -> Lwt.return_unit)
     ~commands:(fun st -> [ cmd_reload st; cmd_save st; ])

@@ -299,7 +299,7 @@ let on_message state (module C:Core.S) msg =
 
 let of_json actions = function
   | None ->
-    Lwt_err.return {actions; map=StrMap.empty; }
+    Ok {actions; map=StrMap.empty; }
   | Some j ->
     let map = match j with
       | `Assoc l ->
@@ -309,7 +309,7 @@ let of_json actions = function
         |> StrMap.of_list
       | _ -> StrMap.empty
     in
-    Lwt_err.return {actions; map}
+    Ok {actions; map}
 
 let to_json (db:state) =
   let json = `Assoc (
