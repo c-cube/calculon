@@ -1,0 +1,6 @@
+
+(executable
+  (name migrate_state)
+  (public_name calculon-migrate-state)
+  (libraries sqlite3 calculon yojson)
+  (package calculon))
