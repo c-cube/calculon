@@ -25,12 +25,4 @@ type contact = {
   ignore_user: bool;
 }
 
-type state
-
-val data : state -> string -> contact
-
-(* by default, [force_sync] is true. Setting data with [force_sync] as false may
-   result in data loss in case of reload/crash of the bot *)
-val set_data : state -> ?force_sync:bool -> string -> contact -> unit
-
 val plugin : Plugin.t

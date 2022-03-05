@@ -502,7 +502,7 @@ let prepare_db db =
       factoids (
         key TEXT NOT NULL,
         value TEXT NOT NULL,
-        UNIQUE (key) on CONFLICT FAIL
+        UNIQUE (key) ON CONFLICT FAIL
       );
     |} |> check_db_ db;
 
