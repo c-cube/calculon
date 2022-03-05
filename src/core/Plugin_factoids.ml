@@ -143,30 +143,37 @@ let json_of_value = function
   | Int i -> `Int i
 
 let get ?(default=StrList[]) key (self:t) : value =
+  let@ () = wrap_failwith "factoids.get" in
   let@ stmt =
     with_stmt self {| SELECT json(value) FROM factoids WHERE key=? |} in
   DB.bind_text stmt 1 key |> check_db_ self;
   DB.step stmt |> check_db_ self;
-  (try DB.column_text stmt 1 |> Yojson.Safe.from_string |> as_value
+  (try
+    let j = DB.column_text stmt 0 in
+    as_value @@ Yojson.Safe.from_string j
    with _ -> default)
 
 let mem key (self:t) : bool =
+  let@ () = wrap_failwith "factoids.mem" in
   let@ stmt = with_stmt self
     {| SELECT EXISTS (SELECT(value) FROM factoids WHERE key=?) |} in
   DB.bind_text stmt 1 key |> check_db_ self;
   DB.step stmt |> check_db_ self;
-  DB.column_bool stmt 1
+  DB.column_bool stmt 0
 
 let set {key;value} (self:t) : unit =
+  let@ () = wrap_failwith "factoids.set" in
   let v = json_of_value value |> Yojson.Safe.to_string in
   let@ stmt = with_stmt self
-    {| INSERT INTO factoids(key,value) VALUES(?,?) ON CONFLICT REPLACE |} in
+      {| INSERT INTO factoids(key,value) VALUES(?1,?2)
+         ON CONFLICT DO UPDATE SET value=?2 |} in
   DB.bind_text stmt 1 key |> check_db_ self;
   DB.bind_text stmt 2 v |> check_db_ self;
   DB.step stmt |> check_db_ self;
   ()
 
 let append {key;value} (self:t) : unit =
+  let@ () = wrap_failwith "factoids.append" in
   DB.exec self "BEGIN;" |> check_db_ self;
   let value' = match get key self, value with
     | Int i, Int j -> Int (i+j)
@@ -180,6 +187,7 @@ let append {key;value} (self:t) : unit =
   ()
 
 let remove {key;value} (self:t) : unit =
+  let@ () = wrap_failwith "factoids.remove" in
   let value' =
     match get key self, value with
     | Int i, Int j -> Int (i-j)
@@ -194,13 +202,12 @@ let remove {key;value} (self:t) : unit =
   in
   begin match value' with
     | StrList [] | Int 0 ->
-      let stmt =
-        DB.prepare self
+      let@ stmt =
+        with_stmt self
           {| DELETE FROM factoids WHERE key=? |}
       in
       DB.bind_text stmt 1 key |> check_db_ self;
       DB.step stmt |> check_db_ self;
-      DB.finalize stmt |> check_db_ self;
     | _ ->
       set {key; value = value'} self
   end
@@ -250,7 +257,7 @@ let search tokens (self:t): string list =
         l
   in
 
-  let stmt = DB.prepare self {| SELECT key, value FROM factoids; |} in
+  let@ stmt = with_stmt self {| SELECT key, value FROM factoids; |} in
   let rc, l =
     DB.fold stmt
       ~init:[]
@@ -262,15 +269,15 @@ let search tokens (self:t): string list =
           | _ -> choices)
   in
   check_db_ self rc;
-  DB.finalize stmt |> check_db_ self;
   l
 
 let random (self:t): string =
+  let@ () = wrap_failwith "factoids.random" in
   match
     let@ stmt = with_stmt self
         {| SELECT key FROM factoids ORDER BY random() LIMIT 1 |} in
     DB.step stmt |> check_db_ self;
-    (try Some (DB.column_text stmt 1) with _ -> None)
+    (try Some (DB.column_text stmt 0) with _ -> None)
   with
   | None -> ""
   | Some key ->
@@ -418,7 +425,7 @@ let cmd_factoids (self:t) =
     let op = parse_op ~prefix msg.Core.message in
     CCOpt.iter
       (fun (c,_) ->
-         Logs.debug ~src:Core.logs_src (fun k->k "parsed command `%s`" (string_of_op c)))
+         Log.debug (fun k->k "factoids: parsed command `%s`" (string_of_op c)))
       op;
     begin match op with
       | Some (Get k, hl) ->
@@ -429,7 +436,9 @@ let cmd_factoids (self:t) =
             if n>0
             then C.send_privmsg ~target ~message:help_msg |> matched
             else Command.Cmd_skip
-          | v -> reply_value ~hl v
+          | v ->
+            Log.debug (fun k->k "factoids: get returned %s" (string_of_value v));
+            reply_value ~hl v
         end
       | Some (Set f, _) ->
         if mem f.key self then (

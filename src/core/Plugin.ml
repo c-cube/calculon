@@ -80,11 +80,6 @@ let db_backed
     () : t =
   DB_backed {commands; prepare_db; on_msg; stop}
 
-(* check DB errors *)
-let[@inline] check_db_ db rc =
-  if DB.Rc.is_success rc then ()
-  else failwith (Printf.sprintf "DB error: %s %s" (DB.Rc.to_string rc) (DB.errmsg db))
-
 (* prepare the main plugin tables, settings *)
 let prepare_db_ db =
   DB.busy_timeout db 500;
@@ -100,12 +95,6 @@ let prepare_db_ db =
     CREATE INDEX IF NOT EXISTS plugins_idx on plugins(name);
     |} |> check_db_ db;
   ()
-
-let guard_res f : _ result =
-  try Ok (f())
-  with
-  | Failure e -> Error e
-  | e -> Error (Printexc.to_string e)
 
 let unwrap_failwith = function
   | Ok x -> x
@@ -209,6 +198,9 @@ module Set = struct
 
       | DB_backed plugin ->
         plugin.prepare_db db;
+        all_cmds := List.rev_append (plugin.commands db) !all_cmds;
+        all_on_msg := List.rev_append (plugin.on_msg db) !all_on_msg;
+
         Active_db_backed plugin
     in
 

@@ -53,8 +53,8 @@ let make_simple_inner_ ~query ?descr ?prio ~cmd f : t =
       | None -> Cmd_skip
       | Some (sub, hl) ->
         Core.Log.debug
-          (fun k->k "command '%s' matched with %s, hl=%s"
-              prefix sub (match hl with None -> "none" | Some h -> h));
+          (fun k->k "command '%s' matched with sub=%S, hl=%s"
+              prefix sub (match hl with None -> "none" | Some h -> Printf.sprintf "%S" h));
         try
           let fut =
             f msg sub >>= fun lines ->
