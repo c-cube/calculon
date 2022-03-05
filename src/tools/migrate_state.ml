@@ -71,6 +71,54 @@ let () =
       DB.finalize  stmt |> check_db_;
 
 
+    ) else if n="social" then (
+      DB.exec db
+        {| CREATE TABLE IF NOT EXISTS
+        social(name TEXT NOT NULL,
+               value TEXT NOT NULL,
+               UNIQUE (name) ON CONFLICT FAIL
+               );
+      |} |> check_db_;
+      DB.exec db
+        {| CREATE INDEX IF NOT EXISTS idx_social on social(name); |}
+      |> check_db_;
+
+      let l = J.Util.to_assoc sub in
+      (* add value, but be ready to merge if a nick was present several
+         times (possibly because of casing inconsistencies) *)
+      let stmt = DB.prepare db
+          {| INSERT INTO social(name,value) VALUES (?1,?2)
+             ON CONFLICT(name) DO
+             UPDATE SET value =
+              json_object(
+                'ignore_user',
+                ( CASE json_extract(?2, '$.ignore_user')
+                       OR json_extract(value, '$.ignore_user')
+                  WHEN 1 THEN json('true')
+                  WHEN 0 THEN json('false') END),
+                'lastSeen',
+                max(json_extract(?2, '$.lastSeen'), json_extract(value, '$.lastSeen')),
+                'to_tell',
+                (SELECT json_group_array(x.value) FROM
+                  ( SELECT value FROM json_each(value, '$.tell') UNION
+                    SELECT value FROM json_each(?2, '$.tell' ))
+                  as x)
+              );
+             |} in
+      List.iter
+        (fun (name, value) ->
+           let str_val = J.to_string value in
+           let name = String.lowercase_ascii name in
+
+           DB.reset stmt |> check_db_;
+           DB.bind_text stmt 1 name |> check_db_;
+           DB.bind_text stmt 2 str_val |> check_db_;
+           DB.step stmt |> check_db_;
+        ) l;
+
+      DB.finalize  stmt |> check_db_;
+
+
     ) else (
       let sub = J.to_string sub in
       let stmt = DB.prepare db "INSERT INTO plugins(name,value) VALUES (?,?);" in
