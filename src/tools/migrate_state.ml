@@ -31,7 +31,7 @@ let () =
       (name TEXT NOT NULL,
        value TEXT NOT NULL,
        UNIQUE (name) ON CONFLICT FAIL
-       );
+       ) STRICT;
     |} |> check_db_;
 
   Printf.printf "creating index\n";
@@ -49,7 +49,7 @@ let () =
             key TEXT NOT NULL,
             value TEXT NOT NULL,
             UNIQUE (key) on CONFLICT FAIL
-          );
+          ) STRICT;
         |} |> check_db_;
 
       DB.exec db {|
@@ -77,7 +77,7 @@ let () =
         social(name TEXT NOT NULL,
                value TEXT NOT NULL,
                UNIQUE (name) ON CONFLICT FAIL
-               );
+               ) STRICT;
       |} |> check_db_;
       DB.exec db
         {| CREATE INDEX IF NOT EXISTS idx_social on social(name); |}

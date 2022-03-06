@@ -76,7 +76,7 @@ let prepare_db (self:t) : unit =
         social(name TEXT NOT NULL,
                value TEXT NOT NULL,
                UNIQUE (name) ON CONFLICT FAIL
-               );
+               ) STRICT;
     |} |> check_db_ self;
   DB.exec self
     {| CREATE INDEX IF NOT EXISTS idx_social on social(name); |}

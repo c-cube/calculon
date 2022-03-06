@@ -503,7 +503,7 @@ let prepare_db db =
         key TEXT NOT NULL,
         value TEXT NOT NULL,
         UNIQUE (key) ON CONFLICT FAIL
-      );
+      ) STRICT;
     |} |> check_db_ db;
 
   DB.exec db {|
