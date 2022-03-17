@@ -1,5 +1,7 @@
 open Prelude
 
+type hidden = Hidden
+
 type t = {
   server : string;
   port : int;
@@ -10,9 +12,10 @@ type t = {
   tls: bool;
   sasl: bool;
   channel : string;
-  state_file : string;
   log_level: Logs.level;
-  prefix: string; (** prefix for commands *)
+  prefix: string;
+  db_file: string;
+  _hidden: hidden;
 }
 
 let default = {
@@ -25,16 +28,17 @@ let default = {
   tls = true;
   sasl = true;
   channel = "#ocaml";
-  state_file = "state.json";
   log_level=Logs.Info;
   prefix = "!";
+  db_file="calculon.db";
+  _hidden=Hidden;
 }
 
 let parse ?(extra_args=[]) conf args =
   let custom_nick = ref None in
   let custom_chan = ref None in
   let custom_server = ref None in
-  let custom_state = ref None in
+  let custom_db_file = ref None in
   let custom_port = ref conf.port in
   let custom_tls = ref None in
   let custom_sasl = ref None in
@@ -48,8 +52,8 @@ let parse ?(extra_args=[]) conf args =
       ; "--port", Arg.Set_int custom_port, " port of the server"
       ; "--server", Arg.String (fun s -> custom_server := Some s),
         " server to join (default: " ^ default.server ^ ")"
-      ; "--state", Arg.String (fun s -> custom_state := Some s),
-        " file containing factoids (default: " ^ default.state_file ^ ")"
+      ; "--db-file", Arg.String (fun s -> custom_db_file := Some s),
+        " database file containing plugin state (default: " ^ default.db_file ^ ")"
       ; "--tls", Arg.Bool (fun b -> custom_tls := Some b), " enable/disable TLS"
       ; "--sasl", Arg.Bool (fun b -> custom_sasl := Some b), " enable/disable SASL auth"
       ; "--debug", Arg.Unit (fun() ->log_lvl := Some Logs.Debug), " set log level to debug"
@@ -74,7 +78,7 @@ let parse ?(extra_args=[]) conf args =
     tls = !custom_tls |? conf.tls;
     sasl = !custom_sasl |? conf.sasl;
     port = !custom_port;
-    state_file = !custom_state |? conf.state_file;
+    db_file = !custom_db_file |? conf.db_file;
     log_level = !log_lvl |? conf.log_level;
     prefix = !prefix;
   }

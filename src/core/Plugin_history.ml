@@ -70,7 +70,7 @@ let plugin ?(default_len=10) ?(n=150) () =
   Plugin.stateful
     ~name:"history"
     ~of_json:(fun actions _ ->
-      Lwt_err.return {actions; size=n; default_len; hist=Queue.create();})
+      Ok {actions; size=n; default_len; hist=Queue.create();})
     ~to_json:(fun _ -> None)
     ~on_msg:(fun state -> [on_msg state])
     ~stop:(fun _ -> Lwt.return_unit)

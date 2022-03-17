@@ -1,4 +1,5 @@
 open Prelude
+open DB_utils
 open Containers
 
 module J = Yojson.Safe.Util
@@ -18,12 +19,17 @@ type contact = {
   ignore_user: bool;    (* user does not turn up in searches etc. *)
 }
 
-exception Bad_json
+let equal_contact : contact -> contact -> bool = CCEqual.poly
 
-let contact_of_json (json: json): contact option =
+(* we only need second precision here *)
+let now = Unix.time
+
+exception Bad_json of string
+
+let contact_of_json (json: json): (contact, string) result =
   let member k =
     match J.member k json with
-    | `Null -> raise Bad_json
+    | `Null -> raise (Bad_json  (spf "member not found: %S" k))
     | v -> v in
   try
     { last_seen = member "lastSeen" |> J.to_float;
@@ -35,13 +41,15 @@ let contact_of_json (json: json): contact option =
             | [from; on_channel; msg; tell_after] ->
               let tell_after = Some (float_of_string tell_after) in
               {from; on_channel; msg; tell_after;}
-            | _ -> raise Bad_json);
+            | _ -> raise (Bad_json (spf "bad `tell` object: %s" (Yojson.Safe.to_string j))));
       ignore_user = match J.member "ignore_user" json with
         | `Null -> false;
         | v -> J.to_bool_option v
                |> CCOpt.get_or ~default:false
-    } |> some
-  with Bad_json | J.Type_error (_, _) -> None
+    } |> (fun x->Ok x)
+  with
+  | Bad_json s -> Error s
+  | J.Type_error (_, _) -> assert false
 
 let json_of_contact (c: contact): json =
   `Assoc [
@@ -60,31 +68,121 @@ let json_of_contact (c: contact): json =
 
 (* Contacts db *)
 
-type state = {
-  actions: Plugin.action_callback;
-  mutable map: contact StrMap.t;
-}
+type t = DB.db
 
-let write_db (db:state) =
-  Signal.Send_ref.send db.actions Plugin.Require_save
+let prepare_db (self:t) : unit =
+  DB.exec self
+    {| CREATE TABLE IF NOT EXISTS
+        social(name TEXT NOT NULL,
+               value TEXT NOT NULL,
+               UNIQUE (name) ON CONFLICT FAIL
+               ) STRICT;
+    |} |> check_db_ self;
+  DB.exec self
+    {| CREATE INDEX IF NOT EXISTS idx_social on social(name); |}
+    |> check_db_ self;
+  ()
 
-let is_contact state nick = StrMap.mem nick state.map
+let is_contact (self:t) nick: bool =
+  let@ () = wrap_failwith "social.is_contact" in
+  let@ stmt = with_stmt self {| SELECT EXISTS (SELECT * from social WHERE name=?) |} in
+  DB.bind_text stmt 1 nick |> check_db_ self;
+  DB.step stmt |> check_db_ self;
+  DB.column_bool stmt 0
 
-let set_data state ?(force_sync = true) nick contact =
-  state.map <- StrMap.add nick contact state.map;
-  if force_sync then Lwt.async (fun () -> write_db state)
+let set_data (self:t) nick (contact:contact) : unit =
+  let nick = String.lowercase_ascii nick in
+  let j = contact |> json_of_contact |> Yojson.Safe.to_string in
+  let@ () = wrap_failwith "social.set_data" in
+  let@ stmt =
+    with_stmt self
+      {| INSERT INTO social(name, value)
+         VALUES(?1,?2)
+         ON CONFLICT(name)
+         DO UPDATE SET value=?2 |}
+  in
+  DB.bind_text stmt 1 nick |> check_db_ self;
+  DB.bind_text stmt 2 j |> check_db_ self;
+  DB.step stmt |> check_db_ self
 
-let new_contact state nick =
-  if not (is_contact state nick) then
-    set_data state nick {
-      last_seen = Unix.time ();
-      to_tell = [];
-      ignore_user = false;
-    }
+let new_contact (self:t) nick : contact =
+  let nick = String.lowercase_ascii nick in
+  let d = {
+    last_seen = now();
+    to_tell = [];
+    ignore_user = false;
+  } in
+  set_data self nick d;
+  d
 
-let data state nick =
-  if not @@ is_contact state nick then new_contact state nick;
-  StrMap.find nick state.map
+let data (self:t) nick : contact option =
+  let nick = String.lowercase_ascii nick in
+  let@ () = wrap_failwith "social.data" in
+  if is_contact self nick then (
+    let@ stmt =
+      with_stmt self
+        {| SELECT value FROM social WHERE name=? |}
+    in
+    DB.bind_text stmt 1 nick |> check_db_ self;
+    DB.step stmt |> check_db_ self;
+    match
+      let s = DB.column_text stmt 0 in
+      s, s |> Yojson.Safe.from_string |> contact_of_json
+    with
+    | _, Ok c -> Some c
+    | s, Error err ->
+      failwith (spf "invalid contact %S: %s" s err)
+    | exception _ ->
+      failwith (spf "cannot access contact %S" nick)
+  ) else (
+    None
+  )
+
+let ignored (self:t) : string list =
+  let@ () = wrap_failwith "social.ignored" in
+  let@ stmt =
+    with_stmt self
+      {| SELECT name FROM social
+         WHERE json_extract(value, '$.ignore_user') = true |}
+  in
+  let rc, l =
+    DB.fold stmt ~init:[] ~f:(fun acc row ->
+      match row with
+      | [| DB.Data.TEXT r |] -> r :: acc
+      | _ -> acc)
+  in
+  check_db_ self rc; l
+
+let last_talk (self:t) ~n : (string*float) list =
+  let@ () = wrap_failwith "social.ignored" in
+  let@ stmt =
+    with_stmt self
+      {| SELECT name, json_extract(value, '$.lastSeen') as lastSeen FROM social
+         ORDER BY lastSeen DESC
+         LIMIT ?|}
+  in
+  DB.bind_int stmt 1 n |> check_db_ self;
+  let rc, l =
+    DB.fold stmt ~init:[] ~f:(fun acc row ->
+        match row with
+        | [| DB.Data.TEXT r; DB.Data.FLOAT t |] -> (r,t) :: acc
+        | _ -> acc)
+  in
+  check_db_ self rc; l
+
+let data_or_insert (self:t) nick : contact =
+  match data self nick with
+  | Some c -> c
+  | None -> new_contact self nick
+
+let update_data (self:t) nick ~f : contact =
+  let@ () = wrap_failwith "social.update-data" in
+  let d = data_or_insert self nick in
+  let d' = f d in
+  if not (equal_contact d d') then set_data self nick d';
+  d'
+
+let update_data' self nick ~f : unit = ignore (update_data self nick ~f : contact)
 
 let split_2 ~msg re s =
   let a = Re.split re s in
@@ -98,7 +196,7 @@ let split_3 ~msg re s =
     | x::y::tail -> x,y,String.concat " " tail
     | _ -> raise (Command.Fail msg)
 
-let cmd_tell_inner ~at state =
+let cmd_tell_inner ~at (self:t) =
   Command.make_simple
     ~descr:("ask the bot to transmit a message to someone absent\n"
       ^ if at then "format: <date> <nick> <msg>" else "format: <nick> <msg>")
@@ -109,8 +207,7 @@ let cmd_tell_inner ~at state =
        let s = String.trim s in
        try
          let dest, msg, tell_after =
-           if at
-           then (
+           if at then (
              let d, m, t =
                split_3 ~msg:"tell_at: expected <date> <nick> <msg>"
                  (Re.Perl.compile_pat "[ \t]+") s
@@ -125,11 +222,11 @@ let cmd_tell_inner ~at state =
              d, m, None
            )
          in
-         set_data state dest
-           {(data state dest) with
-              to_tell =
+         update_data' self dest
+           ~f:(fun state ->
+               {state with to_tell =
                 {from=nick; on_channel=target; msg; tell_after}
-                :: (data state dest).to_tell};
+                :: state.to_tell});
          Lwt.return_some (Talk.select Talk.Ack)
        with
          | Command.Fail _ as e -> Lwt.fail e
@@ -155,66 +252,54 @@ let print_diff (f:float) : string =
   ] |> List.flatten |> String.concat ", "
 
 
-let create_message_for_user now (user,last) =
+let create_message_for_user now user last =
   let diff = now -. last in
   CCFormat.sprintf "seen %s last: %s ago" user (print_diff diff)
 
-let cmd_seen (state:state) =
+let cmd_seen (self:t) =
   Command.make_simple_l
     ~descr:"ask for the last time someone talked on this chan"
     ~prio:10 ~cmd:"seen"
     (fun _msg s ->
        try
-         let dest = CCString.trim s |> CCString.uppercase_ascii in
-         Logs.debug ~src:Core.logs_src (fun k->k "query: seen `%s`" dest);
-         let now = Unix.time () in
-         StrMap.fold (fun name data acc ->
-             if String.equal dest (CCString.uppercase_ascii name) then
-               (name, data.last_seen) :: acc
-             else
-               acc )
-           state.map []
-         |> CCList.sort (fun a b -> - (Float.compare (snd a) (snd b)) )
-         |> CCList.map (create_message_for_user now)
-         |> Lwt.return
+         let now = now() in
+         let nick = CCString.trim s |> String.lowercase_ascii in
+         Logs.debug ~src:Core.logs_src (fun k->k "query: seen `%s`" nick);
+         match data self nick with
+         | Some c ->
+           Lwt.return [create_message_for_user now nick c.last_seen]
+         | None -> Lwt.return []
        with e ->
-         Lwt.fail (Command.Fail ("seen: " ^ Printexc.to_string e)))
+         Lwt.fail (Command.Fail ("seen: " ^ Printexc.to_string e))
+    )
 
-
-let cmd_last (state:state) =
+let cmd_last (self:t) =
   Command.make_simple_l
     ~descr:"ask for the last n people talking on this chan (default: n=3)"
     ~prio:10 ~cmd:"last"
-    (fun msg s ->
+    (fun _msg s ->
        try
          let default_n = 3 in
          let dest = String.trim s in
-         Logs.debug ~src:Core.logs_src (fun k->k "query: last `%s`" dest);
+
          let top_n = try match int_of_string dest with
            | x when x > 0 -> x
            | _ -> default_n
            with
            | Failure _ -> default_n
          in
-         let now = Unix.time () in
-         let user_times =
-           StrMap.fold (fun key contact acc ->
-               if not (String.equal key msg.Core.nick) && contact.ignore_user |> not then
-                 (key, contact.last_seen) :: acc
-               else
-                 acc
-             )
-             state.map []
-           |> CCList.sort (fun a b -> - (Float.compare (snd a) (snd b)) )
-           |> CCList.tl (* remove person who asked *)
-           |> CCList.take top_n
-           |> CCList.map (create_message_for_user now)
-         in
-         Lwt.return user_times
-       with e ->
-         Lwt.fail (Command.Fail ("last_seen: " ^ Printexc.to_string e)))
 
-let cmd_ignore_template ~cmd prefix_stem ignore (state:state) =
+         Logs.debug ~src:Core.logs_src (fun k->k "query: last `%n`" top_n);
+
+         let now=now() in
+         let l = last_talk self ~n:top_n in
+         let l = CCList.map (fun (n,t) -> create_message_for_user now n t) l in
+         Lwt.return l
+       with e ->
+         Lwt.fail (Command.Fail ("last_seen: " ^ Printexc.to_string e))
+    )
+
+let cmd_ignore_template ~cmd prefix_stem ignore (self:t) =
   Command.make_simple
     ~descr:(cmd ^ " nick") ~prio:10 ~cmd
     (fun _ s ->
@@ -224,12 +309,12 @@ let cmd_ignore_template ~cmd prefix_stem ignore (state:state) =
          if String.equal dest "" then (
           Lwt.return None
          ) else (
-           let contact = data state dest in
+           let contact = data_or_insert self dest in
            let msg =
              if Bool.equal contact.ignore_user ignore then
                CCFormat.sprintf "already %sing %s" prefix_stem dest |> some
              else (
-               set_data ~force_sync:true state dest
+               set_data self dest
                  { contact with ignore_user = ignore };
                CCFormat.sprintf "%sing %s" prefix_stem dest |> some )
            in
@@ -240,17 +325,13 @@ let cmd_ignore_template ~cmd prefix_stem ignore (state:state) =
 let cmd_ignore = cmd_ignore_template ~cmd:"ignore" "ignor" true
 let cmd_unignore = cmd_ignore_template ~cmd:"unignore" "unignor" false
 
-let cmd_ignore_list (state:state) =
+let cmd_ignore_list (self:t) =
   Command.make_simple_l
     ~descr:"add nick to list of ignored people" ~prio:10 ~cmd:"ignore_list"
     (fun _ _ ->
        try
          Logs.debug ~src:Core.logs_src (fun k->k "query: ignore_list");
-         let ignored =
-           StrMap.fold (fun name -> function
-               | { ignore_user = true; _ } -> fun x -> name :: x
-               | (* ignore_user = false; *) _ -> fun x -> x
-             ) state.map [] in
+         let ignored = ignored self in
          let msg =
            if CCList.is_empty ignored
            then ["no one ignored!"]
@@ -260,9 +341,8 @@ let cmd_ignore_list (state:state) =
        with e ->
          Lwt.fail (Command.Fail ("ignore_list: " ^ Printexc.to_string e)))
 
-
 (* callback to update state, notify users of their messages, etc. *)
-let on_message state (module C:Core.S) msg =
+let on_message (self:t) (module C:Core.S) msg =
   let module Msg = Irc_message in
   let nick = match msg.Msg.command with
     | Msg.JOIN (_, _) | Msg.PRIVMSG (_, _) ->
@@ -276,11 +356,12 @@ let on_message state (module C:Core.S) msg =
     | None -> Lwt.return ()
     | Some nick ->
       (* update [lastSeen] *)
-      set_data state ~force_sync:false nick
-        {(data state nick) with last_seen = Unix.time ()};
-      let contact = data state nick in
+      let now = now() in
+      let contact =
+        update_data self nick
+          ~f:(fun st -> {st with last_seen = now })
+      in
       let to_tell, remaining =
-        let now = Unix.time() in
         contact.to_tell
         |> List.partition
           (fun t -> match t.tell_after with
@@ -289,7 +370,7 @@ let on_message state (module C:Core.S) msg =
              | Some _ -> false)
       in
       if not (List.is_empty to_tell) then (
-        set_data state nick {contact with to_tell = remaining};
+        set_data self nick {contact with to_tell = remaining};
       );
       Lwt_list.iter_s (fun {from=author; on_channel; msg=m; _} ->
         C.send_notice ~target:on_channel
@@ -297,39 +378,18 @@ let on_message state (module C:Core.S) msg =
         (List.rev to_tell)
   end
 
-let of_json actions = function
-  | None ->
-    Lwt_err.return {actions; map=StrMap.empty; }
-  | Some j ->
-    let map = match j with
-      | `Assoc l ->
-        l
-        |> CCList.filter_map (fun (k, j) ->
-          Option.(contact_of_json j >>= fun c -> Some (k, c)))
-        |> StrMap.of_list
-      | _ -> StrMap.empty
-    in
-    Lwt_err.return {actions; map}
-
-let to_json (db:state) =
-  let json = `Assoc (
-    StrMap.to_list db.map
-    |> List.map (fun (k, c) -> (k, json_of_contact c))
-  ) in
-  Some json
-
 let plugin =
-  let commands state =
-    [ cmd_tell state;
-      cmd_tell_at state;
-      cmd_seen state;
-      cmd_last state;
-      cmd_ignore state;
-      cmd_unignore state;
-      cmd_ignore_list state;
+  let commands self =
+    [ cmd_tell self;
+      cmd_tell_at self;
+      cmd_seen self;
+      cmd_last self;
+      cmd_ignore self;
+      cmd_unignore self;
+      cmd_ignore_list self;
     ]
   in
-  Plugin.stateful
-    ~name:"social"
+  Plugin.db_backed
+    ~commands ~prepare_db
     ~on_msg:(fun st -> [on_message st])
-    ~of_json ~to_json ~commands ()
+    ()

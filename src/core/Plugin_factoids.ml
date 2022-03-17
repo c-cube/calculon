@@ -1,14 +1,16 @@
 open Prelude
 open Containers
 open Lwt.Infix
+open DB_utils
+module Log = Core.Log
 
 type key = string
 type value =
   | StrList of string list
   | Int of int
 type factoid = {key: key; value: value}
-type t = factoid StrMap.t
 type json = Yojson.Safe.t
+type t = DB.db
 
 type op =
   | Get of key
@@ -136,64 +138,104 @@ let as_value (j: json) : value = match j with
   | `Int i -> Int i
   | _ -> raise Could_not_parse
 
-let get key (fcs:t) : value =
-  try (StrMap.find key fcs).value
-  with Not_found -> StrList []
+let json_of_value = function
+  | StrList l -> `List (List.map (fun s -> `String s) l)
+  | Int i -> `Int i
 
-let mem key (fcs:t) : bool = StrMap.mem key fcs
+let get ?(default=StrList[]) key (self:t) : value =
+  let@ () = wrap_failwith "factoids.get" in
+  let@ stmt =
+    with_stmt self {| SELECT json(value) FROM factoids WHERE key=? |} in
+  DB.bind_text stmt 1 key |> check_db_ self;
+  DB.step stmt |> check_db_ self;
+  (try
+    let j = DB.column_text stmt 0 in
+    as_value @@ Yojson.Safe.from_string j
+   with _ -> default)
 
-let set ({key;_} as f) (fcs:t): t =
-  StrMap.add key f fcs
+let mem key (self:t) : bool =
+  let@ () = wrap_failwith "factoids.mem" in
+  let@ stmt = with_stmt self
+    {| SELECT EXISTS (SELECT(value) FROM factoids WHERE key=?) |} in
+  DB.bind_text stmt 1 key |> check_db_ self;
+  DB.step stmt |> check_db_ self;
+  DB.column_bool stmt 0
 
-let append {key;value} (fcs:t): t =
-  let value' = match try Some (StrMap.find key fcs).value, value with Not_found -> None, value with
-    | Some (Int i), Int j -> Int (i+j)
-    | Some (StrList l), StrList l' -> StrList (l @ l')
-    | Some (StrList l), Int j -> StrList (string_of_int j :: l)
-    | Some (Int i), StrList l -> StrList (string_of_int i :: l)
-    | None, _ -> value
+let set {key;value} (self:t) : unit =
+  let@ () = wrap_failwith "factoids.set" in
+  let v = json_of_value value |> Yojson.Safe.to_string in
+  let@ stmt = with_stmt self
+      {| INSERT INTO factoids(key,value) VALUES(?1,?2)
+         ON CONFLICT DO UPDATE SET value=?2 |} in
+  DB.bind_text stmt 1 key |> check_db_ self;
+  DB.bind_text stmt 2 v |> check_db_ self;
+  DB.step stmt |> check_db_ self;
+  ()
+
+let append {key;value} (self:t) : unit =
+  let@ () = wrap_failwith "factoids.append" in
+  DB.exec self "BEGIN;" |> check_db_ self;
+  let value' = match get key self, value with
+    | Int i, Int j -> Int (i+j)
+    | StrList [], _ -> value
+    | StrList l, StrList l' -> StrList (l @ l')
+    | StrList l, Int j -> StrList (string_of_int j :: l)
+    | Int i, StrList l -> StrList (string_of_int i :: l)
   in
-  StrMap.add key {key; value = value'} fcs
+  set {key; value = value'} self;
+  DB.exec self "COMMIT" |> check_db_ self;
+  ()
 
-let remove {key;value} (fcs:t): t =
+let remove {key;value} (self:t) : unit =
+  let@ () = wrap_failwith "factoids.remove" in
   let value' =
-    match try Some (StrMap.find key fcs).value, value with Not_found -> None, value with
-    | Some (Int i), Int j -> Int (i-j)
-    | Some (StrList l), StrList l' ->
+    match get key self, value with
+    | Int i, Int j -> Int (i-j)
+    | StrList [], Int j -> Int (-j)
+    | StrList [], _ -> value
+    | StrList l, StrList l' ->
       StrList (List.filter (fun s -> not (List.exists (String.equal s) l')) l)
-    | Some (StrList l), Int j ->
+    | StrList l, Int j ->
       StrList (List.filter (fun s -> not (String.equal (string_of_int j) s)) l)
-    | Some (Int _), StrList _ ->
+    | Int _, StrList _ ->
       Printf.printf "Hé non, on enlève pas des strings à une valeur entière !"; value
-    | None, Int j -> Int (-j)
-    | None, _ -> value
   in
-  match value' with
-    | StrList [] | Int 0 -> StrMap.remove key fcs
-    | _ -> StrMap.add key {key; value = value'} fcs
+  begin match value' with
+    | StrList [] | Int 0 ->
+      let@ stmt =
+        with_stmt self
+          {| DELETE FROM factoids WHERE key=? |}
+      in
+      DB.bind_text stmt 1 key |> check_db_ self;
+      DB.step stmt |> check_db_ self;
+    | _ ->
+      set {key; value = value'} self
+  end
 
 let as_int v = match v with
   | Int i -> Some i
   | StrList [s] -> (try Some (int_of_string s) with _ -> None)
   | _ -> None
 
-let incr key (fcs:t): int option * t =
-  let value = try (StrMap.find key fcs).value with Not_found -> Int 0 in
+let incr key (self:t) : int option =
+  let value = get key ~default:(Int 0) self in
   match as_int value with
   | Some i ->
     let count = i + 1 in
-    (Some count, StrMap.add key {key; value = Int count} fcs)
-  | None -> (None, fcs)
+    set {key; value=Int count} self;
+    Some count
+  | None -> None
 
-let decr key (fcs:t): int option * t =
-  let value = try (StrMap.find key fcs).value with Not_found -> Int 0 in
+let decr key (self:t): int option  =
+  let value = get key ~default:(Int 0) self in
   match as_int value with
   | Some i ->
     let count = i - 1 in
-    (Some count, StrMap.add key {key; value = Int count} fcs)
-  | None -> (None, fcs)
+    set {key;value=Int count} self;
+    Some count
+  | None -> None
 
-let search tokens (fcs:t): string list =
+let search tokens (self:t): string list =
   let tokens = List.map CCString.lowercase_ascii tokens in
   (* list pairs [key, value] that match all the given tokens? *)
   let check_str s tok = CCString.mem ~sub:tok (CCString.lowercase_ascii s) in
@@ -214,35 +256,59 @@ let search tokens (fcs:t): string list =
            else None)
         l
   in
-  StrMap.fold
-    (fun _ {key; value} choices ->
-       List.rev_append (tok_matches key value) choices)
-    fcs []
 
-let random (fcs:t): string =
-  let l = StrMap.to_list fcs in
-  match l with
-    | [] -> ""
-    | _ ->
-      let _, fact = Rand_distrib.uniform l |> Rand_distrib.run in
-      let msg_val = match fact.value with
-        | StrList [] -> assert false
-        | StrList l -> Rand_distrib.uniform l |> Rand_distrib.run
-        | Int i -> string_of_int i
-      in
-      Printf.sprintf "!%s: %s" fact.key msg_val
+  let@ stmt = with_stmt self {| SELECT key, value FROM factoids; |} in
+  let rc, l =
+    DB.fold stmt
+      ~init:[]
+      ~f:(fun choices row ->
+          match row with
+          | [| DB.Data.TEXT key; DB.Data.TEXT value |] ->
+            let value = Yojson.Safe.from_string value |> as_value in
+            List.rev_append (tok_matches key value) choices
+          | _ -> choices)
+  in
+  check_db_ self rc;
+  l
+
+let random (self:t): string =
+  let@ () = wrap_failwith "factoids.random" in
+  match
+    let@ stmt = with_stmt self
+        {| SELECT key FROM factoids ORDER BY random() LIMIT 1 |} in
+    DB.step stmt |> check_db_ self;
+    (try Some (DB.column_text stmt 0) with _ -> None)
+  with
+  | None -> ""
+  | Some key ->
+    Log.debug (fun k->k "random: key is %S" key);
+    let value = get key self in
+    let msg_val = match value with
+      | StrList [] -> assert false
+      | StrList l -> Rand_distrib.uniform l |> Rand_distrib.run
+      | Int i -> string_of_int i
+    in
+    spf "!%s: %s" key msg_val
 
 (* returns a help message that suggest keys that are close to [k]
    by edit distance, and the number of such keys *)
-let find_close_keys (k:key) (fcs:t) : string * int =
+let find_close_keys (k:key) (self:t) : string * int =
   let l =
-    StrMap.fold
-      (fun _ {key; _} keys ->
-         let d = Prelude.edit_distance key k in
-         if d <= 2 then (key, d) :: keys else keys)
-      fcs []
-    |> List.sort (fun (_, x) (_, y) -> compare x y)
-    |> List.map fst
+    let@ stmt =
+      with_stmt self {| SELECT key FROM factoids |} in
+    let rc, l =
+      DB.fold stmt
+        ~init:[]
+        ~f:(fun keys row -> match row with
+            | [| DB.Data.TEXT key |] ->
+              let d = Prelude.edit_distance key k in
+              if d <= 2 then (d, key) :: keys else keys
+            | _ -> keys)
+    in
+    check_db_ self rc;
+    l
+    |> List.sort CCOrd.compare
+    |> List.map snd
   in
   let l = if List.length l > 5 then CCList.take 5 l @ ["…"] else l in
   let res = match l with
@@ -253,49 +319,10 @@ let find_close_keys (k:key) (fcs:t) : string * int =
   in
   res, List.length l
 
-let of_json_exn j =
-  begin match j with
-    | `Assoc l ->
-      List.fold_left
-        (fun acc (k, v) ->
-           let v = as_value v in
-           let key = match key_of_string k with
-             | Some k -> k
-             | None -> raise Could_not_parse
-           in
-           append {key;value=v} acc
-        )
-        StrMap.empty l
-    | _ -> raise Could_not_parse
-  end
-
-(* parsing/outputting the factoids json *)
-let factoids_of_json (j: json): (t,string) CCResult.t =
-  try CCResult.return (of_json_exn j)
-  with Could_not_parse -> CCResult.fail "could not parse json"
-
-let json_of_factoids (factoids: t): json =
-  let l =
-    StrMap.fold
-      (fun _ {key; value} acc ->
-         let jvalue = match value with
-           | StrList l -> `List (List.map (fun s -> `String s) l)
-           | Int i -> `Int i in
-         (key, jvalue) :: acc)
-      factoids
-      []
-  in
-  `Assoc l
-
 (* operations *)
 
-let empty = StrMap.empty
-
-type state = {
-  mutable st_cur: t;
-  max_cardinal_for_force: int ref;
-  actions: Plugin.action Signal.Send_ref.t;
-}
+let max_card_for_force = ref 5
+let set_max_cardinal_for_force x = assert (x >= 2); max_card_for_force := x
 
 (* maximum size of returned lists *)
 let list_size_limit = 4
@@ -315,32 +342,32 @@ let search_tokenize s =
   String.trim s
   |> Re.split (Re.Perl.compile_pat "[ \t]+")
 
-let cmd_search state =
+let cmd_search (self:t) =
   Command.make_simple_l ~descr:"search in factoids" ~cmd:"search" ~prio:10
     (fun _ s ->
        let tokens = search_tokenize s in
-       search tokens state.st_cur
+       search tokens self
        |> limit_list
        |> insert_noresult
        |> Lwt.return
     )
 
-let cmd_search_all state =
+let cmd_search_all (self:t) =
   Command.make_simple_query_l
     ~descr:"search all matches in factoids (reply in pv)"
     ~cmd:"search_all" ~prio:10
     (fun _ s ->
        let tokens = search_tokenize s in
-       search tokens state.st_cur
+       search tokens self
        |> insert_noresult
        |> (fun l -> if List.length l > 5 then [String.concat " | " l] else l)
        |> Lwt.return
     )
 
-let cmd_see state =
+let cmd_see (self:t) =
   Command.make_simple_l ~descr:"see a factoid's content" ~cmd:"see" ~prio:10
     (fun _ s ->
-       let v = get (mk_key s) state.st_cur in
+       let v = get (mk_key s) self in
        let msg = match v with
          | Int i -> [string_of_int i]
          | StrList [] -> ["not found."]
@@ -349,13 +376,13 @@ let cmd_see state =
        Lwt.return msg
     )
 
-let cmd_see_all state =
+let cmd_see_all (self:t) =
   Command.make_simple_query_l
     ~descr:"see all of a factoid's content (in pv)"
     ~cmd:"see_all"
     ~prio:10
     (fun _ s ->
-       let v = get (mk_key s) state.st_cur in
+       let v = get (mk_key s) self in
        let msg = match v with
          | Int i -> [string_of_int i]
          | StrList [] -> ["not found."]
@@ -365,17 +392,14 @@ let cmd_see_all state =
        Lwt.return msg
     )
 
-let cmd_random state =
+let cmd_random (self:t) =
   Command.make_simple ~descr:"random factoid" ~cmd:"random" ~prio:10
     (fun _ _ ->
-       let msg = random state.st_cur in
+       let msg = random self in
        Some msg |> Lwt.return
     )
 
-let save state =
-  Signal.Send_ref.send state.actions Plugin.Require_save
-
-let cmd_factoids state =
+let cmd_factoids (self:t) =
   let reply ~prefix (module C:Core.S) msg =
     let target = Core.reply_to msg in
     let matched x = Command.Cmd_match x in
@@ -401,51 +425,49 @@ let cmd_factoids state =
     let op = parse_op ~prefix msg.Core.message in
     CCOpt.iter
       (fun (c,_) ->
-         Logs.debug ~src:Core.logs_src (fun k->k "parsed command `%s`" (string_of_op c)))
+         Log.debug (fun k->k "factoids: parsed command `%s`" (string_of_op c)))
       op;
     begin match op with
       | Some (Get k, hl) ->
-        begin match get k state.st_cur with
+        begin match get k self with
           | StrList [] ->
-            let help_msg, n = find_close_keys k state.st_cur in
+            let help_msg, n = find_close_keys k self in
             (* probably a typo for this key *)
             if n>0
             then C.send_privmsg ~target ~message:help_msg |> matched
             else Command.Cmd_skip
-          | v -> reply_value ~hl v
+          | v ->
+            Log.debug (fun k->k "factoids: get returned %s" (string_of_value v));
+            reply_value ~hl v
         end
       | Some (Set f, _) ->
-        if mem f.key state.st_cur then (
+        if mem f.key self then (
           C.talk ~target Talk.Err |> matched
         ) else (
-          state.st_cur <- set f state.st_cur;
-          ( Signal.Send_ref.send state.actions Plugin.Require_save
-            >>= fun () ->
-            C.talk ~target Talk.Ack) |> matched
+          set f self;
+          C.talk ~target Talk.Ack |> matched
         )
       | Some (Set_force f, _) ->
-        let l = get f.key state.st_cur  in
+        let l = get f.key self in
         begin match l with
-          | StrList l when List.length l >= !(state.max_cardinal_for_force) ->
+          | StrList l when List.length l >= !max_card_for_force ->
             C.talk ~target Talk.Err |> matched
           | _ ->
-            state.st_cur <- set f state.st_cur;
-            (save state >>= fun () -> C.talk ~target Talk.Ack) |> matched
+            set f self;
+            C.talk ~target Talk.Ack |> matched
         end
       | Some (Append f, _) ->
-        state.st_cur <- append f state.st_cur;
-        (save state >>= fun () -> C.talk ~target Talk.Ack) |> matched
+        append f self;
+        C.talk ~target Talk.Ack |> matched
       | Some (Remove f, _) ->
-        state.st_cur <- remove f state.st_cur;
-        (save state >>= fun () -> C.talk ~target Talk.Ack) |> matched
+        remove f self;
+        C.talk ~target Talk.Ack |> matched
       | Some (Incr k, _) ->
-        let count, state' = incr k state.st_cur in
-        state.st_cur <- state';
-        (save state >>= fun () -> count_update_message k count) |> matched
+        let count = incr k self in
+        count_update_message k count |> matched
       | Some (Decr k, _) ->
-        let count, state' = decr k state.st_cur in
-        state.st_cur <- state';
-        (save state >>= fun () -> count_update_message k count) |> matched
+        let count = decr k self in
+        count_update_message k count |> matched
       | None -> Command.Cmd_skip
     end
   in
@@ -465,7 +487,7 @@ let cmd_factoids state =
     - `!search_all` looks up all terms in the database
     "
 
-let commands state: Command.t list =
+let commands (state:t) : Command.t list =
   [ cmd_factoids state;
     cmd_search state;
     cmd_search_all state;
@@ -474,22 +496,22 @@ let commands state: Command.t list =
     cmd_random state;
   ]
 
-let max_card_ = ref 5
-let set_max_cardinal_for_force x = assert (x >= 2); max_card_ := x
+let prepare_db db =
+  DB.exec db {|
+    CREATE TABLE IF NOT EXISTS
+      factoids (
+        key TEXT NOT NULL,
+        value TEXT NOT NULL,
+        UNIQUE (key) ON CONFLICT FAIL
+      ) STRICT;
+    |} |> check_db_ db;
 
-let of_json actions j: state Lwt_err.t =
-  let open Lwt_err in
-  begin match j with
-    | None -> Lwt_err.return StrMap.empty
-    | Some j -> Lwt.return (factoids_of_json j)
-  end
-  >|= fun t -> {st_cur=t; max_cardinal_for_force=max_card_; actions}
-
-let to_json (st:state): json option =
-  Some (json_of_factoids st.st_cur)
+  DB.exec db {|
+    CREATE INDEX IF NOT EXISTS factoids_idx on factoids(key);
+  |} |> check_db_ db;
+  ()
 
 let plugin : Plugin.t =
-  Plugin.stateful
-    ~name:"factoids" ~to_json ~of_json ~commands
-    ~stop:(fun _ -> Lwt.return_unit) ()
+  Plugin.db_backed
+    ~prepare_db ~commands ()
 

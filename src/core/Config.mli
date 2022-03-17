@@ -1,5 +1,7 @@
 (** User-defined config *)
 
+type hidden (** Type that cannot be built *)
+
 type t = {
   server : string; (** Address of the irc server *)
   port : int; (** Port of the server *)
@@ -10,14 +12,24 @@ type t = {
   tls: bool;
   sasl: bool;
   channel : string; (** Channel to join after the connexion to the server *)
-  state_file : string; (** Where plugins' state is stored *)
 
   log_level: Logs.level;
   (** Level of logging.
       @since 0.6 *)
 
   prefix: string; (** prefix for commands *)
+
+  db_file: string;
+  (** Database path. @since NEXT_RELEASE *)
+
+  _hidden: hidden;
+  (** This field is present to prevent the user from using a literal
+      record to build configuration. This way, adding new fields
+      doesn't break existing code.
+
+      @since NEXT_RELEASE *)
 }
+(** Bot configuration. *)
 
 val default : t
 (** Default configuration:
@@ -30,10 +42,10 @@ val default : t
 - tls = true
 - sasl = true
 - channel = "#ocaml"
-- state_file = "state.json"
 - irc_log = `None
 - log_level = Logs.Warning
 - prefix = "!"
+- db_file = "calculon.db"
  *)
 
 val parse :
