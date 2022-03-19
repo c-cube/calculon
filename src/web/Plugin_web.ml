@@ -4,21 +4,17 @@
 open Calculon
 
 open Soup
-open Lwt.Infix
 module Log = Core.Log
 
 let get_body uri =
-  Lwt_preemptive.detach
-    (fun () ->
-       Curly.run ~args:["-L"]
-         Curly.(Request.make ~url:(Uri.to_string uri) ~meth:`GET ()))
-    ()
-  >>= function
-  | Ok {Curly.Response. body;_ } -> Lwt.return body
-  | Error e -> Lwt.fail (Failure (Format.asprintf "%a" Curly.Error.pp e))
+  Curly.run ~args:["-L"]
+    Curly.(Request.make ~url:(Uri.to_string uri) ~meth:`GET ())
+  |> function
+  | Ok {Curly.Response. body;_ } -> body
+  | Error e -> raise (Failure (Format.asprintf "%a" Curly.Error.pp e))
 
 let page_title ~with_description uri =
-  get_body uri >>= fun body ->
+  get_body uri |> fun body ->
   let tags = Og.Parser.parse_string body in
   let title_descr = List.fold_left (fun (t,d) -> function
       | Og.Title title       when t = None && title <> "" -> (Some title, d)
@@ -31,13 +27,13 @@ let page_title ~with_description uri =
   | Some title, Some description ->
     let msg = Format.asprintf "%s : %s" title description in
     (*    Log.logf "og:: %s" msg; *)
-    Some msg |> Lwt.return
+    Some msg
   | Some title, None ->
     let msg = Format.asprintf "%s" title in
     (* Log.logf "og:title %s" msg; *)
-    Some msg |> Lwt.return
+    Some msg
   | _, _ ->
-    parse body $ "title" |> leaf_text |> Lwt.return
+    parse body $ "title" |> leaf_text
 
 
 let youtube_hosts = [
@@ -53,7 +49,7 @@ let cmd_yt =
        match Uri.host uri with
        | Some host when List.mem host youtube_hosts ->
          page_title ~with_description:true uri
-       | _ -> Lwt.return_none
+       | _ -> None
     )
 
 let find_yt_ids ?(n=1) (body:string): string list =
@@ -64,20 +60,19 @@ let find_yt_ids ?(n=1) (body:string): string list =
   |> CCList.filter_map (Soup.attribute "data-context-item-id")
   |> List.map (fun id -> "https://youtube.com/watch?v=" ^ id)
 
-let get_youtube_search (query:string): string Lwt.t =
+let get_youtube_search (query:string): string =
   let uri =
     Uri.of_string "https://www.youtube.com/results"
   in
   let uri = Uri.add_query_params' uri ["sp","EgIQAQ%3D%3D"; "q", query] in
-  Lwt.catch
-    (fun () -> get_body uri)
-    (function
-      | Failure e ->
-        Log.err (fun k->k "error in fetching `%s`:\n%s" query e);
-        Lwt.return ""
-      | e ->
-        Log.err (fun k->k "error in fetching `%s`:\n%s" query @@ Printexc.to_string e);
-        Lwt.return "")
+  try get_body uri
+  with
+  | Failure e ->
+    Log.err (fun k->k "error in fetching `%s`:\n%s" query e);
+    ""
+  | e ->
+    Log.err (fun k->k "error in fetching `%s`:\n%s" query @@ Printexc.to_string e);
+    ""
 
 
 let cmd_yt_search =
@@ -85,20 +80,19 @@ let cmd_yt_search =
     ~prio:10 ~cmd:"yt_search" ~descr:"lookup on youtube"
     (fun _ s ->
        Log.debug (fun k->k"yt_search `%s`" s);
-       begin
-         get_youtube_search (String.trim s) >|= fun body ->
+       let urls =
+         get_youtube_search (String.trim s) |> fun body ->
          Log.debug (fun k->k"yt_search: body of size %d" (String.length body));
          find_yt_ids ~n:1 body
-       end
-       >>= fun urls ->
-       Lwt_list.fold_left_s (fun acc url ->
+       in
+       List.fold_left (fun acc url ->
            Log.debug (fun k->k "Getting metadata for url: `%s`" url);
-           page_title ~with_description:false (Uri.of_string url) >>= function
+           page_title ~with_description:false (Uri.of_string url) |> function
            | Some x ->
              let descr = Format.asprintf "%s : %s" url x in
-             descr::acc |> Lwt.return
+             descr::acc
            | None ->
-             url::acc |> Lwt.return
+             url::acc
          ) [] urls
     )
 
@@ -116,38 +110,34 @@ module Giphy = struct
         "limit", [string_of_int limit]
       ]
 
-  let search s: string option Lwt.t =
+  let search s: string option =
     let uri = mk_query s in
-    Lwt.catch
-      (fun () ->
-        get_body uri >|= fun s ->
-        try
-          Log.debug (fun k->k"query to giphy returned:@.%s" s);
-          let r = Giphy_j.search_result_of_string s in
-          begin match r.Giphy_j.data with
-            | [] ->
-              Log.debug (fun k->k"giphy: no data");
-              None
-            | l ->
-              let r = Prelude.random_l l in
-              Log.info
-                (fun k->k "giphy: pick `%s` in list of len %d"
-                  r.Giphy_j.url (List.length l));
-              let images = r.Giphy_j.images in
-              begin match images.Giphy_j.images_original, images.Giphy_j.images_downsized with
-                | Some i, _ -> Some i.Giphy_j.i_url
-                | None, Some i -> Some i.Giphy_j.i_url
-                | None, None ->
-                  (* default: return the embed_url *)
-                  Log.err (fun k->k
-                    "giphy: could not get `original` or `downsized` picture for `%s`"
-                    r.Giphy_j.url);
-                  Some r.Giphy_j.embed_url
-              end
+    try
+      let s = get_body uri in
+      Log.debug (fun k->k"query to giphy returned:@.%s" s);
+      let r = Giphy_j.search_result_of_string s in
+      begin match r.Giphy_j.data with
+        | [] ->
+          Log.debug (fun k->k"giphy: no data");
+          None
+        | l ->
+          let r = Prelude.random_l l in
+          Log.info
+            (fun k->k "giphy: pick `%s` in list of len %d"
+                r.Giphy_j.url (List.length l));
+          let images = r.Giphy_j.images in
+          begin match images.Giphy_j.images_original, images.Giphy_j.images_downsized with
+            | Some i, _ -> Some i.Giphy_j.i_url
+            | None, Some i -> Some i.Giphy_j.i_url
+            | None, None ->
+              (* default: return the embed_url *)
+              Log.err (fun k->k
+                          "giphy: could not get `original` or `downsized` picture for `%s`"
+                          r.Giphy_j.url);
+              Some r.Giphy_j.embed_url
           end
-        with _ -> None
-      )
-      (fun _ -> Lwt.return None)
+      end
+    with _ -> None
 
   let cmd =
     Command.make_simple
@@ -155,14 +145,14 @@ module Giphy = struct
       (fun _ s ->
          let s = String.trim s in
          if s=""
-         then Lwt.return_none
-         else search (String.trim s) >>= function
-           | Some x -> Lwt.return (Some x)
-           | None -> Lwt.return (Some "not found")
+         then None
+         else search (String.trim s) |> function
+           | Some x -> Some x
+           | None -> Some "not found"
       )
 end
 
-let find_emoji (s:string) : string option Lwt.t =
+let find_emoji (s:string) : string option =
   let find_h1 ast =
     let open CCOpt.Infix in
     let open Soup in
@@ -179,19 +169,18 @@ let find_emoji (s:string) : string option Lwt.t =
 
   let query = Printf.sprintf "https://emojipedia.org/search/?q=%s" s in
   Log.debug (fun k->k "emoji: query is '%s'" query);
-  Lwt.catch
-    (fun () ->
-       get_body (Uri.of_string query) >|= fun body ->
-       let ast = Soup.parse body in
-       match find_h1 ast, find_search ast with
-       | Some (em,title), _ ->
-         Some (Printf.sprintf "%s: %s (%s)" em title query)
-       | None, Some href ->
-         Some href
-       | None, None -> Some (Printf.sprintf "not found"))
-    (fun e ->
-       Log.err (fun k->k "emoji: query failed:@.%s" (Printexc.to_string e));
-       Lwt.return None)
+  try
+    get_body (Uri.of_string query) |> fun body ->
+    let ast = Soup.parse body in
+    match find_h1 ast, find_search ast with
+    | Some (em,title), _ ->
+      Some (Printf.sprintf "%s: %s (%s)" em title query)
+    | None, Some href ->
+      Some href
+    | None, None -> Some (Printf.sprintf "not found")
+  with e ->
+    Log.err (fun k->k "emoji: query failed:@.%s" (Printexc.to_string e));
+    None
 
 let cmd_emoji =
   Command.make_simple ~descr:"look for emojis" ~cmd:"emoji" ~prio:10

@@ -2,7 +2,8 @@
 (library
    (name calculon_web)
    (public_name calculon-web)
-   (libraries calculon atdgen curly lwt lambdasoup uri))
+   (flags :standard -open Calculon_common)
+   (libraries calculon atdgen curly lambdasoup uri))
 
 (rule
   (targets Movie_j.ml Movie_j.mli)

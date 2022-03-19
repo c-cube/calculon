@@ -1,9 +1,7 @@
 (** {1 Command Type} *)
 
-open Lwt.Infix
-
 type res =
-  | Cmd_match of unit Lwt.t
+  | Cmd_match of unit
   | Cmd_skip
   | Cmd_fail of string
 
@@ -33,7 +31,7 @@ let match_prefix1_full ~prefix ~cmd msg : (string * string option) option =
   let re = Re.Perl.compile_pat
       (Printf.sprintf "^%s\\b[ ]*%s\\b[ ]*(.*)$" prefix cmd)
   in
-  begin match Prelude.re_match1 Prelude.id re msg.Core.message with
+  begin match Prelude.re_match1 id re msg.Core.message with
     | None -> None
     | Some matched ->
       let matched = String.trim matched in
@@ -43,7 +41,7 @@ let match_prefix1_full ~prefix ~cmd msg : (string * string option) option =
   end
 
 let match_prefix1 ~prefix ~cmd msg =
-  Prelude.map_opt fst (match_prefix1_full ~prefix ~cmd msg)
+  map_opt fst (match_prefix1_full ~prefix ~cmd msg)
 
 exception Fail of string
 
@@ -57,7 +55,7 @@ let make_simple_inner_ ~query ?descr ?prio ~cmd f : t =
               prefix sub (match hl with None -> "none" | Some h -> Printf.sprintf "%S" h));
         try
           let fut =
-            f msg sub >>= fun lines ->
+            let lines = f msg sub in
             let lines = match hl with
               | None -> lines
               | Some hl -> List.map (fun line -> hl ^ ": " ^ line) lines
@@ -87,9 +85,9 @@ let make_custom ?descr ?prio ~name f =
   let match_ ~prefix:_ (module C:Core.S) msg =
     match f msg msg.Core.message with
     | None -> Cmd_skip
-    | Some fut ->
+    | Some reply ->
       Cmd_match (
-        fut >>= fun lines ->
+        let lines = reply in
         let target = Core.reply_to msg in
         C.send_privmsg_l_nolimit ~target ~messages:lines ())
     | exception e -> Cmd_fail (Printexc.to_string e)
@@ -98,7 +96,7 @@ let make_custom ?descr ?prio ~name f =
 
 let make_simple ?descr ?prio ~cmd f : t =
   make_simple_l ?descr ?prio ~cmd
-    (fun msg s -> f msg s >|= function
+    (fun msg s -> f msg s |> function
        | None -> []
        | Some x -> [x])
 
@@ -123,14 +121,13 @@ let cmd_help (l:t list): t =
            with Not_found ->
              Some ("error: unknown command " ^ s)
        in
-       Lwt.return res
+       res
     )
 
-let run ~prefix core l msg : unit Lwt.t =
+let run ~prefix core l msg : unit =
   let rec aux = function
     | [] ->
       Logs.debug (fun k->k "no command found for %s" (Core.string_of_privmsg msg));
-      Lwt.return_unit
     | c :: tail ->
       begin match c.match_ ~prefix core msg with
         | Cmd_skip -> aux tail

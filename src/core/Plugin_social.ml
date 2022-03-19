@@ -45,7 +45,7 @@ let contact_of_json (json: json): (contact, string) result =
       ignore_user = match J.member "ignore_user" json with
         | `Null -> false;
         | v -> J.to_bool_option v
-               |> CCOpt.get_or ~default:false
+               |> Option.value ~default:false
     } |> (fun x->Ok x)
   with
   | Bad_json s -> Error s
@@ -227,10 +227,10 @@ let cmd_tell_inner ~at (self:t) =
                {state with to_tell =
                 {from=nick; on_channel=target; msg; tell_after}
                 :: state.to_tell});
-         Lwt.return_some (Talk.select Talk.Ack)
+         Some (Talk.select Talk.Ack)
        with
-         | Command.Fail _ as e -> Lwt.fail e
-         | e -> Lwt.fail (Command.Fail ("tell: " ^ Printexc.to_string e))
+         | Command.Fail _ as e -> raise e
+         | e -> raise (Command.Fail ("tell: " ^ Printexc.to_string e))
     )
 
 let cmd_tell = cmd_tell_inner ~at:false
@@ -267,10 +267,10 @@ let cmd_seen (self:t) =
          Logs.debug ~src:Core.logs_src (fun k->k "query: seen `%s`" nick);
          match data self nick with
          | Some c ->
-           Lwt.return [create_message_for_user now nick c.last_seen]
-         | None -> Lwt.return []
+           [create_message_for_user now nick c.last_seen]
+         | None -> []
        with e ->
-         Lwt.fail (Command.Fail ("seen: " ^ Printexc.to_string e))
+         raise (Command.Fail ("seen: " ^ Printexc.to_string e))
     )
 
 let cmd_last (self:t) =
@@ -294,9 +294,9 @@ let cmd_last (self:t) =
          let now=now() in
          let l = last_talk self ~n:top_n in
          let l = CCList.map (fun (n,t) -> create_message_for_user now n t) l in
-         Lwt.return l
+         l
        with e ->
-         Lwt.fail (Command.Fail ("last_seen: " ^ Printexc.to_string e))
+         raise (Command.Fail ("last_seen: " ^ Printexc.to_string e))
     )
 
 let cmd_ignore_template ~cmd prefix_stem ignore (self:t) =
@@ -307,7 +307,7 @@ let cmd_ignore_template ~cmd prefix_stem ignore (self:t) =
          let dest = String.trim s in
          Logs.debug ~src:Core.logs_src (fun k->k "query: ignore `%s`" dest);
          if String.equal dest "" then (
-          Lwt.return None
+          None
          ) else (
            let contact = data_or_insert self dest in
            let msg =
@@ -318,9 +318,9 @@ let cmd_ignore_template ~cmd prefix_stem ignore (self:t) =
                  { contact with ignore_user = ignore };
                CCFormat.sprintf "%sing %s" prefix_stem dest |> some )
            in
-           Lwt.return msg )
+           msg )
        with e ->
-         Lwt.fail (Command.Fail (cmd ^ ": " ^ Printexc.to_string e)))
+         raise (Command.Fail (cmd ^ ": " ^ Printexc.to_string e)))
 
 let cmd_ignore = cmd_ignore_template ~cmd:"ignore" "ignor" true
 let cmd_unignore = cmd_ignore_template ~cmd:"unignore" "unignor" false
@@ -337,23 +337,23 @@ let cmd_ignore_list (self:t) =
            then ["no one ignored!"]
            else "ignoring:" :: ignored
          in
-         Lwt.return msg
+         msg
        with e ->
-         Lwt.fail (Command.Fail ("ignore_list: " ^ Printexc.to_string e)))
+         raise (Command.Fail ("ignore_list: " ^ Printexc.to_string e)))
 
 (* callback to update state, notify users of their messages, etc. *)
 let on_message (self:t) (module C:Core.S) msg =
   let module Msg = Irc_message in
   let nick = match msg.Msg.command with
     | Msg.JOIN (_, _) | Msg.PRIVMSG (_, _) ->
-      some @@ get_nick @@ Prelude.unwrap_opt "message prefix" msg.Msg.prefix
+      some @@ get_nick @@ unwrap_opt "message prefix" msg.Msg.prefix
     | Msg.NICK newnick ->
       Some newnick
     | _ -> None
   in
   (* trigger [tell] messages *)
   begin match nick with
-    | None -> Lwt.return ()
+    | None -> ()
     | Some nick ->
       (* update [lastSeen] *)
       let now = now() in
@@ -372,7 +372,7 @@ let on_message (self:t) (module C:Core.S) msg =
       if not (List.is_empty to_tell) then (
         set_data self nick {contact with to_tell = remaining};
       );
-      Lwt_list.iter_s (fun {from=author; on_channel; msg=m; _} ->
+      List.iter (fun {from=author; on_channel; msg=m; _} ->
         C.send_notice ~target:on_channel
           ~message:(Printf.sprintf "%s: (from %s): %s" nick author m))
         (List.rev to_tell)

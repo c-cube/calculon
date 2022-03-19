@@ -29,7 +29,7 @@ let () =
     (* update with CLI parameters *)
     let config = C.Config.parse config Sys.argv in
     Logs.set_level ~all:true (Some config.C.Config.log_level);
-    C.Run_main.main config plugins |> Lwt_main.run
+    C.Run_main.main config plugins
   with
     | Arg.Help msg -> print_endline msg
     | Arg.Bad msg -> prerr_endline msg; exit 1

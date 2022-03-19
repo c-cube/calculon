@@ -1,0 +1,6 @@
+(library
+  (name calculon_common)
+  (libraries logs)
+  (public_name calculon.common))
+
+

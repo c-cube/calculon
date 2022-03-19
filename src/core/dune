@@ -2,7 +2,8 @@
 (library
    (name calculon)
    (public_name calculon)
-   (flags :standard -warn-error -a+8)
+   (flags :standard -warn-error -a+8 -open Calculon_common)
    (libraries containers yojson re re.perl logs sqlite3
-              irc-client-lwt irc-client-lwt-ssl lwt.unix stringext
+              calculon.common
+              irc-client ssl stringext unix threads.posix
               ISO8601))

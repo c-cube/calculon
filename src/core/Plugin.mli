@@ -23,14 +23,14 @@ and 'st stateful_ = private {
   commands: 'st -> Command.t list;
   (** Commands parametrized by some (mutable) state, with the ability
      to trigger a signal *)
-  on_msg:'st -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
+  on_msg:'st -> (Core.t -> Irc_message.t -> unit) list;
   (** Executed on each incoming message *)
   to_json : 'st -> json option;
   (** How to serialize (part of) the state into JSON, if need be. *)
   of_json : action_callback -> json option -> ('st, string) Result.result;
   (** How to deserialize the state. [None] is passed for a fresh
       initialization. *)
-  stop: 'st -> unit Lwt.t;
+  stop: 'st -> unit;
   (** Stop the plugin.
      It is NOT the responsibility of this command to save the state,
      as the core engine will have called {!to_json} before. *)
@@ -46,10 +46,10 @@ type db_backed = private {
       Must be idempotent as it'll be called every time the plugin
       is initialized. *)
 
-  on_msg: DB.db -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
+  on_msg: DB.db -> (Core.t -> Irc_message.t -> unit) list;
   (** Executed on each incoming message *)
 
-  stop: DB.db -> unit Lwt.t;
+  stop: DB.db -> unit;
   (** Stop the plugin. There is no need to close the DB connection. *)
 }
 
@@ -71,10 +71,10 @@ val of_cmds : Command.t list -> t
 val stateful :
   name:string ->
   commands:('st -> Command.t list) ->
-  ?on_msg:('st -> (Core.t -> Irc_message.t -> unit Lwt.t) list) ->
+  ?on_msg:('st -> (Core.t -> Irc_message.t -> unit) list) ->
   to_json:('st -> json option) ->
   of_json:(action_callback -> json option -> ('st, string) Result.result) ->
-  ?stop:('st -> unit Lwt.t) ->
+  ?stop:('st -> unit) ->
   unit ->
   t
 (** Make a stateful plugin using the given [name] (for prefixing
@@ -85,8 +85,8 @@ val stateful :
 val db_backed :
   commands:(DB.db -> Command.t list) ->
   prepare_db:(DB.db -> unit) ->
-  ?on_msg:(DB.db -> (Core.t -> Irc_message.t -> unit Lwt.t) list) ->
-  ?stop:(DB.db -> unit Lwt.t) ->
+  ?on_msg:(DB.db -> (Core.t -> Irc_message.t -> unit) list) ->
+  ?stop:(DB.db -> unit) ->
   unit ->
   t
 (** Make a stateful plugin that is backed by some tables in the database.
@@ -101,7 +101,7 @@ module Set : sig
     ?cmd_help:bool ->
     Config.t ->
     plugin list ->
-    (t, string) Result.result Lwt.t
+    (t, string) Result.result
   (** Create a collection of plugins, loading the state, initializing
       them.
       @param cmd_help if true, adds a "help" command.
@@ -110,16 +110,16 @@ module Set : sig
   val commands : t -> Command.t list
   (** Corresponding list of commands *)
 
-  val on_msg_l : t -> (Core.t -> Irc_message.t -> unit Lwt.t) list
+  val on_msg_l : t -> (Core.t -> Irc_message.t -> unit) list
   (** List of callbacks called on each message *)
 
-  val save : t -> unit Lwt.t
+  val save : t -> unit
   (** Save state to disk *)
 
-  val reload : t -> (unit, string) Result.result Lwt.t
+  val reload : t -> (unit, string) Result.result
   (** Reload state from disk *)
 
-  val stop : ?save:bool -> t -> unit Lwt.t
+  val stop : ?save:bool -> t -> unit
   (** Stop all plugins
       @param save if [true], will call {!save} first (default [true]) *)
 end

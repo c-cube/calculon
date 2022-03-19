@@ -8,20 +8,20 @@ type 'a signal = 'a t
 val create : unit -> 'a t
   (** New signal *)
 
-val send : 'a t -> 'a -> unit Lwt.t
+val send : 'a t -> 'a -> unit
   (** Trigger the signal *)
 
 type handler_response =
   | ContinueListening
   | StopListening
 
-val on : 'a t -> ('a -> handler_response Lwt.t) -> unit
+val on : 'a t -> ('a -> handler_response) -> unit
   (** Register a handler to the signal; the handler returns [ContinueListening]
       if it wants to continue being notified, [StopListening] otherwise *)
 
-val on' : 'a t -> ('a -> 'b Lwt.t) -> unit
+val on' : 'a t -> ('a -> 'b) -> unit
 
-val once : 'a t -> ('a -> 'b Lwt.t) -> unit
+val once : 'a t -> ('a -> 'b) -> unit
   (** Register a handler to be called only once *)
 
 val propagate : 'a t -> 'a t -> unit
@@ -50,5 +50,5 @@ module Send_ref : sig
 
   val make : 'a signal -> 'a t
 
-  val send : 'a t -> 'a -> unit Lwt.t
+  val send : 'a t -> 'a -> unit
 end

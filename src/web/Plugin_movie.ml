@@ -1,18 +1,13 @@
 
 open Calculon
-
-open Lwt.Infix
 open CCFun
 
 let get_body uri =
-  Lwt_preemptive.detach
-    (fun () ->
-       Curly.run ~args:["-L"]
-         Curly.(Request.make ~url:(Uri.to_string uri) ~meth:`GET ()))
-    ()
-  >>= function
-  | Ok {Curly.Response. body;_ } -> Lwt.return body
-  | Error e -> Lwt.fail (Failure (Format.asprintf "%a" Curly.Error.pp e))
+  Curly.run ~args:["-L"]
+    Curly.(Request.make ~url:(Uri.to_string uri) ~meth:`GET ())
+  |> function
+  | Ok {Curly.Response. body;_ } -> body
+  | Error e -> raise (Failure (Format.asprintf "%a" Curly.Error.pp e))
 
 type query =
   | Movie of string
@@ -36,24 +31,23 @@ let make_get_uri id =
 
 let parse_search body =
   try
-    Movie_j.search_result_of_string body 
+    Movie_j.search_result_of_string body
   with exn ->
     Printf.printf "invalid imdb search response (%s) : %S" (Printexc.to_string exn) body;
     { Movie_t.results = []; count = 0 }
 
 let parse_get body =
   try
-    CCOpt.pure @@ Movie_j.query_entry_of_string body 
+    CCOpt.pure @@ Movie_j.query_entry_of_string body
   with exn ->
     Printf.printf "invalid imdb query response (%s) : %S" (Printexc.to_string exn) body;
     None
 
 let search query =
-  make_search_uri query |> get_body  >|=
-  parse_search
+  make_search_uri query |> get_body |> parse_search
 
 let get_infos id =
-  make_get_uri id |> get_body >|= parse_get
+  make_get_uri id |> get_body |> parse_get
 
 let ellipsis n s =
   if String.length s > n then begin
@@ -84,23 +78,22 @@ let show_result ?buffer (title, r) =
   Buffer.contents buffer
 
 let title { Movie_t.s_title; _ } = s_title
-let get_id { Movie_t.s_id; _ }  = s_id 
+let get_id { Movie_t.s_id; _ }  = s_id
 
 let refine_results ?(n=3) results =
   results.Movie_t.results |>
   CCList.filter (CCOpt.is_some % title) |>
   CCList.take n |>
   CCList.map get_id |>
-  Lwt_list.filter_map_p get_infos
+  CCList.filter_map get_infos
 
 let format_seq ?n results =
   let buffer = Buffer.create 100 in
   let title { Movie_t.title; _ } = title in
-  refine_results ?n results >>= fun results ->
+  refine_results ?n results |> fun results ->
   results |>
   CCList.filter_map (fun r -> CCOpt.map (flip CCPair.make r) @@ title r) |>
-  CCList.map (show_result ~buffer) |>
-  Lwt.return
+  CCList.map (show_result ~buffer)
 
 let mk_movie_cmd cmd q_of_str =
   Command.make_simple_l
@@ -108,7 +101,7 @@ let mk_movie_cmd cmd q_of_str =
     (fun _ s ->
        String.trim s |>
        q_of_str |>
-       search >>=
+       search |>
        format_seq
     )
 

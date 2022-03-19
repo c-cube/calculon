@@ -20,14 +20,14 @@ and 'st stateful_ = {
   commands: 'st -> Command.t list;
   (** Commands parametrized by some (mutable) state, with the ability
      to trigger a signal *)
-  on_msg:'st -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
+  on_msg:'st -> (Core.t -> Irc_message.t -> unit) list;
   (** Executed on each incoming message *)
   to_json : 'st -> json option;
   (** How to serialize (part of) the state into JSON, if need be. *)
   of_json : action_callback -> json option -> ('st, string) Result.result;
   (** How to deserialize the state. [None] is passed for a fresh
       initialization. *)
-  stop: 'st -> unit Lwt.t;
+  stop: 'st -> unit;
   (** Stop the plugin.
      It is NOT the responsibility of this command to save the state,
      as the core engine will have called {!to_json} before. *)
@@ -43,10 +43,10 @@ type db_backed = {
       Must be idempotent as it'll be called every time the plugin
       is initialized. *)
 
-  on_msg: DB.db -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
+  on_msg: DB.db -> (Core.t -> Irc_message.t -> unit) list;
   (** Executed on each incoming message *)
 
-  stop: DB.db -> unit Lwt.t;
+  stop: DB.db -> unit;
   (** Stop the plugin. There is no need to close the DB connection. *)
 }
 
@@ -69,14 +69,14 @@ let stateful
     ?(on_msg=fun _ -> [])
     ~to_json
     ~of_json
-    ?(stop=fun _ -> Lwt.return_unit)
+    ?(stop=ignore)
     () =
   Stateful (St { name; on_msg; to_json; of_json; stop; commands; })
 
 let db_backed
     ~commands ~prepare_db
     ?(on_msg=fun _ -> [])
-    ?(stop=fun _ -> Lwt.return())
+    ?(stop=ignore)
     () : t =
   DB_backed {commands; prepare_db; on_msg; stop}
 
@@ -111,10 +111,10 @@ module Set = struct
     config: Config.t;
     plugins: plugin list;
     actions: action Signal.t;
-    db: DB.db;
+    db: DB.db Lock.t;
     mutable active : active_plugin list;
     mutable commands_l: Command.t list; (* sorted by prio *)
-    mutable on_msg_l: (Core.t -> Irc_message.t -> unit Lwt.t) list;
+    mutable on_msg_l: (Core.t -> Irc_message.t -> unit) list;
     mutable stopped: bool;
   }
 
@@ -130,7 +130,7 @@ module Set = struct
     f db
 
   (* save JSON plugins *)
-  let save_ db config active =
+  let save_ db _config active =
     begin
       DB.exec db "BEGIN;" |> check_db_ db;
 
@@ -153,17 +153,18 @@ module Set = struct
       List.iter save_plugin active;
       DB.exec db "COMMIT;" |> check_db_ db;
     end;
-    Lwt.return_unit
+    ()
 
-  let save (self:t) : _ Lwt.t =
-    save_ self.db self.config self.active
+  let save (self:t) : _ =
+    let@ db = Lock.with_ self.db in
+    save_ db self.config self.active
 
   let commands t = t.commands_l
   let on_msg_l t = t.on_msg_l
 
   let load_from
       (db:DB.db) action_signal plugins
-      (config:Config.t) : (Command.t list * _ list * active_plugin list, _) result =
+      (_config:Config.t) : (Command.t list * _ list * active_plugin list, _) result =
     guard_res @@ fun () ->
     let all_cmds = ref [] in
     let all_on_msg = ref [] in
@@ -210,12 +211,13 @@ module Set = struct
     let on_msg_l = !all_on_msg in
     commands_l,on_msg_l,active
 
-  let reload (self:t) : _ Lwt.t =
+  let reload (self:t) : _ =
     Log.info (fun k->k "plugin: reload state");
     let r =
       guard_res @@ fun () ->
       let commands, on_msg_l, active =
-        load_from self.db (Signal.Send_ref.make self.actions)
+        let@ db = Lock.with_ self.db in
+        load_from db (Signal.Send_ref.make self.actions)
           self.plugins self.config
         |> unwrap_failwith
       in
@@ -223,25 +225,19 @@ module Set = struct
       self.on_msg_l <- on_msg_l;
       self.active <- active;
     in
-    Lwt.return r
+    r
 
   let save_period = 300.
 
   (* periodic "save" *)
-  let save_thread t : unit Lwt.t =
-    let open Lwt.Infix in
-    let rec loop () =
-      Lwt_unix.sleep save_period >>= fun () ->
-      if t.stopped then Lwt.return ()
-      else (
-        save t >>= fun _ ->
-        loop ()
-      )
-    in
-    loop ()
+  let save_thread t : unit =
+    while not t.stopped do
+      Unix.sleepf save_period;
+      save t;
+    done
 
   let create ?cmd_help:(help=true) config
-      (plugins:plugin list) : (t, string) Result.result Lwt.t =
+      (plugins:plugin list) : (t, string) Result.result =
     let r =
       guard_res @@ fun () ->
       let db = create_db config in
@@ -255,37 +251,37 @@ module Set = struct
         else commands_l
       in
       let self = {
-        config; db; plugins; actions; active;
+        config; db=Lock.create db; plugins; actions; active;
         commands_l; on_msg_l; stopped=false;
       } in
       (* respond to actions *)
       Signal.on' actions
         (function
           | Require_save -> save self
-          | Require_reload -> Lwt.map ignore (reload self)
+          | Require_reload -> ignore @@ reload self
         );
       (* save thread *)
-      Lwt.async (fun () -> save_thread self);
+      let _: Thread.t = Thread.create save_thread self in
       self
     in
-    Lwt.return r
+    r
 
-  let stop ?save:(save_opt=true) (self:t) : unit Lwt.t =
-    let open Lwt.Infix in
-    if self.stopped then Lwt.return_unit
-    else (
+  let stop ?save:(save_opt=true) (self:t) : unit =
+    if not self.stopped then (
       Log.info (fun k->k "stop plugins");
       self.stopped <- true;
-      (if save_opt then save self else Lwt.return_unit) >>= fun () ->
-      Lwt_list.iter_p
+      if save_opt then save self;
+      List.iter
         (function
-          | Active_stateless _ -> Lwt.return ()
-          | Active_db_backed p -> p.stop self.db
+          | Active_stateless _ -> ()
+          | Active_db_backed p ->
+            let@ db = Lock.with_ self.db in
+            p.stop db
           | Active_stateful (p, st) -> p.stop st)
-        self.active
-      >|= fun () ->
+        self.active;
       (* close DB *)
-      while not (DB.db_close self.db) do () done;
+      let@ db = Lock.with_ self.db in
+      while not (DB.db_close db) do () done;
       Log.info (fun k->k "all plugins stopped");
     )
 end

@@ -32,15 +32,15 @@ val privmsg_of_msg : irc_msg -> privmsg option
 val string_of_privmsg : privmsg -> string
 
 module type S = sig
-  module I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t
+  module I : Irc_client.CLIENT with type 'a Io.t = 'a
 
   type connection = I.connection_t
 
   val connection : connection
   (** Current connection. *)
 
-  val init : unit Lwt.t
-  val exit : unit Lwt.t
+  val init : unit -> unit
+  val exited : unit -> bool
 
   val send_exit : unit -> unit
   (** trigger the {!exit} signal (only at the end!) *)
@@ -55,7 +55,7 @@ module type S = sig
   (** Above [!line_cut_threshold], multi-line messages are cut with "..." *)
 
   val send_privmsg_l :
-    target:string -> messages:string list -> unit Lwt.t
+    target:string -> messages:string list -> unit
   (** Send a list of messages to the target. If the list
       is too long (see {!line_cut_threshold}) only a prefix of the list
       will be sent *)
@@ -65,31 +65,31 @@ module type S = sig
     target:string ->
     messages:string list ->
     unit ->
-    unit Lwt.t
+    unit
   (** Version of {!send_privmsg_l} that does not enforce cut threshold.
       Be careful of the flood this might cause.
       @param delay optional delay between each sent message *)
 
   val send_privmsg :
-    target:string -> message:string -> unit Lwt.t
+    target:string -> message:string -> unit
   (** Helper for sending messages, splitting lines, etc. *)
 
   val send_notice_l :
-    target:string -> messages:string list -> unit Lwt.t
+    target:string -> messages:string list -> unit
   (** Send a list of notices. Notices are not supposed to be
       parsed by other bots, so as to avoid reply loops *)
 
   val send_notice :
-    target:string -> message:string -> unit Lwt.t
+    target:string -> message:string -> unit
   (** Helper for sending notices, splitting lines, etc. *)
 
-  val send_join : channel:string -> unit Lwt.t
+  val send_join : channel:string -> unit
   (** Send a "join" messages to try and join some channel *)
 
-  val send_part : channel:string -> unit Lwt.t
+  val send_part : channel:string -> unit
   (** Send a "part" messages to try and part some channel *)
 
-  val talk : target:string -> Talk.t -> unit Lwt.t
+  val talk : target:string -> Talk.t -> unit
   (** Send a pre-formatted answer to the channel. *)
 end
 
@@ -97,10 +97,10 @@ type t = (module S)
 
 val loop_ssl :
   ?conn_info:string ->
-  connect:(unit -> Irc_client_lwt_ssl.connection_t option Lwt.t) ->
-  init:(t -> unit Lwt.t) ->
+  connect:(unit -> Irc.connection_t option) ->
+  init:(t -> unit) ->
   unit ->
-  unit Lwt.t
+  unit
 (** Feed this to {!Lwt_main.run}. It will connect using
     [connect] (which opens a TLS connection),
     create a new core object (of type {!t}),
@@ -113,10 +113,10 @@ val loop_ssl :
 
 val loop_unsafe :
   ?conn_info:string ->
-  connect:(unit -> Irc_client_lwt.connection_t option Lwt.t) ->
-  init:(t -> unit Lwt.t) ->
+  connect:(unit -> Irc.connection_t option) ->
+  init:(t -> unit) ->
   unit ->
-  unit Lwt.t
+  unit
 (** Feed to {!Lwt_main.run}. Same as {!loop_tls} but with a cleartext
     connection (boo!).
     @param conn_info how to display connection info in debug messages
@@ -124,9 +124,9 @@ val loop_unsafe :
 
 val run :
   Config.t ->
-  init:(t -> unit Lwt.t) ->
+  init:(t -> unit) ->
   unit ->
-  unit Lwt.t
+  unit
 (** Main entry point: use config to pick the connection method,
     then call the appropriate auto-reconnection loop.
     Calls {!init} every time a new connection is opened.

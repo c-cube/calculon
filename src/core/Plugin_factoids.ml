@@ -1,6 +1,5 @@
 open Prelude
 open Containers
-open Lwt.Infix
 open DB_utils
 module Log = Core.Log
 
@@ -109,7 +108,7 @@ let parse_op ~prefix msg : (op * string option) option =
           | ("",   factoid, _ )   -> mk_get factoid |> return
           | _ -> None
         )
-    ) |> Prelude.map_opt (fun x->x, hl)
+    ) |> map_opt (fun x->x, hl)
 
 let () =
   let test_ok s = CCOpt.is_some (parse_op ~prefix:"!" s) in
@@ -349,7 +348,6 @@ let cmd_search (self:t) =
        search tokens self
        |> limit_list
        |> insert_noresult
-       |> Lwt.return
     )
 
 let cmd_search_all (self:t) =
@@ -361,7 +359,6 @@ let cmd_search_all (self:t) =
        search tokens self
        |> insert_noresult
        |> (fun l -> if List.length l > 5 then [String.concat " | " l] else l)
-       |> Lwt.return
     )
 
 let cmd_see (self:t) =
@@ -373,7 +370,7 @@ let cmd_see (self:t) =
          | StrList [] -> ["not found."]
          | StrList l -> limit_list l
        in
-       Lwt.return msg
+       msg
     )
 
 let cmd_see_all (self:t) =
@@ -389,14 +386,14 @@ let cmd_see_all (self:t) =
          | StrList l ->
            if List.length l > 5 then [String.concat " | " l] else l
        in
-       Lwt.return msg
+       msg
     )
 
 let cmd_random (self:t) =
   Command.make_simple ~descr:"random factoid" ~cmd:"random" ~prio:10
     (fun _ _ ->
        let msg = random self in
-       Some msg |> Lwt.return
+       Some msg
     )
 
 let cmd_factoids (self:t) =
@@ -410,20 +407,20 @@ let cmd_factoids (self:t) =
     let reply_value ~hl (v:value) = match v with
       | Int i ->
         C.send_privmsg ~target ~message:(string_of_int i |> add_hl hl) |> matched
-      | StrList [] -> Lwt.return_unit |> matched
+      | StrList [] -> matched()
       | StrList [message] ->
         C.send_privmsg ~target ~message:(add_hl hl message) |> matched
       | StrList l ->
         let message = Rand_distrib.uniform l |> Rand_distrib.run |> add_hl hl in
         C.send_privmsg ~target ~message |> matched
     and count_update_message (k: key) = function
-      | None -> Lwt.return_unit
+      | None -> ()
       | Some count ->
         C.send_privmsg ~target
           ~message:(Printf.sprintf "%s : %d" (k :> string) count)
     in
     let op = parse_op ~prefix msg.Core.message in
-    CCOpt.iter
+    Option.iter
       (fun (c,_) ->
          Log.debug (fun k->k "factoids: parsed command `%s`" (string_of_op c)))
       op;

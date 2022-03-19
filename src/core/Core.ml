@@ -5,8 +5,6 @@ module Format_ = Format
 open Prelude
 open Containers
 
-open Lwt.Infix
-
 module Msg = Irc_message
 let logs_src = Logs.Src.create ~doc:"logs for calculon" "calculon"
 module Log = (val (Logs.src_log logs_src))
@@ -32,7 +30,7 @@ let privmsg_of_msg msg =
   match msg.Msg.command with
   | Msg.PRIVMSG (to_, message) ->
     Some
-      { nick = Prelude.unwrap_opt "msg prefix" msg.Msg.prefix |> get_nick;
+      { nick = unwrap_opt "msg prefix" msg.Msg.prefix |> get_nick;
         to_;
         message }
   | _ -> None
@@ -41,14 +39,14 @@ let string_of_privmsg msg =
   Printf.sprintf "{nick:%S; to:%S; msg: %S}" msg.nick msg.to_ msg.message
 
 module type S = sig
-  module I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t
+  module I : Irc_client.CLIENT with type 'a Io.t = 'a
 
   type connection = I.connection_t
 
   val connection : connection
 
-  val init : unit Lwt.t
-  val exit : unit Lwt.t
+  val init : unit -> unit
+  val exited : unit -> bool
 
   val send_exit : unit -> unit
 
@@ -60,39 +58,39 @@ module type S = sig
   (** Above [!line_cut_threshold], multi-line messages are cut with "..." *)
 
   val send_privmsg_l :
-    target:string -> messages:string list -> unit Lwt.t
+    target:string -> messages:string list -> unit
 
   val send_privmsg_l_nolimit :
     ?delay:float ->
     target:string ->
     messages:string list ->
     unit ->
-    unit Lwt.t
+    unit
   (** Version of {!send_privmsg_l} that does not enforce cut threshold.
       @param delay optional delay between each sent message *)
 
   val send_privmsg :
-    target:string -> message:string -> unit Lwt.t
+    target:string -> message:string -> unit
   (** Helper for sending messages, splitting lines, etc. *)
 
   val send_notice_l :
-    target:string -> messages:string list -> unit Lwt.t
+    target:string -> messages:string list -> unit
 
   val send_notice :
-    target:string -> message:string -> unit Lwt.t
+    target:string -> message:string -> unit
   (** Helper for sending notices, splitting lines, etc. *)
 
-  val send_join : channel:string -> unit Lwt.t
+  val send_join : channel:string -> unit
 
-  val send_part : channel:string -> unit Lwt.t
+  val send_part : channel:string -> unit
 
-  val talk : target:string -> Talk.t -> unit Lwt.t
+  val talk : target:string -> Talk.t -> unit
 end
 
 type t = (module S)
 
 module Make
-    (I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t)
+    (I : Irc_client.CLIENT with type 'a Io.t = 'a)
     (Conn : sig val c : I.connection_t end)
 = struct
   module I = I
@@ -100,10 +98,10 @@ module Make
   type connection = I.connection_t
   let connection = Conn.c
 
-  let init = Lwt.return_unit (* already done! *)
-  let exit, send_exit = Lwt.wait ()
-
-  let send_exit () = Lwt.wakeup send_exit ()
+  let init () = () (* already done! *)
+  let exit_ = ref false
+  let exited () = !exit_
+  let send_exit () = exit_ := true
 
   let messages = Signal.create ()
   let privmsg = Signal.filter_map messages privmsg_of_msg
@@ -119,13 +117,13 @@ module Make
       else lines
     in
     let delay_between = ref 0.3 in
-    Lwt_list.iter_s
+    List.iter
       (fun message ->
-         f ~connection ~target ~message >>= fun () ->
-         Lwt_unix.sleep !delay_between >>= fun () ->
+         f ~connection ~target ~message;
+         Unix.sleepf !delay_between;
          delay_between := CCFloat.min (!delay_between +. 0.2) 1.0;
          match sep with
-           | None -> Lwt.return_unit
+           | None -> ()
            | Some f -> f())
       lines
 
@@ -140,7 +138,7 @@ module Make
   let send_privmsg_l_nolimit ?(delay=0.5) ~target ~messages () =
     process_list_
       ~f:I.send_privmsg
-      ~sep:(fun () -> Lwt_unix.sleep delay)
+      ~sep:(fun () -> Unix.sleepf delay)
       ~target  ~bypass_limit:true
       ~messages:(flat_map split_lines_ messages)
       ()
@@ -170,14 +168,14 @@ module Make
 end
 
 module Run
-    (I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t)
+    (I : Irc_client.CLIENT with type 'a Io.t = 'a)
     (F : sig
-       val connect: unit -> I.connection_t option Lwt.t
+       val connect: unit -> I.connection_t option
        val conn_info: string
-       val init: t -> unit Lwt.t
+       val init: t -> unit
      end)
 = struct
-  let run () : unit Lwt.t =
+  let run () : unit =
     let self : t option ref = ref None in
     I.reconnect_loop
       ~keepalive:{I.mode=`Passive; timeout=300}
@@ -189,14 +187,13 @@ module Run
           F.connect ())
       ~callback:(fun _ msg_or_err ->
         match !self with
-        | None -> Lwt.return_unit
+        | None -> ()
         | Some (module C) ->
           begin match msg_or_err with
             | Result.Ok msg ->
               Signal.send C.messages msg
             | Result.Error err ->
               Log.err (fun k->k "error: %s" err);
-              Lwt.return ()
           end)
       ~f:(fun conn ->
         Log.info (fun k->k "connected, instantiate core");
@@ -207,16 +204,16 @@ module Run
       ()
 end
 
-let loop_ssl ?(conn_info="") ~connect ~init () : unit Lwt.t =
-  let module R = Run(Irc_client_lwt_ssl)(struct
+let loop_ssl ?(conn_info="") ~connect ~init () : unit =
+  let module R = Run(Irc)(struct
       let connect = connect
       let conn_info = conn_info
       let init = init
     end) in
   R.run ()
 
-let loop_unsafe ?(conn_info="") ~connect ~init () : unit Lwt.t =
-  let module R = Run(Irc_client_lwt)(struct
+let loop_unsafe ?(conn_info="") ~connect ~init () : unit =
+  let module R = Run(Irc)(struct
       let connect = connect
       let conn_info = conn_info
       let init = init
@@ -231,9 +228,9 @@ let run conf ~init () =
   in
   let conn_info = Printf.sprintf "%s/%d" conf.C.server conf.C.port in
   if conf.C.tls then (
-    let tls_config = Irc_client_lwt_ssl.Config.default in
+    let tls_config = Irc.Config.default in
     let connect () =
-      Irc_client_lwt_ssl.connect_by_name
+      Irc.connect_by_name
         ~username:conf.C.username ~realname:conf.C.realname ~nick:conf.C.nick
         ?password:conf.C.password
         ~server:conf.C.server ~port:conf.C.port ~config:tls_config
@@ -243,7 +240,7 @@ let run conf ~init () =
     loop_ssl ~conn_info ~connect ~init ()
   ) else (
     let connect () =
-      Irc_client_lwt.connect_by_name
+      Irc.connect_by_name
         ~username:conf.C.username ~realname:conf.C.realname ~nick:conf.C.nick
         ~server:conf.C.server ~port:conf.C.port
         ()

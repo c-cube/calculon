@@ -6,24 +6,22 @@ type t = {
 }
 
 let cmd_reload st =
-  let open Lwt.Infix in
   Command.make_simple
     ~descr:"reload state from disk"
     ~prio:10
     ~cmd:"reload"
     (fun _ _ ->
-       Signal.Send_ref.send st.actions Plugin.Require_reload >|= fun () ->
+       Signal.Send_ref.send st.actions Plugin.Require_reload;
        Some (Talk.select Talk.Ack)
     )
 
 let cmd_save st =
-  let open Lwt.Infix in
   Command.make_simple
     ~descr:"save state to disk"
     ~prio:10
     ~cmd:"save"
     (fun _ _ ->
-       Signal.Send_ref.send st.actions Plugin.Require_save >|= fun () ->
+       Signal.Send_ref.send st.actions Plugin.Require_save;
        Some (Talk.select Talk.Ack)
     )
 
@@ -32,6 +30,6 @@ let plugin =
     ~name:"state"
     ~of_json:(fun actions _ -> Ok {actions})
     ~to_json:(fun _ -> None)
-    ~stop:(fun _ -> Lwt.return_unit)
+    ~stop:ignore
     ~commands:(fun st -> [ cmd_reload st; cmd_save st; ])
     ()

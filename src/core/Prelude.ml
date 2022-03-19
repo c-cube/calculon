@@ -9,16 +9,6 @@ let string_list_to_string string_list =
 
 let get_nick h = CCString.Split.left_exn ~by:"!" h |> fst
 
-let id x = x
-let some x = Some x
-let map_opt f = function
-  | None -> None
-  | Some x -> Some (f x)
-
-let unwrap_opt msg = function
-  | Some x -> x
-  | None -> failwith msg
-
 let (|?) o x = match o with
   | None -> x
   | Some y -> y
@@ -71,8 +61,6 @@ let edit_distance s1 s2 =
   end
 
 module StrMap = CCMap.Make(String)
-
-include Lwt.Infix
 
 (** {2 Random Distribution} *)
 module Rand_distrib = struct

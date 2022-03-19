@@ -1,5 +1,4 @@
 open Result
-open Lwt.Infix
 
 (* TODO add proper lib *)
 module Time = struct
@@ -94,7 +93,10 @@ end
 
 type poll = { purpose : string; creator : string; vote : Vote.t }
 
-type state = (string, poll) Hashtbl.t
+type state = {
+  polls: (string, poll) Hashtbl.t;
+  mutable stop: bool;
+}
 
 let max_polls_per_nick = 1
 let max_polls = 5
@@ -138,7 +140,7 @@ let vote polls nick name vote =
       | true ->
         Hashtbl.remove polls name;
         Ok (Some (Printf.sprintf "Poll time has ended!: The final result is %s"
-              (CCOpt.get_or ~default:"draw" @@ CCOpt.map Vote.string_of_vote
+              (Option.value ~default:"draw" @@ map_opt Vote.string_of_vote
                @@ Vote.get_winner poll.vote)))
       | _ -> Ok (Some (Vote.show_status poll.vote))
 
@@ -148,8 +150,8 @@ let show_vote polls name nick =
       Error (Printf.sprintf "no active poll named '%s'" name)
     | Some poll ->
       let vote =
-        CCOpt.get_or ~default:"draw"
-        @@ CCOpt.map Vote.string_of_vote
+        Option.value ~default:"draw"
+        @@ map_opt Vote.string_of_vote
         @@ Vote.vote_status poll.vote nick
       in
       Ok (Some (Printf.sprintf "%s is %s %s" nick vote name))
@@ -160,14 +162,14 @@ let vote_status polls name =
   | Some poll ->
     Ok (Some (show_status name poll))
 
-let rec collector polls =
+let rec collector (st:state) =
   let now = Time.now () in
   Hashtbl.iter
     begin fun name { vote; _ } ->
-      if Vote.expired now vote then Hashtbl.remove polls name end
-    polls;
-  Lwt_unix.sleep (Time.minutes 1) >>= fun () ->
-  collector polls
+      if Vote.expired now vote then Hashtbl.remove st.polls name end
+    st.polls;
+  Unix.sleepf (Time.minutes 1);
+  collector st
 
 let help =
   "!vote show <poll> <nick> : display current vote of <nick> for <poll>\n\
@@ -177,7 +179,7 @@ let help =
    !vote against <poll>: vote against the given <poll>\n\
   "
 
-let reply polls msg s =
+let reply (self:state) msg s =
   let message_usage =
     "Please use `!vote for VOTE_NAME` or `!vote against VOTE_NAME` to vote; or start a new vote \
     with `!vote start VOTE_NAME`. (run !help vote for the complete list of commands)"
@@ -185,19 +187,19 @@ let reply polls msg s =
   let reply_res = function
     | Error msg ->
       let message = Printf.sprintf "%s: %s" Talk.(select Err) msg in
-      Some message |> Lwt.return
-    | Ok x -> x |> Lwt.return
+      Some message
+    | Ok x -> x
   in
   begin match Stringext.split ~max:3 (String.trim s) ~on:' ' with
     | "show" :: name :: nick :: _ ->
-      show_vote polls name nick |> reply_res
+      show_vote self.polls name nick |> reply_res
     | "start" :: name :: purpose ->
-      create_poll polls msg.Core.nick name
+      create_poll self.polls msg.Core.nick name
         (match purpose with [] -> "" | purpose :: _ -> purpose)
       |> reply_res
-    | "status" :: name :: _ -> vote_status polls name |> reply_res
+    | "status" :: name :: _ -> vote_status self.polls name |> reply_res
     | ("for" | "against" as v) :: name :: _ ->
-      vote polls msg.Core.nick name v |> reply_res
+      vote self.polls msg.Core.nick name v |> reply_res
     | [("show" | "start" | "status" | "for" | "against" as v)] ->
        Error (Printf.sprintf "this command is missing the vote name. Please specify one as in `vote %sVOTE_NAME" v) |> reply_res
     | _ ->
@@ -211,8 +213,8 @@ let cmd_vote state : Command.t =
     (reply state)
 
 let of_json _ _ : (state,_) result =
-  let polls = Hashtbl.create 10 in
-  Lwt.async (fun () -> collector polls);
+  let polls = {stop=false; polls=Hashtbl.create 10 } in
+  let _:Thread.t = Thread.create collector polls in
   Ok polls
 
 let plugin =
@@ -221,6 +223,6 @@ let plugin =
     ~to_json:(fun _ -> None)
     ~of_json
     ~commands:(fun state -> [cmd_vote state])
-    ~stop:(fun _ -> Lwt.return_unit)
+    ~stop:(fun st -> st.stop <- true)
     ()
 

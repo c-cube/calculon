@@ -19,9 +19,9 @@ type t = {
 }
 
 let on_msg state _ m = match Core.privmsg_of_msg m with
-  | None -> Lwt.return_unit
+  | None -> ()
   | Some {Core. to_; _} when not (Core.is_chan to_) ->
-    Lwt.return_unit (* ignore private messages *)
+    () (* ignore private messages *)
   | Some {Core. nick; to_=_; message } ->
     let time = Unix.gettimeofday() in
     let line = {time; nick_=nick; msg=message } in
@@ -29,8 +29,7 @@ let on_msg state _ m = match Core.privmsg_of_msg m with
     if Queue.length state.hist >= state.size then (
       ignore (Queue.pop state.hist);
     );
-    Queue.push line state.hist;
-    Lwt.return_unit
+    Queue.push line state.hist
 
 (* list of lines in history *)
 let reply_history state n : string list =
@@ -53,7 +52,7 @@ let cmd_history st =
     ~prio:10 ~cmd:"history"
     (fun _ msg ->
        let msg = String.trim msg in
-       if msg="" then Lwt.return (reply_history st st.default_len)
+       if msg="" then reply_history st st.default_len
        else (
          (* parse the number of lines *)
          try
@@ -63,7 +62,7 @@ let cmd_history st =
            else [Talk.select Talk.Err]
          with _ ->
            [Talk.select Talk.Err]
-       ) |> Lwt.return
+       )
     )
 
 let plugin ?(default_len=10) ?(n=150) () =
@@ -73,6 +72,6 @@ let plugin ?(default_len=10) ?(n=150) () =
       Ok {actions; size=n; default_len; hist=Queue.create();})
     ~to_json:(fun _ -> None)
     ~on_msg:(fun state -> [on_msg state])
-    ~stop:(fun _ -> Lwt.return_unit)
+    ~stop:ignore
     ~commands:(fun st -> [ cmd_history st; ])
     ()
