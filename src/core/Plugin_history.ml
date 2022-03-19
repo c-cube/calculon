@@ -36,9 +36,10 @@ let reply_history state n : string list =
   assert (n>0);
   Queue.fold
     (fun acc line ->
+       let time = Ptime.of_float_s line.time |> unwrap_opt "invalid timestamp" in
        let line' =
          Printf.sprintf "[%s] %s: %s"
-           (ISO8601.Permissive.string_of_datetime line.time) line.nick_ line.msg
+           (Ptime.to_rfc3339 ~space:false time) line.nick_ line.msg
        in
        line' :: acc)
     [] state.hist

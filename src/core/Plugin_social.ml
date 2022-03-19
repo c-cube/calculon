@@ -212,7 +212,14 @@ let cmd_tell_inner ~at (self:t) =
                split_3 ~msg:"tell_at: expected <date> <nick> <msg>"
                  (Re.Perl.compile_pat "[ \t]+") s
              in
-             let t = ISO8601.Permissive.datetime ~reqtime:false t in
+             let t = match
+                 Ptime.of_rfc3339 ~strict:false t
+                 |> Ptime.rfc3339_error_to_msg
+               with
+               | Ok (t, _, _) -> Ptime.to_float_s t
+               | Error (`Msg msg) ->
+                 failwith (spf "invalid timestamp: %s" msg)
+             in
              d, m, Some t
            ) else (
              let d, m =

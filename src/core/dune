@@ -4,6 +4,5 @@
    (public_name calculon)
    (flags :standard -warn-error -a+8 -open Calculon_common)
    (libraries containers yojson re re.perl logs sqlite3
-              calculon.common
-              irc-client ssl stringext unix threads.posix
-              ISO8601))
+              calculon.common ptime
+              irc-client ssl stringext unix threads.posix))
