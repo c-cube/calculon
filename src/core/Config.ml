@@ -11,7 +11,7 @@ type t = {
   nick : string;
   tls: bool;
   sasl: bool;
-  channel : string;
+  channels : string list;
   log_level: Logs.level;
   prefix: string;
   db_file: string;
@@ -27,7 +27,7 @@ let default = {
   nick = "calculon";
   tls = true;
   sasl = true;
-  channel = "#ocaml";
+  channels = ["#ocaml"];
   log_level=Logs.Info;
   prefix = "!";
   db_file="calculon.db";
@@ -36,7 +36,7 @@ let default = {
 
 let parse ?(extra_args=[]) conf args =
   let custom_nick = ref None in
-  let custom_chan = ref None in
+  let custom_chan = ref [] in
   let custom_server = ref None in
   let custom_db_file = ref None in
   let custom_port = ref conf.port in
@@ -47,8 +47,8 @@ let parse ?(extra_args=[]) conf args =
   let options = Arg.align @@ extra_args @
       [ "--nick", Arg.String (fun s -> custom_nick := Some s),
         " custom nickname (default: " ^ default.nick ^ ")"
-      ; "--chan", Arg.String (fun s -> custom_chan := Some s),
-        " channel to join (default: " ^ default.channel ^ ")"
+      ; "--chan", Arg.String (fun s -> custom_chan := s :: !custom_chan),
+        " channel to join (default: " ^ String.concat "," default.channels ^ ")"
       ; "--port", Arg.Set_int custom_port, " port of the server"
       ; "--server", Arg.String (fun s -> custom_server := Some s),
         " server to join (default: " ^ default.server ^ ")"
@@ -73,7 +73,7 @@ let parse ?(extra_args=[]) conf args =
     nick = !custom_nick |? conf.nick;
     username = user;
     password;
-    channel = !custom_chan |? conf.channel;
+    channels = (if !custom_chan=[] then conf.channels else !custom_chan);
     server = !custom_server |? conf.server;
     tls = !custom_tls |? conf.tls;
     sasl = !custom_sasl |? conf.sasl;

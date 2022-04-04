@@ -5,7 +5,7 @@ let main ?cmd_help conf all : unit =
     (* setup plugins *)
     let plugins = Plugin.Set.create ?cmd_help conf all |> unwrap_result_failwith in
     (* connect to chan *)
-    C.send_join ~channel:conf.Config.channel;
+    List.iter (fun c -> C.send_join ~channel:c) conf.Config.channels;
     Logs.info ~src:Core.logs_src (fun k->k "run %d plugins" (List.length all));
     (* log incoming messages, apply commands to them *)
     let prefix = conf.Config.prefix in

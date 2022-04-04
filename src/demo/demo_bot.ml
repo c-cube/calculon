@@ -19,7 +19,7 @@ let config = {
   nick = "test_bot";
   log_level = Logs.Info;
   tls = true;
-  channel = "##test1234";
+  channels = ["##test1234"];
 }
 
 let () =
