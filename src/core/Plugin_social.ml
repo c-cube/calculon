@@ -351,12 +351,13 @@ let cmd_ignore_list (self:t) =
 (* callback to update state, notify users of their messages, etc. *)
 let on_message (self:t) (module C:Core.S) msg =
   let module Msg = Irc_message in
-  let nick = match msg.Msg.command with
+  let nick, channel = match msg.Msg.command with
     | Msg.JOIN (_, _) | Msg.PRIVMSG (_, _) ->
-      some @@ get_nick @@ unwrap_opt "message prefix" msg.Msg.prefix
+      let msg = Core.privmsg_of_msg msg |> unwrap_opt "message parsing error" in
+      Some msg.nick, if Core.is_chan msg.to_ then Some msg.to_ else None
     | Msg.NICK newnick ->
-      Some newnick
-    | _ -> None
+      Some newnick, None
+    | _ -> None, None
   in
   (* trigger [tell] messages *)
   begin match nick with
@@ -371,10 +372,13 @@ let on_message (self:t) (module C:Core.S) msg =
       let to_tell, remaining =
         contact.to_tell
         |> List.partition
-          (fun t -> match t.tell_after with
-             | None -> true
-             | Some f when Float.(now > f) -> true
-             | Some _ -> false)
+          (fun t -> match t.tell_after, channel with
+             | _, None -> false
+             | None, _ -> true
+             | Some f, Some chan ->
+               (* delay expired, and it was on the same channel *)
+               Float.(now > f) && String.equal t.on_channel chan
+          )
       in
       if not (List.is_empty to_tell) then (
         set_data self nick {contact with to_tell = remaining};
