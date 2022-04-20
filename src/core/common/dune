@@ -1,6 +1,6 @@
 (library
   (name calculon_common)
-  (libraries logs)
+  (libraries logs threads)
   (public_name calculon.common))
 
 

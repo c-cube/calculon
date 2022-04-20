@@ -261,7 +261,7 @@ module Set = struct
           | Require_reload -> ignore @@ reload self
         );
       (* save thread *)
-      let _: Thread.t = Thread.create save_thread self in
+      spawn_thread save_thread self;
       self
     in
     r

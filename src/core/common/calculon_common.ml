@@ -32,3 +32,12 @@ let guard_res ?(ctx="") f : _ result =
   with
   | Failure e -> Error e
   | e -> Error (ctx^Printexc.to_string e)
+
+let spawn_thread f x =
+  let run() =
+    List.iter
+      (fun i -> Sys.set_signal i Sys.Signal_ignore)
+      [Sys.sigint; Sys.sigterm; Sys.sigpipe];
+    f x
+  in
+  ignore (Thread.create run () : Thread.t)

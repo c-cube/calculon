@@ -214,7 +214,7 @@ let cmd_vote state : Command.t =
 
 let of_json _ _ : (state,_) result =
   let polls = {stop=false; polls=Hashtbl.create 10 } in
-  let _:Thread.t = Thread.create collector polls in
+  spawn_thread collector polls;
   Ok polls
 
 let plugin =
