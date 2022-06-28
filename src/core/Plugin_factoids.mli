@@ -1,11 +1,7 @@
-open Prelude
-
 type key = private string (* utf8 *)
-type value =
-  | StrList of string list
-  | Int of int
-type factoid = {key: key; value: value}
 
+type value = StrList of string list | Int of int
+type factoid = { key: key; value: value }
 type t
 
 val key_of_string : string -> key option
@@ -24,7 +20,6 @@ val parse_op : prefix:string -> string -> (op * string option) option
 
 val string_of_value : value -> string
 val string_of_op : op -> string
-
 val plugin : Plugin.t
 
 val set_max_cardinal_for_force : int -> unit

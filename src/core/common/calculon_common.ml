@@ -1,43 +1,56 @@
-
 let spf = Printf.sprintf
-let[@inline] (let@) f x = f x
-
+let[@inline] ( let@ ) f x = f x
 let id x = x
-let some x = Some x
-let map_opt f = function
-  | None -> None
-  | Some x -> Some (f x)
 
-let unwrap_opt msg = function
-  | Some x -> x
-  | None -> failwith msg
+module Option = struct
+  include Option
+
+  let get_or msg = function
+    | Some x -> x
+    | None -> failwith msg
+
+  let get_or_lazy default = function
+    | Some x -> x
+    | None -> default ()
+
+  module Infix = struct
+    let ( let+ ) x f = Option.map f x
+    let ( let* ) = Option.bind
+    let ( >|= ) x f = Option.map f x
+    let ( >>= ) = Option.bind
+
+    let ( and+ ) x y =
+      match x, y with
+      | None, _ | _, None -> None
+      | Some x, Some y -> Some (x, y)
+  end
+end
 
 let unwrap_result_failwith = function
   | Ok x -> x
   | Error msg -> failwith msg
 
 let wrap_failwith ctx f =
-  try f()
-  with
-  | exn ->
-    let err = match exn with
+  try f ()
+  with exn ->
+    let err =
+      match exn with
       | Failure e -> spf "%s\n%s" e ctx
       | e -> spf "%s\n%s" (Printexc.to_string e) ctx
     in
-    Logs.err (fun k->k "fail: %s" err);
+    Logs.err (fun k -> k "fail: %s" err);
     failwith err
 
-let guard_res ?(ctx="") f : _ result =
-  try Ok (f())
-  with
+let guard_res ?(ctx = "") f : _ result =
+  try Ok (f ()) with
   | Failure e -> Error e
-  | e -> Error (ctx^Printexc.to_string e)
+  | e -> Error (ctx ^ Printexc.to_string e)
 
-let spawn_thread f x =
-  let run() =
-    List.iter
-      (fun i -> Sys.set_signal i Sys.Signal_ignore)
-      [Sys.sigint; Sys.sigterm; Sys.sigpipe];
-    f x
-  in
-  ignore (Thread.create run () : Thread.t)
+module Lwt_infix = struct
+  let ( let* ) = Lwt.bind
+  let ( let+ ) x f = Lwt.map f x
+  let ( and+ ) = Lwt.both
+  let ( and* ) = ( and+ )
+  let ( >|= ) x f = Lwt.map f x
+  let ( >>= ) = Lwt.bind
+end

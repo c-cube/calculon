@@ -5,8 +5,7 @@ module Maybe = struct
     | "N/A" -> None
     | s -> Some s
 
-  let unwrap = CCOpt.get_or ~default:"N/A" 
-
+  let unwrap = Option.value ~default:"N/A"
 end
 
 module Year = struct
@@ -14,9 +13,8 @@ module Year = struct
 
   let wrap s =
     match Stringext.split ~max:3 ~on:' ' (String.trim s) with
-    | _::_::year::[] -> begin try Some (int_of_string year) with _ -> None end
+    | [ _; _; year ] -> (try Some (int_of_string year) with _ -> None)
     | _ -> None
 
-  let unwrap = CCOpt.map_or ~default:"N/A" (Printf.sprintf "1 Jan %d")
+  let unwrap = Option.fold ~none:"N/A" ~some:(Printf.sprintf "1 Jan %d")
 end
-

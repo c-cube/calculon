@@ -1,7 +1,6 @@
-
 (** {1 Simple Runner} *)
 
-val main : ?cmd_help:bool -> Config.t -> Plugin.t list -> unit
+val main : ?cmd_help:bool -> Config.t -> Plugin.t list -> unit Lwt.t
 (** Easy wrapper for a bot that takes some configuration
     (including the connection options, such as the network
     and channel to join) and a list of plugins, and
@@ -19,4 +18,3 @@ val main : ?cmd_help:bool -> Config.t -> Plugin.t list -> unit
         C.Run_main.main config plugins |> Lwt_main.run
     ]}
 *)
-

@@ -1,14 +1,14 @@
 (** {1 Plugins} *)
 
 open DB_utils
+open Lwt_infix
 module Log = Core.Log
+
 type json = Yojson.Safe.t
 
 type action =
-  | Require_reload
-  (** Require that we reload everything from on-disk state *)
-  | Require_save
-  (** Require that the state be saved *)
+  | Require_reload  (** Require that we reload everything from on-disk state *)
+  | Require_save  (** Require that the state be saved *)
 
 type action_callback = action Signal.Send_ref.t
 
@@ -16,38 +16,35 @@ type stateful = St : 'st stateful_ -> stateful
 
 and 'st stateful_ = {
   name: string;
-  (** Namespace for storing state. Must be distinct for every plugin. *)
+      (** Namespace for storing state. Must be distinct for every plugin. *)
   commands: 'st -> Command.t list;
-  (** Commands parametrized by some (mutable) state, with the ability
+      (** Commands parametrized by some (mutable) state, with the ability
      to trigger a signal *)
-  on_msg:'st -> (Core.t -> Irc_message.t -> unit) list;
-  (** Executed on each incoming message *)
-  to_json : 'st -> json option;
-  (** How to serialize (part of) the state into JSON, if need be. *)
-  of_json : action_callback -> json option -> ('st, string) Result.result;
-  (** How to deserialize the state. [None] is passed for a fresh
+  on_msg: 'st -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
+      (** Executed on each incoming message *)
+  to_json: 'st -> json option;
+      (** How to serialize (part of) the state into JSON, if need be. *)
+  of_json: action_callback -> json option -> ('st, string) Result.result;
+      (** How to deserialize the state. [None] is passed for a fresh
       initialization. *)
-  stop: 'st -> unit;
-  (** Stop the plugin.
+  stop: 'st -> unit Lwt.t;
+      (** Stop the plugin.
      It is NOT the responsibility of this command to save the state,
      as the core engine will have called {!to_json} before. *)
 }
 
 type db_backed = {
   commands: DB.db -> Command.t list;
-  (** Commands parametrized by some (mutable) state, with the ability
+      (** Commands parametrized by some (mutable) state, with the ability
      to trigger a signal *)
-
-  prepare_db : DB.db -> unit;
-  (** Prepare database (create tables, etc.).
+  prepare_db: DB.db -> unit;
+      (** Prepare database (create tables, etc.).
       Must be idempotent as it'll be called every time the plugin
       is initialized. *)
-
-  on_msg: DB.db -> (Core.t -> Irc_message.t -> unit) list;
-  (** Executed on each incoming message *)
-
-  stop: DB.db -> unit;
-  (** Stop the plugin. There is no need to close the DB connection. *)
+  on_msg: DB.db -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
+      (** Executed on each incoming message *)
+  stop: DB.db -> unit Lwt.t;
+      (** Stop the plugin. There is no need to close the DB connection. *)
 }
 
 (** A single plugin *)
@@ -58,42 +55,38 @@ type t =
 
 type plugin = t
 
-let of_cmd c = Stateless [c]
+let of_cmd c = Stateless [ c ]
+
 let of_cmds l =
-  if l=[] then invalid_arg "Plugin.of_cmds";
+  if l = [] then invalid_arg "Plugin.of_cmds";
   Stateless l
 
-let stateful
-    ~name
-    ~commands
-    ?(on_msg=fun _ -> [])
-    ~to_json
-    ~of_json
-    ?(stop=ignore)
-    () =
-  Stateful (St { name; on_msg; to_json; of_json; stop; commands; })
+let stateful ~name ~commands ?(on_msg = fun _ -> []) ~to_json ~of_json
+    ?(stop = fun _ -> Lwt.return_unit) () =
+  Stateful (St { name; on_msg; to_json; of_json; stop; commands })
 
-let db_backed
-    ~commands ~prepare_db
-    ?(on_msg=fun _ -> [])
-    ?(stop=ignore)
-    () : t =
-  DB_backed {commands; prepare_db; on_msg; stop}
+let db_backed ~commands ~prepare_db ?(on_msg = fun _ -> [])
+    ?(stop = fun _ -> Lwt.return ()) () : t =
+  DB_backed { commands; prepare_db; on_msg; stop }
 
 (* prepare the main plugin tables, settings *)
 let prepare_db_ db =
   DB.busy_timeout db 500;
-  DB.exec db {|
+  DB.exec db
+    {|
     CREATE TABLE IF NOT EXISTS plugins
       (name TEXT NOT NULL,
        value TEXT NOT NULL,
        UNIQUE (name) ON CONFLICT FAIL
        );
-    |} |> check_db_ db;
+    |}
+  |> check_db_ db;
   Printf.printf "creating index\n";
-  DB.exec db {|
+  DB.exec db
+    {|
     CREATE INDEX IF NOT EXISTS plugins_idx on plugins(name);
-    |} |> check_db_ db;
+    |}
+  |> check_db_ db;
   ()
 
 let unwrap_failwith = function
@@ -111,10 +104,10 @@ module Set = struct
     config: Config.t;
     plugins: plugin list;
     actions: action Signal.t;
-    db: DB.db Lock.t;
-    mutable active : active_plugin list;
+    db: DB.db;
+    mutable active: active_plugin list;
     mutable commands_l: Command.t list; (* sorted by prio *)
-    mutable on_msg_l: (Core.t -> Irc_message.t -> unit) list;
+    mutable on_msg_l: (Core.t -> Irc_message.t -> unit Lwt.t) list;
     mutable stopped: bool;
   }
 
@@ -124,47 +117,36 @@ module Set = struct
     prepare_db_ db;
     db
 
-  let with_db_ config f =
-    let db = create_db config in
-    CCFun.protect ~finally:(fun () -> while not (DB.db_close db) do () done) @@ fun () ->
-    f db
-
   (* save JSON plugins *)
   let save_ db _config active =
-    begin
-      DB.exec db "BEGIN;" |> check_db_ db;
+    (DB.exec db "BEGIN;" |> check_db_ db;
 
-      let save_plugin = function
-        | Active_stateless _
-        | Active_db_backed _ -> ()
-        | Active_stateful (plugin, state) ->
-          (* save as json into the appropriate table *)
-          begin match plugin.to_json state with
-            | None -> ()
-            | Some j ->
-              let@ stmt = with_stmt db
-                  {|INSERT OR REPLACE INTO plugins(name,value) VALUES(?,?);|} in
-              DB.bind_text stmt 1 plugin.name |> check_db_ db;
-              DB.bind_text stmt 2 (Yojson.Safe.to_string j) |> check_db_ db;
-              DB.step stmt |> check_db_ db;
-          end
-      in
+     let save_plugin = function
+       | Active_stateless _ | Active_db_backed _ -> ()
+       | Active_stateful (plugin, state) ->
+         (* save as json into the appropriate table *)
+         (match plugin.to_json state with
+         | None -> ()
+         | Some j ->
+           let@ stmt =
+             with_stmt db
+               {|INSERT OR REPLACE INTO plugins(name,value) VALUES(?,?);|}
+           in
+           DB.bind_text stmt 1 plugin.name |> check_db_ db;
+           DB.bind_text stmt 2 (Yojson.Safe.to_string j) |> check_db_ db;
+           DB.step stmt |> check_db_ db)
+     in
 
-      List.iter save_plugin active;
-      DB.exec db "COMMIT;" |> check_db_ db;
-    end;
-    ()
+     List.iter save_plugin active;
+     DB.exec db "COMMIT;" |> check_db_ db);
+    Lwt.return ()
 
-  let save (self:t) : _ =
-    let@ db = Lock.with_ self.db in
-    save_ db self.config self.active
-
+  let save (self : t) : unit Lwt.t = save_ self.db self.config self.active
   let commands t = t.commands_l
   let on_msg_l t = t.on_msg_l
 
-  let load_from
-      (db:DB.db) action_signal plugins
-      (_config:Config.t) : (Command.t list * _ list * active_plugin list, _) result =
+  let load_from (db : DB.db) action_signal plugins (_config : Config.t) :
+      (Command.t list * _ list * active_plugin list, _) result =
     guard_res @@ fun () ->
     let all_cmds = ref [] in
     let all_on_msg = ref [] in
@@ -173,11 +155,11 @@ module Set = struct
       | Stateless cmds ->
         all_cmds := List.rev_append cmds !all_cmds;
         Active_stateless cmds
-
       | Stateful (St plugin) ->
         let plugin_j =
           let@ stmt =
-            with_stmt db {|SELECT json(value) FROM plugins WHERE name=?|} in
+            with_stmt db {|SELECT json(value) FROM plugins WHERE name=?|}
+          in
           DB.bind_text stmt 1 plugin.name |> check_db_ db;
           DB.step stmt |> check_db_ db;
           try
@@ -186,17 +168,14 @@ module Set = struct
           with _ -> None
         in
 
-        begin match plugin.of_json action_signal plugin_j with
-          | Error err ->
-            failwith (spf "plugin %S failed to initialize: %s" plugin.name err)
+        (match plugin.of_json action_signal plugin_j with
+        | Error err ->
+          failwith (spf "plugin %S failed to initialize: %s" plugin.name err)
+        | Ok state ->
+          all_cmds := List.rev_append (plugin.commands state) !all_cmds;
+          all_on_msg := List.rev_append (plugin.on_msg state) !all_on_msg;
 
-          | Ok state ->
-            all_cmds := List.rev_append (plugin.commands state) !all_cmds;
-            all_on_msg := List.rev_append (plugin.on_msg state) !all_on_msg;
-
-            Active_stateful (plugin, state)
-        end
-
+          Active_stateful (plugin, state))
       | DB_backed plugin ->
         plugin.prepare_db db;
         all_cmds := List.rev_append (plugin.commands db) !all_cmds;
@@ -209,79 +188,100 @@ module Set = struct
 
     let commands_l = List.sort Command.compare_prio @@ !all_cmds in
     let on_msg_l = !all_on_msg in
-    commands_l,on_msg_l,active
+    commands_l, on_msg_l, active
 
-  let reload (self:t) : _ =
-    Log.info (fun k->k "plugin: reload state");
+  let reload (self : t) : _ =
+    Log.info (fun k -> k "plugin: reload state");
     let r =
       guard_res @@ fun () ->
       let commands, on_msg_l, active =
-        let@ db = Lock.with_ self.db in
-        load_from db (Signal.Send_ref.make self.actions)
+        load_from self.db
+          (Signal.Send_ref.make self.actions)
           self.plugins self.config
         |> unwrap_failwith
       in
       self.commands_l <- commands;
       self.on_msg_l <- on_msg_l;
-      self.active <- active;
+      self.active <- active
     in
-    r
+    Lwt.return r
 
   let save_period = 300.
 
   (* periodic "save" *)
-  let save_thread t : unit =
-    while not t.stopped do
-      Unix.sleepf save_period;
-      save t;
-    done
+  let save_thread t : unit Lwt.t =
+    let open Lwt.Infix in
+    let rec loop () =
+      Lwt_unix.sleep save_period >>= fun () ->
+      if t.stopped then
+        Lwt.return ()
+      else
+        save t >>= fun _ -> loop ()
+    in
+    loop ()
 
-  let create ?cmd_help:(help=true) config
-      (plugins:plugin list) : (t, string) Result.result =
+  let create ?cmd_help:(help = true) config (plugins : plugin list) :
+      (t, string) Result.result =
     let r =
       guard_res @@ fun () ->
       let db = create_db config in
-      let actions = Signal.create() in
+      let actions = Signal.create () in
       let commands_l, on_msg_l, active =
         load_from db (Signal.Send_ref.make actions) plugins config
         |> unwrap_failwith
       in
       let commands_l =
-        if help then Command.cmd_help commands_l :: commands_l
-        else commands_l
+        if help then
+          Command.cmd_help commands_l :: commands_l
+        else
+          commands_l
       in
-      let self = {
-        config; db=Lock.create db; plugins; actions; active;
-        commands_l; on_msg_l; stopped=false;
-      } in
+      let self =
+        {
+          config;
+          db;
+          plugins;
+          actions;
+          active;
+          commands_l;
+          on_msg_l;
+          stopped = false;
+        }
+      in
       (* respond to actions *)
-      Signal.on' actions
-        (function
-          | Require_save -> save self
-          | Require_reload -> ignore @@ reload self
-        );
+      Signal.on' actions (function
+        | Require_save -> save self
+        | Require_reload -> Lwt.map ignore (reload self));
       (* save thread *)
-      spawn_thread save_thread self;
+      Lwt.async (fun () -> save_thread self);
       self
     in
     r
 
-  let stop ?save:(save_opt=true) (self:t) : unit =
+  let stop ?save:(save_opt = true) (self : t) : unit Lwt.t =
     if not self.stopped then (
-      Log.info (fun k->k "stop plugins");
+      Log.info (fun k -> k "stop plugins");
       self.stopped <- true;
-      if save_opt then save self;
-      List.iter
-        (function
-          | Active_stateless _ -> ()
-          | Active_db_backed p ->
-            let@ db = Lock.with_ self.db in
-            p.stop db
-          | Active_stateful (p, st) -> p.stop st)
-        self.active;
+      let* () =
+        if save_opt then
+          save self
+        else
+          Lwt.return ()
+      in
+      let* () =
+        Lwt_list.iter_p
+          (function
+            | Active_stateless _ -> Lwt.return ()
+            | Active_db_backed p -> p.stop self.db
+            | Active_stateful (p, st) -> p.stop st)
+          self.active
+      in
       (* close DB *)
-      let@ db = Lock.with_ self.db in
-      while not (DB.db_close db) do () done;
-      Log.info (fun k->k "all plugins stopped");
-    )
+      while not (DB.db_close self.db) do
+        ()
+      done;
+      Log.info (fun k -> k "all plugins stopped");
+      Lwt.return ()
+    ) else
+      Lwt.return ()
 end
