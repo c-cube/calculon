@@ -4,13 +4,12 @@
     It will register its commands to the core loop *)
 
 open DB_utils
+
 type json = Yojson.Safe.t
 
 type action =
-  | Require_reload
-  (** Require that we reload everything from on-disk state *)
-  | Require_save
-  (** Require that the state be saved *)
+  | Require_reload  (** Require that we reload everything from on-disk state *)
+  | Require_save  (** Require that the state be saved *)
 
 type action_callback = action Signal.Send_ref.t
 
@@ -19,38 +18,35 @@ type stateful = St : 'st stateful_ -> stateful
 
 and 'st stateful_ = private {
   name: string;
-  (** Namespace for storing state. Must be distinct for every plugin. *)
+      (** Namespace for storing state. Must be distinct for every plugin. *)
   commands: 'st -> Command.t list;
-  (** Commands parametrized by some (mutable) state, with the ability
+      (** Commands parametrized by some (mutable) state, with the ability
      to trigger a signal *)
-  on_msg:'st -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
-  (** Executed on each incoming message *)
-  to_json : 'st -> json option;
-  (** How to serialize (part of) the state into JSON, if need be. *)
-  of_json : action_callback -> json option -> ('st, string) Result.result;
-  (** How to deserialize the state. [None] is passed for a fresh
+  on_msg: 'st -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
+      (** Executed on each incoming message *)
+  to_json: 'st -> json option;
+      (** How to serialize (part of) the state into JSON, if need be. *)
+  of_json: action_callback -> json option -> ('st, string) Result.result;
+      (** How to deserialize the state. [None] is passed for a fresh
       initialization. *)
   stop: 'st -> unit Lwt.t;
-  (** Stop the plugin.
+      (** Stop the plugin.
      It is NOT the responsibility of this command to save the state,
      as the core engine will have called {!to_json} before. *)
 }
 
 type db_backed = private {
   commands: DB.db -> Command.t list;
-  (** Commands parametrized by some (mutable) state, with the ability
+      (** Commands parametrized by some (mutable) state, with the ability
      to trigger a signal *)
-
-  prepare_db : DB.db -> unit;
-  (** Prepare database (create tables, etc.).
+  prepare_db: DB.db -> unit;
+      (** Prepare database (create tables, etc.).
       Must be idempotent as it'll be called every time the plugin
       is initialized. *)
-
   on_msg: DB.db -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
-  (** Executed on each incoming message *)
-
+      (** Executed on each incoming message *)
   stop: DB.db -> unit Lwt.t;
-  (** Stop the plugin. There is no need to close the DB connection. *)
+      (** Stop the plugin. There is no need to close the DB connection. *)
 }
 
 (** A single plugin *)
@@ -98,10 +94,7 @@ module Set : sig
   type t
 
   val create :
-    ?cmd_help:bool ->
-    Config.t ->
-    plugin list ->
-    (t, string) Result.result Lwt.t
+    ?cmd_help:bool -> Config.t -> plugin list -> (t, string) Result.result
   (** Create a collection of plugins, loading the state, initializing
       them.
       @param cmd_help if true, adds a "help" command.

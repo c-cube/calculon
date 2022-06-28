@@ -12,22 +12,20 @@
 *)
 
 type res =
-  | Cmd_match of unit Lwt.t
-  (** command applies, and fired with given action *)
-  | Cmd_skip
-  (** the command did not apply *)
-  | Cmd_fail of string
-  (** command applies, but failed *)
+  | Cmd_match of unit Lwt.t  (** command applies, and fired with given action *)
+  | Cmd_skip  (** the command did not apply *)
+  | Cmd_fail of string  (** command applies, but failed *)
 
+type t = {
+  prio: int;  (** Priority. The lower, the more urgent this command is. *)
+  match_: prefix:string -> Core.t -> Core.privmsg -> res;
+      (** How to react to incoming messages *)
+  name: string;  (** Name of the command *)
+  descr: string;  (** For !help *)
+}
 (** A command, bundling some metadata (name + descr, used for "!help"),
     a priority (used to run some commands before the others),
     and the answering function itself *)
-type t = {
-  prio: int; (** Priority. The lower, the more urgent this command is. *)
-  match_: prefix:string -> Core.t -> Core.privmsg -> res; (** How to react to incoming messages *)
-  name: string; (** Name of the command *)
-  descr: string; (** For !help *)
-}
 
 val match_prefix1 : prefix:string -> cmd:string -> Core.privmsg -> string option
 (** [match_prefix1 ~prefix:"foo" msg]
@@ -40,7 +38,8 @@ val extract_hl : string -> (string * string) option
 (** [extract_hl "foo > bar"] returns [Some ("foo", "bar")].
     Returns [None] if it cannot split on ">" cleanly. *)
 
-val match_prefix1_full : prefix:string -> cmd:string -> Core.privmsg -> (string * string option) option
+val match_prefix1_full :
+  prefix:string -> cmd:string -> Core.privmsg -> (string * string option) option
 (** @return [Some (msg, hl)] if [msg] matches the regex,
    and [hl] is either [Some foo] if the message ended with "> hl",
    [None] otherwise *)

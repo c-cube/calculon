@@ -1,4 +1,3 @@
-
 (** {1 Simple Runner} *)
 
 val main : ?cmd_help:bool -> Config.t -> Plugin.t list -> unit Lwt.t
@@ -19,4 +18,3 @@ val main : ?cmd_help:bool -> Config.t -> Plugin.t list -> unit Lwt.t
         C.Run_main.main config plugins |> Lwt_main.run
     ]}
 *)
-

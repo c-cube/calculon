@@ -11,7 +11,7 @@ type t = {
   nick : string;
   tls: bool;
   sasl: bool;
-  channel : string; (** Channel to join after the connexion to the server *)
+  channels : string list; (** Channels to join after the connexion to the server *)
 
   log_level: Logs.level;
   (** Level of logging.
