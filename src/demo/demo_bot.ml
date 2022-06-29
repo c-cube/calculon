@@ -1,5 +1,4 @@
 module C = Calculon
-module CW = Calculon_web
 
 let plugins : C.Plugin.t list =
   [
@@ -7,7 +6,6 @@ let plugins : C.Plugin.t list =
     C.Plugin_factoids.plugin;
     C.Plugin_state.plugin;
     C.Plugin_history.plugin ~n:40 ();
-    CW.Plugin_web.plugin;
   ]
 
 let config =
