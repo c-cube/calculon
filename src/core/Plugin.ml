@@ -24,7 +24,7 @@ and 'st stateful_ = {
       (** Executed on each incoming message *)
   to_json: 'st -> json option;
       (** How to serialize (part of) the state into JSON, if need be. *)
-  of_json: action_callback -> json option -> ('st, string) Result.result;
+  of_json : action_callback -> json option -> ('st, string) Result.result;
       (** How to deserialize the state. [None] is passed for a fresh
       initialization. *)
   stop: 'st -> unit Lwt.t;
@@ -221,7 +221,7 @@ module Set = struct
     loop ()
 
   let create ?cmd_help:(help = true) config (plugins : plugin list) :
-      (t, string) Result.result =
+      (t, string) Result.result Lwt.t =
     let r =
       guard_res @@ fun () ->
       let db = create_db config in
@@ -256,7 +256,7 @@ module Set = struct
       Lwt.async (fun () -> save_thread self);
       self
     in
-    r
+    Lwt.return r
 
   let stop ?save:(save_opt = true) (self : t) : unit Lwt.t =
     if not self.stopped then (

@@ -94,7 +94,7 @@ module Set : sig
   type t
 
   val create :
-    ?cmd_help:bool -> Config.t -> plugin list -> (t, string) Result.result
+    ?cmd_help:bool -> Config.t -> plugin list -> (t, string) Result.result Lwt.t
   (** Create a collection of plugins, loading the state, initializing
       them.
       @param cmd_help if true, adds a "help" command.

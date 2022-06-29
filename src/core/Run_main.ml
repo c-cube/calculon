@@ -4,16 +4,15 @@ let main ?cmd_help conf all : unit Lwt.t =
   let init_or_err (core : Core.t) : _ result Lwt.t =
     let (module C) = core in
     (* setup plugins *)
-    Logs.info ~src:Core.logs_src (fun k->k "creating plugins…");
-    let plugins =
-      Plugin.Set.create ?cmd_help conf all |> unwrap_result_failwith
-    in
+    Logs.info ~src:Core.logs_src (fun k -> k "creating plugins…");
+    let* plugins = Plugin.Set.create ?cmd_help conf all in
+    let plugins = unwrap_result_failwith plugins in
     (* connect to chan *)
-    Lwt.async (fun () ->
-      let* () = Lwt_unix.sleep 2. in
-      Logs.info ~src:Core.logs_src (fun k->k "joining channels…");
+    let* () = Lwt_unix.sleep 2. in
+    Logs.info ~src:Core.logs_src (fun k -> k "joining channels…");
+    let* () =
       Lwt_list.iter_s (fun c -> C.send_join ~channel:c) conf.Config.channels
-    );
+    in
     Logs.info ~src:Core.logs_src (fun k -> k "run %d plugins" (List.length all));
     (* log incoming messages, apply commands to them *)
     let prefix = conf.Config.prefix in
@@ -28,13 +27,19 @@ let main ?cmd_help conf all : unit Lwt.t =
   in
   (* error-logging wraper *)
   let init core : unit Lwt.t =
-    let+ x = init_or_err core in
-    match x with
-    | Ok () -> ()
-    | Error (Failure msg) ->
-      Logs.err ~src:Core.logs_src (fun k -> k "error in main loop: %s" msg)
-    | Error e ->
-      let msg = Printexc.to_string e in
-      Logs.err ~src:Core.logs_src (fun k -> k "error in main loop: %s" msg)
+    Lwt.catch
+      (fun () ->
+        let+ x = init_or_err core in
+        match x with
+        | Ok () -> ()
+        | Error (Failure msg) ->
+          Logs.err ~src:Core.logs_src (fun k -> k "error in init: %s" msg)
+        | Error e ->
+          let msg = Printexc.to_string e in
+          Logs.err ~src:Core.logs_src (fun k -> k "error in init: %s" msg))
+      (fun e ->
+        let msg = Printexc.to_string e in
+        Logs.err ~src:Core.logs_src (fun k -> k "error in init: %s" msg);
+        Lwt.return ())
   in
   Core.run conf ~init ()
