@@ -1,0 +1,74 @@
+opam-version: "2.0"
+name: "calculon-web"
+version: "0.7"
+synopsis: "A collection of web plugins for Calculon"
+maintainer: "c-cube"
+authors: ["Armael" "Enjolras" "c-cube"]
+license: "MIT"
+tags: ["irc" "bot" "factoids"]
+homepage: "https://github.com/c-cube/calculon"
+bug-reports: "https://github.com/c-cube/calculon/issues"
+depends: [
+  "angstrom" {= "0.15.0"}
+  "atd" {= "2.2.1"}
+  "atdgen" {= "2.2.1"}
+  "atdgen-runtime" {= "2.2.1"}
+  "base-bigarray" {= "base"}
+  "base-bytes" {= "base"}
+  "base-threads" {= "base"}
+  "base-unix" {= "base"}
+  "base64" {= "3.5.0"}
+  "bigarray-compat" {= "1.1.0"}
+  "bigstringaf" {= "0.8.0"}
+  "biniou" {= "1.2.1"}
+  "calculon" {= "0.7"}
+  "conf-libssl" {= "3"}
+  "conf-pkg-config" {= "2"}
+  "conf-sqlite3" {= "1"}
+  "containers" {= "3.6.1"}
+  "cppo" {= "1.6.8"}
+  "csexp" {= "1.5.1"}
+  "curly" {= "0.2.0"}
+  "dune" {= "3.0.3"}
+  "dune-configurator" {= "3.0.3"}
+  "easy-format" {= "1.3.2"}
+  "either" {= "1.0.0"}
+  "irc-client" {= "0.7.0"}
+  "irc-client-lwt" {= "0.7.0"}
+  "irc-client-lwt-ssl" {= "0.7.0"}
+  "iter" {= "1.4"}
+  "lambdasoup" {= "0.7.3"}
+  "logs" {= "0.7.0"}
+  "lwt" {= "5.5.0"}
+  "lwt_ssl" {= "1.1.3"}
+  "markup" {= "1.0.2"}
+  "menhir" {= "20211128"}
+  "menhirLib" {= "20211128"}
+  "menhirSdk" {= "20211128"}
+  "mmap" {= "1.2.0"}
+  "ocaml" {= "4.08.1"}
+  "ocaml-base-compiler" {= "4.08.1"}
+  "ocaml-config" {= "1"}
+  "ocaml-syntax-shims" {= "1.0.0"}
+  "ocamlbuild" {= "0.14.1"}
+  "ocamlfind" {= "1.9.3"}
+  "ocplib-endian" {= "1.2"}
+  "ptime" {= "1.0.0"}
+  "re" {= "1.10.3"}
+  "result" {= "1.5"}
+  "seq" {= "base"}
+  "sqlite3" {= "5.0.2"}
+  "ssl" {= "0.5.10"}
+  "stringext" {= "1.6.0"}
+  "topkg" {= "1.0.5"}
+  "uchar" {= "0.0.2"}
+  "uri" {= "4.2.0"}
+  "uutf" {= "1.0.3"}
+  "yojson" {= "1.7.0"}
+]
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "build" "@doc" "-p" name] {with-doc}
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
+]
+dev-repo: "git+https://github.com/c-cube/calculon.git"
