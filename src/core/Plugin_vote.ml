@@ -1,4 +1,5 @@
 open Result
+open Lwt_infix
 
 (* TODO add proper lib *)
 module Time = struct
@@ -176,14 +177,13 @@ let vote_status polls name =
   | None -> Error (Printf.sprintf "no active poll named '%s'" name)
   | Some poll -> Ok (Some (show_status name poll))
 
-let rec collector (st : state) =
+let rec collector (st : state) : _ Lwt.t =
   let now = Time.now () in
   Hashtbl.iter
     (fun name { vote; _ } ->
       if Vote.expired now vote then Hashtbl.remove st.polls name)
     st.polls;
-  Unix.sleepf (Time.minutes 1);
-  collector st
+  Lwt_unix.sleep (Time.minutes 1) >>= fun () -> collector st
 
 let help =
   "!vote show <poll> <nick> : display current vote of <nick> for <poll>\n\
