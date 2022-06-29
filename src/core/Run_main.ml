@@ -8,9 +8,10 @@ let main ?cmd_help conf all : unit Lwt.t =
       Plugin.Set.create ?cmd_help conf all |> unwrap_result_failwith
     in
     (* connect to chan *)
-    let* () =
-      Lwt_list.iter_p (fun c -> C.send_join ~channel:c) conf.Config.channels
-    in
+    Lwt.async (fun () ->
+      let* () = Lwt_unix.sleep 2. in
+      Lwt_list.iter_s (fun c -> C.send_join ~channel:c) conf.Config.channels
+    );
     Logs.info ~src:Core.logs_src (fun k -> k "run %d plugins" (List.length all));
     (* log incoming messages, apply commands to them *)
     let prefix = conf.Config.prefix in
