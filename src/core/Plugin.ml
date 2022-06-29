@@ -277,6 +277,7 @@ module Set = struct
           self.active
       in
       (* close DB *)
+      Log.info (fun k->k "closing DB");
       while not (DB.db_close self.db) do
         ()
       done;

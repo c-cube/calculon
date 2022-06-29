@@ -4,12 +4,14 @@ let main ?cmd_help conf all : unit Lwt.t =
   let init_or_err (core : Core.t) : _ result Lwt.t =
     let (module C) = core in
     (* setup plugins *)
+    Logs.info ~src:Core.logs_src (fun k->k "creating plugins…");
     let plugins =
       Plugin.Set.create ?cmd_help conf all |> unwrap_result_failwith
     in
     (* connect to chan *)
     Lwt.async (fun () ->
       let* () = Lwt_unix.sleep 2. in
+      Logs.info ~src:Core.logs_src (fun k->k "joining channels…");
       Lwt_list.iter_s (fun c -> C.send_join ~channel:c) conf.Config.channels
     );
     Logs.info ~src:Core.logs_src (fun k -> k "run %d plugins" (List.length all));
