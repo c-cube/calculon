@@ -6,6 +6,8 @@ let main ?cmd_help conf all : unit Lwt.t =
     (* setup plugins *)
     Logs.info ~src:Core.logs_src (fun k -> k "creating plugins…");
     let* plugins = Plugin.Set.create ?cmd_help conf all in
+    Logs.info ~src:Core.logs_src (fun k ->
+        k "plugins initialized (ok: %b)…" (Result.is_ok plugins));
     let plugins = unwrap_result_failwith plugins in
     (* connect to chan *)
     let* () = Lwt_unix.sleep 2. in
