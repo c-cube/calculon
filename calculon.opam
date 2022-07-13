@@ -7,7 +7,7 @@ authors: ["Armael" "Enjolras" "c-cube"]
 maintainer: "c-cube"
 build: [
   ["dune" "build" "-p" name "-j" jobs]
-  ["dune" "build" "@doc" "-p" name] {with-doc}
+  ["dune" "build" "@doc" "-p" name "-j" jobs] {with-doc}
   ["dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
 depends: [
@@ -17,10 +17,10 @@ depends: [
   "irc-client" { >= "0.7.0"}
   "irc-client-lwt"
   "irc-client-lwt-ssl"
-  "sqlite3"
+  "sqlite3" { >= "5.0.0" }
   "logs" {>= "0.5.0"}
   "yojson" { >= "1.7" }
-  "containers" { >= "3.0" & < "4.0" }
+  "containers" { >= "3.6" & < "4.0" }
   "ptime"
   "stringext"
   "re" { >= "1.7.2" & < "2.0" }
@@ -29,6 +29,9 @@ depends: [
 ]
 depopts: [
   "iter"
+]
+conflicts: [
+  "result" { < "1.5" }
 ]
 tags: [ "irc" "bot" "factoids" ]
 homepage: "https://github.com/c-cube/calculon"
