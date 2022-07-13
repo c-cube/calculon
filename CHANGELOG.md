@@ -1,4 +1,18 @@
 
+## 0.8
+
+- add opam lockfiles
+- check channel in !tell
+- config: ability to join multiple channels
+- remove ISO8601, use ptime instead
+- use sqlite3 for storage
+  * small `migrate_state` tool to produce a db file from state.json
+- use github actions
+- remove `tls_cert` config option
+- factoid: add `max_cardinal_for_force`
+- add custom commands (no prefix matching at all)
+- count years in !seen
+
 ## 0.7
 
 - add emoji plugin
