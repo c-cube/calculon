@@ -87,7 +87,7 @@ val db_backed :
   t
 (** Make a stateful plugin that is backed by some tables in the database.
     See {!db_backed} for more details.
-    @since NEXT_RELEASE *)
+    @since 0.8 *)
 
 (** {2 Collection of Plugins} *)
 module Set : sig

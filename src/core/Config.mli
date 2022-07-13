@@ -20,14 +20,14 @@ type t = {
   prefix: string; (** prefix for commands *)
 
   db_file: string;
-  (** Database path. @since NEXT_RELEASE *)
+  (** Database path. @since 0.8 *)
 
   _hidden: hidden;
   (** This field is present to prevent the user from using a literal
       record to build configuration. This way, adding new fields
       doesn't break existing code.
 
-      @since NEXT_RELEASE *)
+      @since 0.8 *)
 }
 (** Bot configuration. *)
 
@@ -53,7 +53,7 @@ val parse :
   t -> string array -> t
 (** [parse conf args] is the same as [conf], but some command line
     arguments can override its fields
-    @param extra_args additional command line arguments for {!Arg} (since NEXT_RELEASE)
+    @param extra_args additional command line arguments for {!Arg} (since 0.8)
 *)
 
 val of_argv :
@@ -61,5 +61,5 @@ val of_argv :
   unit -> t
 (** Parsed from {!Sys.argv}
     Will call {!exit} if [Arg.parse] fails
-    @param extra_args additional command line arguments for {!Arg} (since NEXT_RELEASE)
+    @param extra_args additional command line arguments for {!Arg} (since 0.8)
 *)
