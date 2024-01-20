@@ -1,18 +1,14 @@
-
-
 module Config = struct
-  type t = {
-    check_certificate: bool;
-    proto: Ssl.protocol;
-  }
+  type t = { check_certificate: bool; proto: Ssl.protocol }
 
-  let default = { check_certificate=false; proto=Ssl.TLSv1_3; }
+  let default = { check_certificate = false; proto = Ssl.TLSv1_3 }
 end
 
 module Io_ssl = struct
   type 'a t = 'a
-  let[@inline] (>>=) x f = f x
-  let[@inline] (>|=) x f = f x
+
+  let[@inline] ( >>= ) x f = f x
+  let[@inline] ( >|= ) x f = f x
   let[@inline] return x = x
 
   type file_descr = {
@@ -24,14 +20,14 @@ module Io_ssl = struct
   type config = Config.t
   type inet_addr = Unix.inet_addr
 
-  let open_socket ?(config=Config.default) addr port : file_descr t =
+  let open_socket ?(config = Config.default) addr port : file_descr t =
     let ssl = Ssl.create_context config.Config.proto Ssl.Client_context in
-    if config.Config.check_certificate then begin
+    if config.Config.check_certificate then (
       (* from https://github.com/johnelse/ocaml-irc-client/pull/21 *)
       Ssl.set_verify_depth ssl 3;
-      Ssl.set_verify ssl [Ssl.Verify_peer] (Some Ssl.client_verify_callback);
-      Ssl.set_client_verify_callback_verbose true;
-    end;
+      Ssl.set_verify ssl [ Ssl.Verify_peer ] (Some Ssl.client_verify_callback);
+      Ssl.set_client_verify_callback_verbose true
+    );
     let sock = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
     let sockaddr = Unix.ADDR_INET (addr, port) in
     (* Printf.printf "connect socket…\n%!"; *)
@@ -39,11 +35,9 @@ module Io_ssl = struct
     (* Printf.printf "Ssl.connect socket…\n%!"; *)
     let sslsock = Ssl.embed_socket sock ssl in
     Ssl.connect sslsock;
-    {fd=sock; ssl; sslsock;}
+    { fd = sock; ssl; sslsock }
 
-  let close_socket {fd;sslsock=_;ssl=_} =
-    Unix.close fd
-
+  let close_socket { fd; sslsock = _; ssl = _ } = Unix.close fd
   let read self i len = Ssl.read self.sslsock i len
   let write self s i len = Ssl.write self.sslsock s i len
 
@@ -60,10 +54,9 @@ module Io_ssl = struct
 
   let iter = List.iter
   let sleep d = Unix.sleepf (float d)
-  let catch f err = try  f() with e -> err e
+  let catch f err = try f () with e -> err e
   let time = Unix.gettimeofday
-
   let pick = None
 end
 
-include Irc_client.Make(Io_ssl)
+include Irc_client.Make (Io_ssl)

@@ -94,7 +94,6 @@ struct
 
   let connection = Conn.c
   let init = Lwt.return_unit (* already done! *)
-
   let exit, send_exit = Lwt.wait ()
   let send_exit () = Lwt.wakeup send_exit ()
   let messages = Signal.create ()
