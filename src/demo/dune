@@ -2,6 +2,5 @@
 (executable
   (name demo_bot)
   (modes native)
-  (flags :standard -w +a-4-42-44-48-29@8)
   (libraries calculon calculon.extras)
 )

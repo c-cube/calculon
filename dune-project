@@ -1,5 +1,5 @@
 (lang dune 2.0)
-
+(name calculon)
 (generate_opam_files true)
 
 (version 0.8)
