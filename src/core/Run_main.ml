@@ -1,6 +1,6 @@
 open Lwt_infix
 
-let main ?cmd_help conf all : unit Lwt.t =
+let main ?cmd_help ?(on_init = ignore) conf all : unit Lwt.t =
   let init_or_err (core : Core.t) : _ result Lwt.t =
     let (module C) = core in
     (* setup plugins *)
@@ -31,6 +31,7 @@ let main ?cmd_help conf all : unit Lwt.t =
   let init core : unit Lwt.t =
     Lwt.catch
       (fun () ->
+        on_init core;
         let+ x = init_or_err core in
         match x with
         | Ok () -> ()
