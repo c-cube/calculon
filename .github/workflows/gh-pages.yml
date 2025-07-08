@@ -10,14 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@main
-
-      - name: Cache opam
-        id: cache-opam
-        uses: actions/cache@v2
-        with:
-          path: ~/.opam
-          key: opam-ubuntu-latest-4.12.0
-
       - uses: avsm/setup-ocaml@v3
         with:
           ocaml-compiler: '5.3'
