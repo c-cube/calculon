@@ -3,7 +3,7 @@ name: github pages
 on:
   push:
     branches:
-      - master  # Set a branch name to trigger deployment
+      - main
 
 jobs:
   deploy:
@@ -20,7 +20,7 @@ jobs:
 
       - uses: avsm/setup-ocaml@v3
         with:
-          ocaml-compiler: '5.0'
+          ocaml-compiler: '5.3'
           dune-cache: true
           allow-prerelease-opam: true
 
