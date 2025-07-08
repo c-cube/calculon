@@ -15,13 +15,14 @@ jobs:
             #- windows-latest
         ocaml-compiler:
           - 4.08.x
-          - 5.1.x
+          - 5.3.x
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
-    - uses: ocaml/setup-ocaml@v2
+    - uses: ocaml/setup-ocaml@v3
       with:
         ocaml-compiler: ${{ matrix.ocaml-compiler }}
+        dune-cache: true
         allow-prerelease-opam: true
     - run: opam pin -n .
     - run: opam depext -yt calculon calculon-web
