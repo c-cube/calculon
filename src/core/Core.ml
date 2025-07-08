@@ -84,7 +84,8 @@ end
 type t = (module S)
 
 module Make
-    (I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t) (Conn : sig
+    (I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t)
+    (Conn : sig
       val c : I.connection_t
     end) =
 struct
@@ -158,7 +159,8 @@ struct
 end
 
 module Run
-    (I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t) (F : sig
+    (I : Irc_client.CLIENT with type 'a Io.t = 'a Lwt.t)
+    (F : sig
       val connect : unit -> I.connection_t option Lwt.t
       val conn_info : string
       val init : t -> unit Lwt.t
@@ -173,9 +175,9 @@ struct
         Log.info (fun k ->
             k "trying to (re)connect%s…"
               (if String.equal F.conn_info "" then
-                ""
-              else
-                " to " ^ F.conn_info));
+                 ""
+               else
+                 " to " ^ F.conn_info));
         F.connect ())
       ~callback:(fun _ msg_or_err ->
         match !self with

@@ -18,29 +18,27 @@ and 'st stateful_ = {
   name: string;
       (** Namespace for storing state. Must be distinct for every plugin. *)
   commands: 'st -> Command.t list;
-      (** Commands parametrized by some (mutable) state, with the ability
-     to trigger a signal *)
+      (** Commands parametrized by some (mutable) state, with the ability to
+          trigger a signal *)
   on_msg: 'st -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
       (** Executed on each incoming message *)
   to_json: 'st -> json option;
       (** How to serialize (part of) the state into JSON, if need be. *)
-  of_json : action_callback -> json option -> ('st, string) Result.result;
+  of_json: action_callback -> json option -> ('st, string) Result.result;
       (** How to deserialize the state. [None] is passed for a fresh
-      initialization. *)
+          initialization. *)
   stop: 'st -> unit Lwt.t;
-      (** Stop the plugin.
-     It is NOT the responsibility of this command to save the state,
-     as the core engine will have called {!to_json} before. *)
+      (** Stop the plugin. It is NOT the responsibility of this command to save
+          the state, as the core engine will have called {!to_json} before. *)
 }
 
 type db_backed = {
   commands: DB.db -> Command.t list;
-      (** Commands parametrized by some (mutable) state, with the ability
-     to trigger a signal *)
+      (** Commands parametrized by some (mutable) state, with the ability to
+          trigger a signal *)
   prepare_db: DB.db -> unit;
-      (** Prepare database (create tables, etc.).
-      Must be idempotent as it'll be called every time the plugin
-      is initialized. *)
+      (** Prepare database (create tables, etc.). Must be idempotent as it'll be
+          called every time the plugin is initialized. *)
   on_msg: DB.db -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
       (** Executed on each incoming message *)
   stop: DB.db -> unit Lwt.t;
@@ -277,7 +275,7 @@ module Set = struct
           self.active
       in
       (* close DB *)
-      Log.info (fun k->k "closing DB");
+      Log.info (fun k -> k "closing DB");
       while not (DB.db_close self.db) do
         ()
       done;

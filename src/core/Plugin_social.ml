@@ -211,9 +211,9 @@ let cmd_tell_inner ~at (self : t) =
     ~prio:10
     ~cmd:
       (if at then
-        "tell_at"
-      else
-        "tell")
+         "tell_at"
+       else
+         "tell")
     (fun msg s ->
       let nick = msg.Core.nick in
       let target = Core.reply_to msg in
@@ -268,21 +268,21 @@ let print_diff (f : float) : string =
   let years = f /. (365. *. 3600. *. 24.) |> int_of_float in
   [
     (if years > 0 then
-      [ spf "%d years" years ]
-    else
-      []);
+       [ spf "%d years" years ]
+     else
+       []);
     (if days > 0 then
-      [ spf "%d days" days ]
-    else
-      []);
+       [ spf "%d days" days ]
+     else
+       []);
     (if h > 0 then
-      [ spf "%d hours" h ]
-    else
-      []);
+       [ spf "%d hours" h ]
+     else
+       []);
     (if m > 0 then
-      [ spf "%d minutes" m ]
-    else
-      []);
+       [ spf "%d minutes" m ]
+     else
+       []);
     [ spf "%d seconds" s ];
   ]
   |> List.flatten |> String.concat ", "

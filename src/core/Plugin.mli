@@ -1,7 +1,7 @@
 (** {1 Plugins}
 
-    A plugin is a bunch of commands, and optionally some disk-backed state.
-    It will register its commands to the core loop *)
+    A plugin is a bunch of commands, and optionally some disk-backed state. It
+    will register its commands to the core loop *)
 
 open DB_utils
 
@@ -20,29 +20,27 @@ and 'st stateful_ = private {
   name: string;
       (** Namespace for storing state. Must be distinct for every plugin. *)
   commands: 'st -> Command.t list;
-      (** Commands parametrized by some (mutable) state, with the ability
-     to trigger a signal *)
+      (** Commands parametrized by some (mutable) state, with the ability to
+          trigger a signal *)
   on_msg: 'st -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
       (** Executed on each incoming message *)
   to_json: 'st -> json option;
       (** How to serialize (part of) the state into JSON, if need be. *)
   of_json: action_callback -> json option -> ('st, string) Result.result;
       (** How to deserialize the state. [None] is passed for a fresh
-      initialization. *)
+          initialization. *)
   stop: 'st -> unit Lwt.t;
-      (** Stop the plugin.
-     It is NOT the responsibility of this command to save the state,
-     as the core engine will have called {!to_json} before. *)
+      (** Stop the plugin. It is NOT the responsibility of this command to save
+          the state, as the core engine will have called {!to_json} before. *)
 }
 
 type db_backed = private {
   commands: DB.db -> Command.t list;
-      (** Commands parametrized by some (mutable) state, with the ability
-     to trigger a signal *)
+      (** Commands parametrized by some (mutable) state, with the ability to
+          trigger a signal *)
   prepare_db: DB.db -> unit;
-      (** Prepare database (create tables, etc.).
-      Must be idempotent as it'll be called every time the plugin
-      is initialized. *)
+      (** Prepare database (create tables, etc.). Must be idempotent as it'll be
+          called every time the plugin is initialized. *)
   on_msg: DB.db -> (Core.t -> Irc_message.t -> unit Lwt.t) list;
       (** Executed on each incoming message *)
   stop: DB.db -> unit Lwt.t;
@@ -73,10 +71,10 @@ val stateful :
   ?stop:('st -> unit Lwt.t) ->
   unit ->
   t
-(** Make a stateful plugin using the given [name] (for prefixing
-    its storage; this should be unique) and ways to serialize state to Json,
-    deserialize state from Json, and building commands from the state.
-    See {!stateful_} for more details on each field. *)
+(** Make a stateful plugin using the given [name] (for prefixing its storage;
+    this should be unique) and ways to serialize state to Json, deserialize
+    state from Json, and building commands from the state. See {!stateful_} for
+    more details on each field. *)
 
 val db_backed :
   commands:(DB.db -> Command.t list) ->
@@ -85,8 +83,8 @@ val db_backed :
   ?stop:(DB.db -> unit Lwt.t) ->
   unit ->
   t
-(** Make a stateful plugin that is backed by some tables in the database.
-    See {!db_backed} for more details.
+(** Make a stateful plugin that is backed by some tables in the database. See
+    {!db_backed} for more details.
     @since 0.8 *)
 
 (** {2 Collection of Plugins} *)
@@ -95,10 +93,8 @@ module Set : sig
 
   val create :
     ?cmd_help:bool -> Config.t -> plugin list -> (t, string) Result.result Lwt.t
-  (** Create a collection of plugins, loading the state, initializing
-      them.
-      @param cmd_help if true, adds a "help" command.
-  *)
+  (** Create a collection of plugins, loading the state, initializing them.
+      @param cmd_help if true, adds a "help" command. *)
 
   val commands : t -> Command.t list
   (** Corresponding list of commands *)

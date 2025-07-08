@@ -1,6 +1,5 @@
-
 (library
-   (name calculon_extras)
-   (optional)
-   (public_name calculon.extras)
-   (libraries calculon re re.posix iter unix))
+ (name calculon_extras)
+ (optional)
+ (public_name calculon.extras)
+ (libraries calculon re re.posix iter unix))

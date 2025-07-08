@@ -1,22 +1,9 @@
-
 (* À étendre *)
 
-type t =
-  | Ack
-  | Err
+type t = Ack | Err
 
-let ack = [
-  "OK.";
-  "done.";
-  "Success"
-]
-
-let error = [
-  "oops";
-  "uh";
-  "hmm";
-  "Failure";
-]
+let ack = [ "OK."; "done."; "Success" ]
+let error = [ "oops"; "uh"; "hmm"; "Failure" ]
 
 let talk_base = function
   | Ack -> ack

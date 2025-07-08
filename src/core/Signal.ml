@@ -95,9 +95,9 @@ let filter signal p =
       | None -> Lwt.return StopListening
       | Some signal' ->
         (if p x then
-          send signal' x
-        else
-          Lwt.return ())
+           send signal' x
+         else
+           Lwt.return ())
         >>= fun () -> Lwt.return ContinueListening);
   signal'.alive <- Keep signal;
   signal'

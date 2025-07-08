@@ -1,4 +1,3 @@
-
 (** {1 Manage state} *)
 
 (** This module provides commands for reloading/saving state on disk.

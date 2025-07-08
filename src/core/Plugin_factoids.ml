@@ -91,26 +91,26 @@ let parse_op ~prefix msg : (op * string option) option =
     None
   else
     Re.split_full re_split_pat msg
-    |> (function
-         | `Delim prefix :: `Text factoid :: `Delim op :: rest
-           when is_command prefix && is_factoid factoid ->
-           let op = Re.Group.get op 0 in
-           let fact = group_join rest |> String.trim in
-           let tfactoid = String.trim factoid in
-           some (op, tfactoid, fact)
-         | [ `Delim prefix; `Text factoid ]
-           when is_command prefix && is_factoid factoid ->
-           some ("", String.trim factoid, "")
-         | _ -> None)
-    >>= (function
-          | "=", factoid, fact -> mk_set factoid fact |> some
-          | "+=", factoid, fact -> mk_append factoid fact |> some
-          | "-=", factoid, fact -> mk_remove factoid fact |> some
-          | ":=", factoid, fact -> mk_set_force factoid fact |> some
-          | "++", factoid, "" -> mk_incr factoid |> some
-          | "--", factoid, "" -> mk_decr factoid |> some
-          | "", factoid, _ -> mk_get factoid |> some
-          | _ -> None)
+    |> ( function
+    | `Delim prefix :: `Text factoid :: `Delim op :: rest
+      when is_command prefix && is_factoid factoid ->
+      let op = Re.Group.get op 0 in
+      let fact = group_join rest |> String.trim in
+      let tfactoid = String.trim factoid in
+      some (op, tfactoid, fact)
+    | [ `Delim prefix; `Text factoid ]
+      when is_command prefix && is_factoid factoid ->
+      some ("", String.trim factoid, "")
+    | _ -> None )
+    >>= ( function
+    | "=", factoid, fact -> mk_set factoid fact |> some
+    | "+=", factoid, fact -> mk_append factoid fact |> some
+    | "-=", factoid, fact -> mk_remove factoid fact |> some
+    | ":=", factoid, fact -> mk_set_force factoid fact |> some
+    | "++", factoid, "" -> mk_incr factoid |> some
+    | "--", factoid, "" -> mk_decr factoid |> some
+    | "", factoid, _ -> mk_get factoid |> some
+    | _ -> None )
     |> Option.map (fun x -> x, hl)
 
 let () =

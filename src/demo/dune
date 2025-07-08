@@ -1,6 +1,4 @@
-
 (executable
-  (name demo_bot)
-  (modes native)
-  (libraries calculon calculon.extras)
-)
+ (name demo_bot)
+ (modes native)
+ (libraries calculon calculon.extras))

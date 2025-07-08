@@ -1,26 +1,29 @@
-
 (library
-   (name calculon_web)
-   (public_name calculon-web)
-   (flags :standard -open Calculon_common)
-   (libraries calculon atdgen curly lambdasoup uri))
+ (name calculon_web)
+ (public_name calculon-web)
+ (flags :standard -open Calculon_common)
+ (libraries calculon atdgen curly lambdasoup uri))
 
 (rule
-  (targets Movie_j.ml Movie_j.mli)
-  (deps    Movie.atd)
-  (action  (run atdgen -j -j-std %{deps})))
+ (targets Movie_j.ml Movie_j.mli)
+ (deps Movie.atd)
+ (action
+  (run atdgen -j -j-std %{deps})))
 
 (rule
-  (targets Movie_t.ml Movie_t.mli)
-  (deps    Movie.atd)
-  (action  (run atdgen -t -j-std %{deps})))
+ (targets Movie_t.ml Movie_t.mli)
+ (deps Movie.atd)
+ (action
+  (run atdgen -t -j-std %{deps})))
 
 (rule
-  (targets Giphy_j.ml Giphy_j.mli)
-  (deps    Giphy.atd)
-  (action  (run atdgen -j -j-std %{deps})))
+ (targets Giphy_j.ml Giphy_j.mli)
+ (deps Giphy.atd)
+ (action
+  (run atdgen -j -j-std %{deps})))
 
 (rule
-  (targets Giphy_t.ml Giphy_t.mli)
-  (deps    Giphy.atd)
-  (action  (run atdgen -t -j-std %{deps})))
+ (targets Giphy_t.ml Giphy_t.mli)
+ (deps Giphy.atd)
+ (action
+  (run atdgen -t -j-std %{deps})))
