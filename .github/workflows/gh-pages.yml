@@ -19,12 +19,14 @@ jobs:
       - run: opam pin -n .
       - run: opam depext -yt calculon calculon-web
       - run: opam install -d . --deps-only
-      - run: opam exec -- dune build @doc
+      - run: opam install odig
+
+      - run: opam exec -- odig odoc --cache-dir=_doc/ calculon calculon-web
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./_build/default/_doc/_html/
+          publish_dir: ./_doc/_html/
           destination_dir: .
           enable_jekyll: false
