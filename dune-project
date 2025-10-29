@@ -56,6 +56,6 @@
    (>= "1.7.2"))
   "uri"
   "curly"
-  "atdgen"
+  ("atdgen" (and (>= 2.16) (< 3.0)))
   "lambdasoup"
   ("odoc" :with-doc)))
