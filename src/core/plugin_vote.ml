@@ -1,5 +1,4 @@
 open Result
-open Lwt_infix
 
 (* TODO add proper lib *)
 module Time = struct
@@ -177,13 +176,22 @@ let vote_status polls name =
   | None -> Error (Printf.sprintf "no active poll named '%s'" name)
   | Some poll -> Ok (Some (show_status name poll))
 
-let rec collector (st : state) : _ Lwt.t =
+(* Collector: periodically remove expired polls.
+   In the old code this used Lwt.async + Lwt_unix.sleep.
+   Now the collector just runs synchronously during each poll command check.
+   We do a lazy cleanup on each command invocation instead. *)
+let cleanup_expired (st : state) =
   let now = Time.now () in
-  Hashtbl.iter
-    (fun name { vote; _ } ->
-      if Vote.expired now vote then Hashtbl.remove st.polls name)
-    st.polls;
-  Lwt_unix.sleep (Time.minutes 1) >>= fun () -> collector st
+  let to_remove =
+    Hashtbl.fold
+      (fun name { vote; _ } acc ->
+        if Vote.expired now vote then
+          name :: acc
+        else
+          acc)
+      st.polls []
+  in
+  List.iter (Hashtbl.remove st.polls) to_remove
 
 let help =
   "!vote show <poll> <nick> : display current vote of <nick> for <poll>\n\
@@ -192,7 +200,8 @@ let help =
    !vote for <poll> : vote for the given <poll>\n\
    !vote against <poll>: vote against the given <poll>\n"
 
-let reply (self : state) msg s : _ Lwt.t =
+let reply (self : state) msg s =
+  cleanup_expired self;
   let message_usage =
     "Please use `!vote for VOTE_NAME` or `!vote against VOTE_NAME` to vote; or \
      start a new vote with `!vote start VOTE_NAME`. (run !help vote for the \
@@ -201,8 +210,8 @@ let reply (self : state) msg s : _ Lwt.t =
   let reply_res = function
     | Error msg ->
       let message = Printf.sprintf "%s: %s" Talk.(select Err) msg in
-      Lwt.return @@ Some message
-    | Ok x -> Lwt.return x
+      Some message
+    | Ok x -> x
   in
   match Stringext.split ~max:3 (String.trim s) ~on:' ' with
   | "show" :: name :: nick :: _ -> show_vote self.polls name nick |> reply_res
@@ -230,16 +239,12 @@ let cmd_vote state : Command.t =
     ~cmd:"vote" ~prio:10 (reply state)
 
 let of_json _ _ : (state, _) result =
-  let polls = { stop = false; polls = Hashtbl.create 10 } in
-  Lwt.async (fun () -> collector polls);
-  Ok polls
+  Ok { stop = false; polls = Hashtbl.create 10 }
 
 let plugin =
   Plugin.stateful ~name:"vote"
     ~to_json:(fun _ -> None)
     ~of_json
     ~commands:(fun state -> [ cmd_vote state ])
-    ~stop:(fun st ->
-      st.stop <- true;
-      Lwt.return ())
+    ~stop:(fun st -> st.stop <- true)
     ()

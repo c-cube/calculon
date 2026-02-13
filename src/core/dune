@@ -2,5 +2,17 @@
  (name calculon)
  (public_name calculon)
  (flags :standard -warn-error -a+8 -open Calculon_common)
- (libraries containers yojson re re.perl logs sqlite3 calculon.common ptime
-   irky irky-eio irky-eio-tls tls-eio ca-certs eio eio_main stringext unix))
+ (libraries
+  containers
+  yojson
+  re
+  re.perl
+  logs
+  sqlite3
+  calculon.common
+  ptime
+  irky
+  irky-eio
+  eio
+  stringext
+  unix))

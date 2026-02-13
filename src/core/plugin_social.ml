@@ -1,4 +1,4 @@
-open DB_utils
+open Db_utils
 module J = Yojson.Safe.Util
 
 type json = Yojson.Safe.t
@@ -250,7 +250,7 @@ let cmd_tell_inner ~at (self : t) =
                 { from = nick; on_channel = target; msg; tell_after }
                 :: state.to_tell;
             });
-        Lwt.return_some (Talk.select Talk.Ack)
+        Some (Talk.select Talk.Ack)
       with
       | Command.Fail _ as e -> raise e
       | e -> raise (Command.Fail ("tell: " ^ Printexc.to_string e)))
@@ -300,8 +300,8 @@ let cmd_seen (self : t) =
         let nick = CCString.trim s |> String.lowercase_ascii in
         Logs.debug ~src:Core.logs_src (fun k -> k "query: seen `%s`" nick);
         match data self nick with
-        | Some c -> Lwt.return [ create_message_for_user now nick c.last_seen ]
-        | None -> Lwt.return []
+        | Some c -> [ create_message_for_user now nick c.last_seen ]
+        | None -> []
       with e -> raise (Command.Fail ("seen: " ^ Printexc.to_string e)))
 
 let cmd_last (self : t) =
@@ -324,8 +324,7 @@ let cmd_last (self : t) =
 
         let now = now () in
         let l = last_talk self ~n:top_n in
-        let l = CCList.map (fun (n, t) -> create_message_for_user now n t) l in
-        Lwt.return l
+        CCList.map (fun (n, t) -> create_message_for_user now n t) l
       with e -> raise (Command.Fail ("last_seen: " ^ Printexc.to_string e)))
 
 let cmd_ignore_template ~cmd prefix_stem ignore (self : t) =
@@ -334,19 +333,15 @@ let cmd_ignore_template ~cmd prefix_stem ignore (self : t) =
         let dest = String.trim s in
         Logs.debug ~src:Core.logs_src (fun k -> k "query: ignore `%s`" dest);
         if String.equal dest "" then
-          Lwt.return None
+          None
         else (
           let contact = data_or_insert self dest in
-          let msg =
-            if Bool.equal contact.ignore_user ignore then
-              CCFormat.sprintf "already %sing %s" prefix_stem dest
-              |> Option.some
-            else (
-              set_data self dest { contact with ignore_user = ignore };
-              CCFormat.sprintf "%sing %s" prefix_stem dest |> Option.some
-            )
-          in
-          Lwt.return msg
+          if Bool.equal contact.ignore_user ignore then
+            CCFormat.sprintf "already %sing %s" prefix_stem dest |> Option.some
+          else (
+            set_data self dest { contact with ignore_user = ignore };
+            CCFormat.sprintf "%sing %s" prefix_stem dest |> Option.some
+          )
         )
       with e -> raise (Command.Fail (cmd ^ ": " ^ Printexc.to_string e)))
 
@@ -359,18 +354,15 @@ let cmd_ignore_list (self : t) =
       try
         Logs.debug ~src:Core.logs_src (fun k -> k "query: ignore_list");
         let ignored = ignored self in
-        let msg =
-          if CCList.is_empty ignored then
-            [ "no one ignored!" ]
-          else
-            "ignoring:" :: ignored
-        in
-        Lwt.return msg
+        if CCList.is_empty ignored then
+          [ "no one ignored!" ]
+        else
+          "ignoring:" :: ignored
       with e -> raise (Command.Fail ("ignore_list: " ^ Printexc.to_string e)))
 
 (* callback to update state, notify users of their messages, etc. *)
-let on_message (self : t) (module C : Core.S) msg : _ Lwt.t =
-  let module Msg = Irc_message in
+let on_message (self : t) (core : Core.t) msg : unit =
+  let module Msg = Irky.Message in
   let nick, channel =
     match msg.Msg.command with
     | Msg.JOIN (_, _) | Msg.PRIVMSG (_, _) ->
@@ -387,7 +379,7 @@ let on_message (self : t) (module C : Core.S) msg : _ Lwt.t =
   in
   (* trigger [tell] messages *)
   match nick with
-  | None -> Lwt.return ()
+  | None -> ()
   | Some nick ->
     (* update [lastSeen] *)
     let now = now () in
@@ -406,9 +398,9 @@ let on_message (self : t) (module C : Core.S) msg : _ Lwt.t =
     in
     if not (CCList.is_empty to_tell) then
       set_data self nick { contact with to_tell = remaining };
-    Lwt_list.iter_p
+    List.iter
       (fun { from = author; on_channel; msg = m; _ } ->
-        C.send_notice ~target:on_channel
+        Core.send_notice core ~target:on_channel
           ~message:(Printf.sprintf "%s: (from %s): %s" nick author m))
       (List.rev to_tell)
 

@@ -1,5 +1,5 @@
 open Prelude
-open DB_utils
+open Db_utils
 module Log = Core.Log
 
 type key = string
@@ -365,14 +365,12 @@ let cmd_search (self : t) =
   Command.make_simple_l ~descr:"search in factoids" ~cmd:"search" ~prio:10
     (fun _ s ->
       let tokens = search_tokenize s in
-      search tokens self |> limit_list |> insert_noresult |> Lwt.return)
+      search tokens self |> limit_list |> insert_noresult)
 
 let cmd_search_all (self : t) =
   Command.make_simple_query_l
     ~descr:"search all matches in factoids (reply in pv)" ~cmd:"search_all"
     ~prio:10 (fun _ s ->
-      Lwt.return
-      @@
       let tokens = search_tokenize s in
       search tokens self |> insert_noresult |> fun l ->
       if List.length l > 5 then
@@ -384,39 +382,33 @@ let cmd_see (self : t) =
   Command.make_simple_l ~descr:"see a factoid's content" ~cmd:"see" ~prio:10
     (fun _ s ->
       let v = get (mk_key s) self in
-      let msg =
-        match v with
-        | Int i -> [ string_of_int i ]
-        | StrList [] -> [ "not found." ]
-        | StrList l -> limit_list l
-      in
-      Lwt.return msg)
+      match v with
+      | Int i -> [ string_of_int i ]
+      | StrList [] -> [ "not found." ]
+      | StrList l -> limit_list l)
 
 let cmd_see_all (self : t) =
   Command.make_simple_query_l ~descr:"see all of a factoid's content (in pv)"
     ~cmd:"see_all" ~prio:10 (fun _ s ->
       let v = get (mk_key s) self in
-      let msg =
-        match v with
-        | Int i -> [ string_of_int i ]
-        | StrList [] -> [ "not found." ]
-        | StrList l ->
-          if List.length l > 5 then
-            [ String.concat " | " l ]
-          else
-            l
-      in
-      Lwt.return msg)
+      match v with
+      | Int i -> [ string_of_int i ]
+      | StrList [] -> [ "not found." ]
+      | StrList l ->
+        if List.length l > 5 then
+          [ String.concat " | " l ]
+        else
+          l)
 
 let cmd_random (self : t) =
   Command.make_simple ~descr:"random factoid" ~cmd:"random" ~prio:10 (fun _ _ ->
       let msg = random self in
-      Lwt.return @@ Some msg)
+      Some msg)
 
 let cmd_factoids (self : t) =
-  let reply ~prefix (module C : Core.S) msg =
+  let reply ~prefix (core : Core.t) msg =
     let target = Core.reply_to msg in
-    let matched x = Command.Cmd_match x in
+    let matched f = Command.Cmd_match f in
     let add_hl hl line =
       match hl with
       | None -> line
@@ -425,18 +417,20 @@ let cmd_factoids (self : t) =
     let reply_value ~hl (v : value) =
       match v with
       | Int i ->
-        C.send_privmsg ~target ~message:(string_of_int i |> add_hl hl)
-        |> matched
-      | StrList [] -> matched @@ Lwt.return ()
+        matched (fun () ->
+            Core.send_privmsg core ~target
+              ~message:(string_of_int i |> add_hl hl))
+      | StrList [] -> matched (fun () -> ())
       | StrList [ message ] ->
-        C.send_privmsg ~target ~message:(add_hl hl message) |> matched
+        matched (fun () ->
+            Core.send_privmsg core ~target ~message:(add_hl hl message))
       | StrList l ->
         let message = Rand_distrib.uniform l |> Rand_distrib.run |> add_hl hl in
-        C.send_privmsg ~target ~message |> matched
+        matched (fun () -> Core.send_privmsg core ~target ~message)
     and count_update_message (k : key) = function
-      | None -> Lwt.return ()
+      | None -> ()
       | Some count ->
-        C.send_privmsg ~target
+        Core.send_privmsg core ~target
           ~message:(Printf.sprintf "%s : %d" (k :> string) count)
     in
     let op = parse_op ~prefix msg.Core.message in
@@ -451,7 +445,7 @@ let cmd_factoids (self : t) =
         let help_msg, n = find_close_keys k self in
         (* probably a typo for this key *)
         if n > 0 then
-          C.send_privmsg ~target ~message:help_msg |> matched
+          matched (fun () -> Core.send_privmsg core ~target ~message:help_msg)
         else
           Command.Cmd_skip
       | v ->
@@ -459,31 +453,31 @@ let cmd_factoids (self : t) =
         reply_value ~hl v)
     | Some (Set f, _) ->
       if mem f.key self then
-        C.talk ~target Talk.Err |> matched
+        matched (fun () -> Core.talk core ~target Talk.Err)
       else (
         set f self;
-        C.talk ~target Talk.Ack |> matched
+        matched (fun () -> Core.talk core ~target Talk.Ack)
       )
     | Some (Set_force f, _) ->
       let l = get f.key self in
       (match l with
       | StrList l when List.length l >= !max_card_for_force ->
-        C.talk ~target Talk.Err |> matched
+        matched (fun () -> Core.talk core ~target Talk.Err)
       | _ ->
         set f self;
-        C.talk ~target Talk.Ack |> matched)
+        matched (fun () -> Core.talk core ~target Talk.Ack))
     | Some (Append f, _) ->
       append f self;
-      C.talk ~target Talk.Ack |> matched
+      matched (fun () -> Core.talk core ~target Talk.Ack)
     | Some (Remove f, _) ->
       remove f self;
-      C.talk ~target Talk.Ack |> matched
+      matched (fun () -> Core.talk core ~target Talk.Ack)
     | Some (Incr k, _) ->
       let count = incr k self in
-      count_update_message k count |> matched
+      matched (fun () -> count_update_message k count)
     | Some (Decr k, _) ->
       let count = decr k self in
-      count_update_message k count |> matched
+      matched (fun () -> count_update_message k count)
     | None -> Command.Cmd_skip
   in
   Command.make ~name:"factoids" ~prio:80 reply

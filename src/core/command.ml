@@ -1,8 +1,9 @@
 (** {1 Command Type} *)
 
-open Lwt_infix
-
-type res = Cmd_match of unit Lwt.t | Cmd_skip | Cmd_fail of string
+type res =
+  | Cmd_match of (unit -> unit)  (** command applies, run the thunk *)
+  | Cmd_skip  (** the command did not apply *)
+  | Cmd_fail of string  (** command applies, but failed *)
 
 type t = {
   prio: int;
@@ -43,7 +44,7 @@ let match_prefix1 ~prefix ~cmd msg =
 exception Fail of string
 
 let make_simple_inner_ ~query ?descr ?prio ~cmd f : t =
-  let match_ ~prefix (module C : Core.S) msg =
+  let match_ ~prefix (core : Core.t) msg =
     match match_prefix1_full ~prefix ~cmd msg with
     | None -> Cmd_skip
     | Some (sub, hl) ->
@@ -53,8 +54,8 @@ let make_simple_inner_ ~query ?descr ?prio ~cmd f : t =
             | None -> "none"
             | Some h -> Printf.sprintf "%S" h));
       (try
-         let fut =
-           let* lines = f msg sub in
+         let thunk () =
+           let lines = f msg sub in
            let lines =
              match hl with
              | None -> lines
@@ -72,9 +73,9 @@ let make_simple_inner_ ~query ?descr ?prio ~cmd f : t =
              else
                None
            in
-           C.send_privmsg_l_nolimit ?delay ~target ~messages:lines ()
+           Core.send_privmsg_l_nolimit ?delay core ~target ~messages:lines ()
          in
-         Cmd_match fut
+         Cmd_match thunk
        with Fail msg -> Cmd_fail msg)
   in
   make ?descr ?prio ~name:cmd match_
@@ -96,21 +97,21 @@ let make_simple_query_l ?descr ?prio ~cmd f : t =
   make_simple_inner_ ~query:true ~descr ?prio ~cmd f
 
 let make_custom ?descr ?prio ~name f =
-  let match_ ~prefix:_ (module C : Core.S) msg =
+  let match_ ~prefix:_ (core : Core.t) msg =
     match f msg msg.Core.message with
     | None -> Cmd_skip
-    | Some fut ->
+    | Some lines ->
       Cmd_match
-        ( fut >>= fun lines ->
+        (fun () ->
           let target = Core.reply_to msg in
-          C.send_privmsg_l_nolimit ~target ~messages:lines () )
+          Core.send_privmsg_l_nolimit core ~target ~messages:lines ())
     | exception e -> Cmd_fail (Printexc.to_string e)
   in
   make ?descr ?prio ~name match_
 
 let make_simple ?descr ?prio ~cmd f : t =
   make_simple_l ?descr ?prio ~cmd (fun msg s ->
-      f msg s >|= function
+      match f msg s with
       | None -> []
       | Some x -> [ x ])
 
@@ -120,36 +121,30 @@ let compare_prio c1 c2 = compare c1.prio c2.prio
 let cmd_help (l : t list) : t =
   make_simple ~descr:"help message" ~cmd:"help" ~prio:5 (fun _ s ->
       let s = String.trim s in
-      let res =
-        match s with
-        | "" ->
-          let l = "help" :: List.map (fun c -> c.name) l in
-          let message =
-            "help: commands are " ^ Prelude.string_list_to_string l
-          in
-          Some message
-        | "help" -> Some "displays help for commands"
-        | _ ->
-          (try
-             let c = List.find (fun c -> c.name = s) l in
-             Some (Printf.sprintf "%s: %s (prio %d)" c.name c.descr c.prio)
-           with Not_found -> Some ("error: unknown command " ^ s))
-      in
-      Lwt.return res)
+      match s with
+      | "" ->
+        let l = "help" :: List.map (fun c -> c.name) l in
+        let message = "help: commands are " ^ Prelude.string_list_to_string l in
+        Some message
+      | "help" -> Some "displays help for commands"
+      | _ ->
+        (try
+           let c = List.find (fun c -> c.name = s) l in
+           Some (Printf.sprintf "%s: %s (prio %d)" c.name c.descr c.prio)
+         with Not_found -> Some ("error: unknown command " ^ s)))
 
-let run ~prefix core l msg : unit Lwt.t =
+let run ~prefix core l msg : unit =
   let rec aux = function
     | [] ->
       Logs.debug (fun k ->
-          k "no command found for %s" (Core.string_of_privmsg msg));
-      Lwt.return_unit
+          k "no command found for %s" (Core.string_of_privmsg msg))
     | c :: tail ->
       (match c.match_ ~prefix core msg with
       | Cmd_skip -> aux tail
       | Cmd_match f ->
         Logs.debug (fun k ->
             k "command %s succeeded for %s" c.name (Core.string_of_privmsg msg));
-        f
+        f ()
       | Cmd_fail e ->
         Logs.debug (fun k ->
             k "command %s failed on %s with %s" c.name

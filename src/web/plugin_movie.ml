@@ -1,16 +1,12 @@
 open Calculon
 open CCFun
-open Lwt_infix
 
 let get_body uri =
-  let run () =
-    Curly.run ~args:[ "-L" ]
-      Curly.(Request.make ~url:(Uri.to_string uri) ~meth:`GET ())
-    |> function
-    | Ok { Curly.Response.body; _ } -> body
-    | Error e -> raise (Failure (Format.asprintf "%a" Curly.Error.pp e))
-  in
-  Lwt_preemptive.detach run ()
+  Curly.run ~args:[ "-L" ]
+    Curly.(Request.make ~url:(Uri.to_string uri) ~meth:`GET ())
+  |> function
+  | Ok { Curly.Response.body; _ } -> body
+  | Error e -> raise (Failure (Format.asprintf "%a" Curly.Error.pp e))
 
 type query = Movie of string | Serie of string
 
@@ -44,8 +40,8 @@ let parse_get body =
       (Printexc.to_string exn) body;
     None
 
-let search query = make_search_uri query |> get_body >|= parse_search
-let get_infos id = make_get_uri id |> get_body >|= parse_get
+let search query = make_search_uri query |> get_body |> parse_search
+let get_infos id = make_get_uri id |> get_body |> parse_get
 
 let ellipsis n s =
   if String.length s > n then (
@@ -78,23 +74,22 @@ let get_id { Movie_t.s_id; _ } = s_id
 let refine_results ?(n = 3) results =
   results.Movie_t.results
   |> CCList.filter (Option.is_some % title)
-  |> CCList.take n |> List.map get_id
-  |> Lwt_list.filter_map_p get_infos
+  |> CCList.take n |> List.map get_id |> List.filter_map get_infos
 
 let format_seq ?n results =
   let buffer = Buffer.create 100 in
   let title { Movie_t.title; _ } = title in
-  let* results = refine_results ?n results in
-  let* l =
-    Lwt_list.filter_map_p
-      (fun r -> Lwt.return @@ Option.map (flip CCPair.make r) @@ title r)
+  let results = refine_results ?n results in
+  let l =
+    List.filter_map
+      (fun r -> Option.map (flip CCPair.make r) @@ title r)
       results
   in
-  Lwt_list.map_p (fun x -> Lwt.return @@ show_result ~buffer x) l
+  List.map (fun x -> show_result ~buffer x) l
 
 let mk_movie_cmd cmd q_of_str =
   Command.make_simple_l ~descr:"look for movies/series" ~prio:10 ~cmd
-    (fun _ s -> String.trim s |> q_of_str |> search >>= format_seq)
+    (fun _ s -> String.trim s |> q_of_str |> search |> format_seq)
 
 let cmd_film = mk_movie_cmd "film" query_movie
 let cmd_serie = mk_movie_cmd "serie" query_serie

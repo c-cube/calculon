@@ -11,7 +11,7 @@
     trying to answer. *)
 
 type res =
-  | Cmd_match of unit Lwt.t  (** command applies, and fired with given action *)
+  | Cmd_match of (unit -> unit)  (** command applies, run the thunk *)
   | Cmd_skip  (** the command did not apply *)
   | Cmd_fail of string  (** command applies, but failed *)
 
@@ -57,7 +57,7 @@ val make_simple :
   ?descr:string ->
   ?prio:int ->
   cmd:string ->
-  (Core.privmsg -> string -> string option Lwt.t) ->
+  (Core.privmsg -> string -> string option) ->
   t
 (** [make_simple ~cmd f] matches messages of the form "!cmd xxx", and call
     [f msg "xxx"]. The function returns 0 or 1 line to reply to sender. The
@@ -67,7 +67,7 @@ val make_simple_l :
   ?descr:string ->
   ?prio:int ->
   cmd:string ->
-  (Core.privmsg -> string -> string list Lwt.t) ->
+  (Core.privmsg -> string -> string list) ->
   t
 (** Same as {!make_simple} but replies lines The function can raise Fail to
     indicate failure *)
@@ -76,7 +76,7 @@ val make_simple_query_l :
   ?descr:string ->
   ?prio:int ->
   cmd:string ->
-  (Core.privmsg -> string -> string list Lwt.t) ->
+  (Core.privmsg -> string -> string list) ->
   t
 (** Same as {!make_simple_l} but replies lines in query (private) The function
     can raise Fail to indicate failure *)
@@ -85,10 +85,10 @@ val make_custom :
   ?descr:string ->
   ?prio:int ->
   name:string ->
-  (Core.privmsg -> string -> string list Lwt.t option) ->
+  (Core.privmsg -> string -> string list option) ->
   t
 (** [make_custom ~name f] calls [f] on input messages, and returns either:
-    - [future(Some l)] to send some lines in response
+    - [Some l] to send some lines in response
     - [None] to abstain and let other commands handle this message.
 
     No prefix is considered here.
@@ -101,6 +101,6 @@ val cmd_help : t list -> t
 (** [cmd_help l] build a command [help] that print a help message about plugins
     in l. *)
 
-val run : prefix:string -> Core.t -> t list -> Core.privmsg -> unit Lwt.t
+val run : prefix:string -> Core.t -> t list -> Core.privmsg -> unit
 (** Execute the commands, in given order, on the message. First command to
     succeed shortcuts the other ones. *)

@@ -23,7 +23,6 @@
   ("eio_main" (>= "1.0"))
   ("irky" (>= "0.1"))
   ("irky-eio" (>= "0.1"))
-  ("irky-eio-tls" (>= "0.1"))
   ("tls-eio" (>= "1.0"))
   ("ca-certs" (>= "0.1"))
   ("sqlite3"
