@@ -1,8 +1,8 @@
-(lang dune 2.0)
+(lang dune 3.0)
 (name calculon)
 (generate_opam_files true)
 
-(version 0.8)
+(version 1.0)
 
 (source
  (github c-cube/calculon))
@@ -15,13 +15,17 @@
  (name calculon)
  (depends
   ("dune"
-   (>= "1.1"))
+   (>= "3.0"))
   "base-unix"
-  "lwt"
-  ("irc-client"
-   (>= "0.7.0"))
-  "irc-client-lwt"
-  "irc-client-lwt-ssl"
+  ("ocaml"
+   (>= "5.0.0"))
+  ("eio" (>= "1.0"))
+  ("eio_main" (>= "1.0"))
+  ("irky" (>= "0.1"))
+  ("irky-eio" (>= "0.1"))
+  ("irky-eio-tls" (>= "0.1"))
+  ("tls-eio" (>= "1.0"))
+  ("ca-certs" (>= "0.1"))
   ("sqlite3"
    (>= "5.0.0"))
   ("logs"
@@ -38,9 +42,7 @@
    (and
     (>= "1.7.2")
     (< "2.0")))
-  ("odoc" :with-doc)
-  ("ocaml"
-   (>= "4.08.0")))
+  ("odoc" :with-doc))
  (depopts iter)
  (tags
   ("irc" "bot" "factoids")))

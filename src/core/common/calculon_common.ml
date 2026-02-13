@@ -45,12 +45,3 @@ let guard_res ?(ctx = "") f : _ result =
   try Ok (f ()) with
   | Failure e -> Error e
   | e -> Error (ctx ^ Printexc.to_string e)
-
-module Lwt_infix = struct
-  let ( let* ) = Lwt.bind
-  let ( let+ ) x f = Lwt.map f x
-  let ( and+ ) = Lwt.both
-  let ( and* ) = ( and+ )
-  let ( >|= ) x f = Lwt.map f x
-  let ( >>= ) = Lwt.bind
-end
