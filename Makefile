@@ -15,6 +15,10 @@ clean:
 format:
 	@dune fmt --auto-promote
 
+format-check:
+	@dune build $(DUNE_OPTS) @fmt --display=quiet
+
+
 WATCH?=@check
 watch:
 	@dune build -w $(WATCH)
