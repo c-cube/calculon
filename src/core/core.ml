@@ -121,8 +121,8 @@ let talk (self : t) ~target ty =
   let message = Talk.select ty in
   send_privmsg self ~target ~message
 
-let make_io_tls ~net ~clock ~sw : Irky.Io.t =
-  let config = Irky_eio.Ssl_config.default in
+let make_io_tls ~check_cert ~net ~clock ~sw : Irky.Io.t =
+  let config = Irky_eio.Ssl_config.make ~check_certificate:check_cert () in
   Irky_eio.io_ssl ~config ~net ~clock ~sw
 
 let make_io_plain ~net ~clock ~sw : Irky.Io.t = Irky_eio.io ~net ~clock ~sw
@@ -132,7 +132,7 @@ let run ~sw ~(net : Eio_unix.Net.t) ~(clock : _ Eio.Time.clock) conf ~on_connect
   let module C = Config in
   let io =
     if conf.C.tls then
-      make_io_tls ~net ~clock ~sw
+      make_io_tls ~check_cert:conf.C.check_cert ~net ~clock ~sw
     else
       make_io_plain ~net ~clock ~sw
   in

@@ -12,6 +12,7 @@ type t = {
   nick: string;
   tls: bool;
   sasl: bool;
+  check_cert: bool;  (** Check server certificate *)
   channels: string list;
       (** Channels to join after the connexion to the server *)
   log_level: Logs.level;
