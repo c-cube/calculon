@@ -45,6 +45,8 @@ val default : t
     - prefix = "!"
     - db_file = "calculon.db" *)
 
+val to_irky : t -> Irky.Config.t
+
 val parse :
   ?extra_args:(string * Arg.spec * string) list -> t -> string array -> t
 (** [parse conf args] is the same as [conf], but some command line arguments can

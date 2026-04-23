@@ -37,6 +37,10 @@ let default =
     _hidden = Hidden;
   }
 
+let to_irky (self : t) : Irky.Config.t =
+  let { server; port; username; realname; nick; sasl; _ } = self in
+  Irky.Config.make ~server ~port ~username ~realname ~nick ~sasl ()
+
 let parse ?(extra_args = []) conf args =
   let custom_nick = ref None in
   let custom_chan = ref [] in

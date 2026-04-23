@@ -137,9 +137,8 @@ let run ~sw ~(net : Eio_unix.Net.t) ~(clock : _ Eio.Time.clock) conf ~on_connect
       make_io_plain ~net ~clock ~sw
   in
   let connect () =
-    Irky.Client.connect ~username:conf.C.username ~realname:conf.C.realname
-      ~nick:conf.C.nick ?password:conf.C.password ~server:conf.C.server
-      ~port:conf.C.port ~sasl:conf.C.sasl ~io ()
+    let client_config = C.to_irky conf in
+    Irky.Client.connect ~config:client_config ~io ()
   in
   let core = { client = None; line_cut_threshold = 10; io } in
   Irky.Client.reconnect_loop ~reconnect_delay:60. ~io ~connect
