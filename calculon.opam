@@ -9,7 +9,7 @@ bug-reports: "https://github.com/c-cube/calculon/issues"
 depends: [
   "dune" {>= "3.0" & >= "3.0"}
   "base-unix"
-  "ocaml" {>= "5.0.0"}
+  "ocaml" {>= "5.1.0"}
   "eio" {>= "1.0"}
   "eio_main" {>= "1.0"}
   "irky" {>= "0.1"}
