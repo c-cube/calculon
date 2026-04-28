@@ -11,6 +11,7 @@
   sqlite3
   calculon.common
   ptime
+  ptime.clock.os
   irky
   irky-eio
   eio
