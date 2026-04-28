@@ -5,8 +5,9 @@ open Soup
 module Log = Core.Log
 
 let get_body uri : string =
-  Curly.run ~args:[ "-L" ]
-    Curly.(Request.make ~url:(Uri.to_string uri) ~meth:`GET ())
+  Eio_unix.run_in_systhread (fun () ->
+      Curly.run ~args:[ "-L" ]
+        Curly.(Request.make ~url:(Uri.to_string uri) ~meth:`GET ()))
   |> function
   | Ok { Curly.Response.body; _ } -> body
   | Error e -> raise (Failure (Format.asprintf "%a" Curly.Error.pp e))
