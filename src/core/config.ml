@@ -38,8 +38,8 @@ let default =
   }
 
 let to_irky (self : t) : Irky.Config.t =
-  let { server; port; username; realname; nick; sasl; _ } = self in
-  Irky.Config.make ~server ~port ~username ~realname ~nick ~sasl ()
+  let { server; port; username; realname; nick; sasl; password; _ } = self in
+  Irky.Config.make ~server ~port ~username ~realname ~nick ~sasl ?password ()
 
 let parse ?(extra_args = []) conf args =
   let custom_nick = ref None in
