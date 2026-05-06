@@ -1,4 +1,4 @@
 (executable
  (name demo_bot)
  (modes native)
- (libraries calculon calculon.extras))
+ (libraries calculon calculon.extras eio_main))

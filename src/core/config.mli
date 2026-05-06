@@ -12,6 +12,7 @@ type t = {
   nick: string;
   tls: bool;
   sasl: bool;
+  check_cert: bool;  (** Check server certificate *)
   channels: string list;
       (** Channels to join after the connexion to the server *)
   log_level: Logs.level;
@@ -43,6 +44,8 @@ val default : t
     - log_level = Logs.Warning
     - prefix = "!"
     - db_file = "calculon.db" *)
+
+val to_irky : t -> Irky.Config.t
 
 val parse :
   ?extra_args:(string * Arg.spec * string) list -> t -> string array -> t

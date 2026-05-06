@@ -27,7 +27,11 @@ let () =
     (* update with CLI parameters *)
     let config = C.Config.parse config Sys.argv in
     Logs.set_level ~all:true (Some config.C.Config.log_level);
-    C.Run_main.main config plugins |> Lwt_main.run
+    Eio_main.run @@ fun env ->
+    Eio.Switch.run @@ fun sw ->
+    let net = Eio.Stdenv.net env in
+    let clock = Eio.Stdenv.clock env in
+    C.Run_main.main ~sw ~net ~clock config plugins
   with
   | Arg.Help msg -> print_endline msg
   | Arg.Bad msg ->

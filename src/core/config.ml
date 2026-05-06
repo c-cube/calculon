@@ -11,6 +11,7 @@ type t = {
   nick: string;
   tls: bool;
   sasl: bool;
+  check_cert: bool;
   channels: string list;
   log_level: Logs.level;
   prefix: string;
@@ -26,6 +27,7 @@ let default =
     password = None;
     realname = "calculon";
     nick = "calculon";
+    check_cert = true;
     tls = true;
     sasl = true;
     channels = [ "#ocaml" ];
@@ -34,6 +36,10 @@ let default =
     db_file = "calculon.db";
     _hidden = Hidden;
   }
+
+let to_irky (self : t) : Irky.Config.t =
+  let { server; port; username; realname; nick; sasl; password; _ } = self in
+  Irky.Config.make ~server ~port ~username ~realname ~nick ~sasl ?password ()
 
 let parse ?(extra_args = []) conf args =
   let custom_nick = ref None in
@@ -44,6 +50,7 @@ let parse ?(extra_args = []) conf args =
   let custom_tls = ref None in
   let custom_sasl = ref None in
   let prefix = ref default.prefix in
+  let check_cert = ref None in
   let log_lvl = ref None in
   let options =
     Arg.align @@ extra_args
@@ -68,6 +75,9 @@ let parse ?(extra_args = []) conf args =
         ( "--sasl",
           Arg.Bool (fun b -> custom_sasl := Some b),
           " enable/disable SASL auth" );
+        ( "--check-cert",
+          Arg.Bool (fun b -> check_cert := Some b),
+          " check TLS certificate of server" );
         ( "--debug",
           Arg.Unit (fun () -> log_lvl := Some Logs.Debug),
           " set log level to debug" );
@@ -94,6 +104,7 @@ let parse ?(extra_args = []) conf args =
          !custom_chan);
     server = !custom_server |? conf.server;
     tls = !custom_tls |? conf.tls;
+    check_cert = !check_cert |? conf.check_cert;
     sasl = !custom_sasl |? conf.sasl;
     port = !custom_port;
     db_file = !custom_db_file |? conf.db_file;
