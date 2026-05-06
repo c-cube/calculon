@@ -22,10 +22,11 @@ Let's assume calculon is loaded, via:
 
 ### Main
 
-The typical `main` entry point would look like  this.
+The typical `main` entry point would look like this.
 Calculon works by gathering a list of
 *plugins* (see the module `Plugin`), some configuration (see `Config`)
-and running the package in a loop using [irc-client](https://github.com/johnelse/ocaml-irc-client/).
+and running the package in a loop using
+[irky](https://github.com/c-cube/irky) with the Eio runtime.
 
 ```ocaml non-deterministic=command
 
@@ -39,7 +40,11 @@ let plugins : C.Plugin.t list = [
 
 let () =
   let conf = C.Config.of_argv () in
-  C.Run_main.main conf plugins |> Lwt_main.run
+  Eio_main.run @@ fun env ->
+  Eio.Switch.run @@ fun sw ->
+  let net = Eio.Stdenv.net env in
+  let clock = Eio.Stdenv.clock env in
+  C.Run_main.main ~sw ~net ~clock conf plugins
 
 ```
 
@@ -63,7 +68,7 @@ let cmd_hello : Command.t =
   Command.make_simple ~descr:"hello world" ~cmd:"hello" ~prio:10
     (fun (input_msg:Core.privmsg) _ ->
        let who = input_msg.Core.nick in
-       Lwt.return (Some ("hello " ^ who))
+       Some ("hello " ^ who)
     )
 
 let plugin_hello : Plugin.t = Plugin.of_cmd cmd_hello
