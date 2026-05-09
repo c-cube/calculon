@@ -1,12 +1,10 @@
 (** {1 Basic signal} *)
 
-open Lwt_infix
-
 type handler_response = ContinueListening | StopListening
 
 type 'a t = {
   mutable n: int; (* how many handlers? *)
-  mutable handlers: ('a -> handler_response Lwt.t) array;
+  mutable handlers: ('a -> handler_response) array;
   mutable alive: keepalive; (* keep some signal alive *)
 }
 (** Signal of type 'a *)
@@ -16,7 +14,7 @@ and keepalive = Keep : 'a t -> keepalive | NotAlive : keepalive
 type 'a signal = 'a t
 
 let _exn_handler = ref (fun _ -> ())
-let nop_handler _x = Lwt.return ContinueListening
+let nop_handler _x = ContinueListening
 
 let create () =
   let s = { n = 0; handlers = Array.make 3 nop_handler; alive = NotAlive } in
@@ -34,23 +32,25 @@ let remove s i =
 
 let send s x =
   let rec loop i =
-    Lwt.catch
-      (fun () ->
-        s.handlers.(i) x >>= function
-        | ContinueListening -> Lwt.return false
-        | StopListening -> Lwt.return true)
-      (fun exn ->
-        !_exn_handler exn;
-        Lwt.return false (* be conservative, keep... *))
-    >>= fun b ->
-    if b then (
-      remove s i;
-      (* i-th handler is done, remove it *)
-      loop i
-    ) else if i < s.n then
-      loop (i + 1)
-    else
-      Lwt.return ()
+    if i >= s.n then
+      ()
+    else (
+      let b =
+        try
+          match s.handlers.(i) x with
+          | ContinueListening -> false
+          | StopListening -> true
+        with exn ->
+          !_exn_handler exn;
+          false (* be conservative, keep... *)
+      in
+      if b then (
+        remove s i;
+        (* i-th handler is done, remove it *)
+        loop i
+      ) else
+        loop (i + 1)
+    )
   in
   loop 0
 
@@ -64,11 +64,20 @@ let on s f =
   s.handlers.(s.n) <- f;
   s.n <- s.n + 1
 
-let on' s f = on s (fun x -> f x >>= fun _ -> Lwt.return ContinueListening)
-let once s f = on s (fun x -> f x >>= fun _ -> Lwt.return StopListening)
+let on' s f =
+  on s (fun x ->
+      f x;
+      ContinueListening)
+
+let once s f =
+  on s (fun x ->
+      f x;
+      StopListening)
 
 let propagate a b =
-  on a (fun x -> send b x >>= fun () -> Lwt.return ContinueListening)
+  on a (fun x ->
+      send b x;
+      ContinueListening)
 
 (** {2 Combinators} *)
 
@@ -79,9 +88,10 @@ let map signal f =
   Weak.set r 0 (Some signal');
   on signal (fun x ->
       match Weak.get r 0 with
-      | None -> Lwt.return StopListening
+      | None -> StopListening
       | Some signal' ->
-        send signal' (f x) >>= fun () -> Lwt.return ContinueListening);
+        send signal' (f x);
+        ContinueListening);
   signal'.alive <- Keep signal;
   signal'
 
@@ -92,13 +102,10 @@ let filter signal p =
   Weak.set r 0 (Some signal');
   on signal (fun x ->
       match Weak.get r 0 with
-      | None -> Lwt.return StopListening
+      | None -> StopListening
       | Some signal' ->
-        (if p x then
-           send signal' x
-         else
-           Lwt.return ())
-        >>= fun () -> Lwt.return ContinueListening);
+        if p x then send signal' x;
+        ContinueListening);
   signal'.alive <- Keep signal;
   signal'
 
@@ -109,12 +116,12 @@ let filter_map signal f =
   Weak.set r 0 (Some signal');
   on signal (fun x ->
       match Weak.get r 0 with
-      | None -> Lwt.return StopListening
+      | None -> StopListening
       | Some signal' ->
         (match f x with
-        | None -> Lwt.return ()
-        | Some x -> send signal' x)
-        >>= fun () -> Lwt.return ContinueListening);
+        | None -> ()
+        | Some x -> send signal' x);
+        ContinueListening);
   signal'.alive <- Keep signal;
   signal'
 

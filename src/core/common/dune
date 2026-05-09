@@ -1,4 +1,4 @@
 (library
  (name calculon_common)
- (libraries logs lwt)
+ (libraries logs)
  (public_name calculon.common))
