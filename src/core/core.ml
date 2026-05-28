@@ -147,7 +147,7 @@ let run ~sw ~(net : Eio_unix.Net.t) ~(clock : _ Eio.Time.clock) conf ~on_connect
       Log.info (fun k -> k "connected to %s" conn_info);
       core.client <- Some client;
       on_connect core)
-    (fun _client msg ->
+    (fun _client _ msg ->
       try callback core msg
       with exn ->
         Log.err (fun k ->

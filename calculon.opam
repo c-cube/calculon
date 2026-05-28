@@ -7,7 +7,7 @@ tags: ["irc" "bot" "factoids"]
 homepage: "https://github.com/c-cube/calculon"
 bug-reports: "https://github.com/c-cube/calculon/issues"
 depends: [
-  "dune" {>= "3.0" & >= "3.0"}
+  "dune" {>= "3.0"}
   "base-unix"
   "ocaml" {>= "5.1.0"}
   "eio" {>= "1.0"}
