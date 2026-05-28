@@ -3,7 +3,7 @@ module Logfmt = struct
     if
       CCString.exists
         (fun c ->
-          Char.code c < 0x2f
+          Char.code c < 0x20
           || Char.code c >= 127
           || c = ' ' || c = '\\' || c = '"')
         s
