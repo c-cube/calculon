@@ -22,8 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # TODO: remove once it's released
-      - run: opam pin https://github.com/c-cube/irky.git#main -y -n
       - run: opam pin -n .
       - run: apt update && opam depext -yt calculon calculon-web
       - run: opam install -t . --deps-only && opam install re iter

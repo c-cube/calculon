@@ -12,7 +12,6 @@ jobs:
     container: ghcr.io/c-cube/c-cube-commmon/ci-doc-5.4:latest
     steps:
       - uses: actions/checkout@v6
-      - run: opam pin https://github.com/c-cube/irky.git#main -y -n
       - run: opam install calculon calculon-web -t
       - run: opam exec -- odig odoc --cache-dir=_doc/ calculon calculon-web
 
