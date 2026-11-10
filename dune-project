@@ -14,8 +14,7 @@
 (package
  (name calculon)
  (depends
-  ("dune"
-   (>= "3.0"))
+  "dune"
   "base-unix"
   ("ocaml"
    (>= "5.1.0"))
