@@ -2,17 +2,19 @@
 (name calculon)
 (generate_opam_files true)
 
-(version 1.0)
+(version 0.9)
 
 (source
  (github c-cube/calculon))
 
 (license MIT)
 
+(maintainers c-cube)
 (authors c-cube Enjolras Armael)
 
 (package
  (name calculon)
+ (synopsis "Library for writing IRC bots in OCaml")
  (depends
   "dune"
   "base-unix"

@@ -1,4 +1,16 @@
 
+## 0.9
+
+- migrate entire codebase from Lwt/irc-client to Eio/irky
+- ocaml >= 5.1 bc of eio
+- config for check-certificates
+- add logfmt logger
+- make sure to run curly in systhread
+- use odig
+- update dep on atdgen
+- move CI to docker images
+- check format in CI
+
 ## 0.8
 
 - add opam lockfiles
