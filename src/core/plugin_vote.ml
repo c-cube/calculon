@@ -69,8 +69,8 @@ module Vote = struct
 
   let is_complete t =
     (match missing_votes t with
-    | Some 0 -> true
-    | _ -> false)
+      | Some 0 -> true
+      | _ -> false)
     || expired (Time.now ()) t
 
   let get_winner t =

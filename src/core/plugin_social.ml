@@ -36,16 +36,16 @@ let contact_of_json (json : json) : (contact, string) result =
       to_tell =
         member "to_tell"
         |> J.convert_each (fun j ->
-               match J.convert_each J.to_string j with
-               | [ from; on_channel; msg ] ->
-                 { from; on_channel; msg; tell_after = None }
-               | [ from; on_channel; msg; tell_after ] ->
-                 let tell_after = Some (float_of_string tell_after) in
-                 { from; on_channel; msg; tell_after }
-               | _ ->
-                 raise
-                   (Bad_json
-                      (spf "bad `tell` object: %s" (Yojson.Safe.to_string j))));
+            match J.convert_each J.to_string j with
+            | [ from; on_channel; msg ] ->
+              { from; on_channel; msg; tell_after = None }
+            | [ from; on_channel; msg; tell_after ] ->
+              let tell_after = Some (float_of_string tell_after) in
+              { from; on_channel; msg; tell_after }
+            | _ ->
+              raise
+                (Bad_json
+                   (spf "bad `tell` object: %s" (Yojson.Safe.to_string j))));
       ignore_user =
         (match J.member "ignore_user" json with
         | `Null -> false
@@ -389,12 +389,12 @@ let on_message (self : t) (core : Core.t) msg : unit =
     let to_tell, remaining =
       contact.to_tell
       |> List.partition (fun t ->
-             match t.tell_after, channel with
-             | _, None -> false
-             | None, _ -> true
-             | Some f, Some chan ->
-               (* delay expired, and it was on the same channel *)
-               CCFloat.(now > f) && String.equal t.on_channel chan)
+          match t.tell_after, channel with
+          | _, None -> false
+          | None, _ -> true
+          | Some f, Some chan ->
+            (* delay expired, and it was on the same channel *)
+            CCFloat.(now > f) && String.equal t.on_channel chan)
     in
     if not (CCList.is_empty to_tell) then
       set_data self nick { contact with to_tell = remaining };
