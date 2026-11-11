@@ -22,6 +22,7 @@
   ("eio_main" (>= "1.0"))
   ("irky" (>= "0.1"))
   ("irky-eio" (>= "0.1"))
+  (iostream (>= 0.3)) ; should be a dep of irky-eio
   ("tls-eio" (>= "1.0"))
   ("ca-certs" (>= "0.1"))
   ("sqlite3"
